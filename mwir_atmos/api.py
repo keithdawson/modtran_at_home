@@ -17,6 +17,7 @@ from .atmosphere.profiles import get_profile
 from .geometry.path import build_path
 from .optics.transmittance import compute_layer_optics, path_transmittance
 from .spectral import make_grid
+from .validation import validate_scenario
 from .types import (
     AtmosphereProfile,
     LayerOptics,
@@ -75,6 +76,7 @@ def run_scenario(
     result is left as ``None`` rather than raising. Transmittance is always
     computed.
     """
+    validate_scenario(scenario)
     if grid is None:
         grid = make_grid(
             scenario.wavenumber_min_cm1,

@@ -225,7 +225,7 @@ def molecular_optical_depth(
     shape ``(len(layers), grid.n)``.
 
     ``linelists`` defaults to :func:`mwir_atmos.hitran.fetch.ensure_linelists`
-    (offline-safe: loads the shipped cache, only fetches if it is missing).
+    (loads the shipped cache; missing files raise without network access).
     ``species`` defaults to :data:`mwir_atmos.types.REQUIRED_SPECIES` (the
     six species every profile must supply -- excludes O2, which has no
     HITRAN line data fetched for this package and negligible MWIR line

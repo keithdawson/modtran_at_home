@@ -140,7 +140,7 @@ def test_unreachable_sensor_altitude_returns_runtime_error(capsys):
     rc = cli.main([*_FAST_ARGV, "--sensor-alt-km", "-5"])
     assert rc == cli.EXIT_RUNTIME_ERROR
     err = capsys.readouterr().err
-    assert "error resolving scenario geometry" in err
+    assert "sensor_alt_km" in err
 
 
 def test_unreachable_source_altitude_returns_runtime_error(capsys):

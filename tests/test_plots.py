@@ -17,6 +17,17 @@ from mwir_atmos.webgui import plots
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 
+@pytest.mark.skipif(not plots.HAS_PLOTLY, reason="plotly is optional")
+def test_species_colors_survive_filtering_and_reordering():
+    x = np.arange(3)
+    complete, filtered = RecordingContainer(), RecordingContainer()
+    plots.line_chart(complete, x, {"H2O": x, "CO2": x, "O3": x}, x_label="x", y_label="y")
+    plots.line_chart(filtered, x, {"O3": x, "CO2": x}, x_label="x", y_label="y")
+    colors = {trace.name: trace.line.color for trace in complete.figures[0].data}
+    for trace in filtered.figures[0].data:
+        assert trace.line.color == colors[trace.name]
+
+
 @pytest.fixture
 def xy():
     x = np.linspace(3.0, 5.0, 64)

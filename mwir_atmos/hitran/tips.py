@@ -42,7 +42,9 @@ from .fetch import GLOBAL_ISOTOPOLOGUES, MOLECULE_IDS
 
 __all__ = ["partition_function"]
 
-_QTABLE_PATH = Path(__file__).resolve().parents[2] / "data" / "hitran" / "tips_qtable.npz"
+from ..data_paths import hitran_data_dir
+
+_QTABLE_PATH = hitran_data_dir() / "tips_qtable.npz"
 
 #: (molecule_id, local_iso_id) -> HITRAN global isotopologue ID, derived from
 #: the same table :mod:`mwir_atmos.hitran.fetch` uses to fetch line data, so

@@ -6,7 +6,7 @@ coverage is explicit rather than relying on the endpoint's own defaults.
 
 CONTRACT.md invariant 5: the finished package must run with no network.
 :func:`ensure_linelists` is the ONLY function in :mod:`mwir_atmos` permitted
-to touch the network -- it loads ``data/hitran/<species>.npz`` if present
+to touch the network when explicitly requested -- it loads ``data/hitran/<species>.npz`` if present
 and only calls :func:`fetch_linelist` (which also hits the network) when the
 cache is missing or ``force=True`` is passed explicitly. Everything else
 (:mod:`mwir_atmos.optics.lbl`, :mod:`mwir_atmos.hitran.tips`) reads the
@@ -52,7 +52,9 @@ _HTTP_TIMEOUT_S = 180.0
 _MAX_ATTEMPTS = 3
 _USER_AGENT = "mwir_atmos/0.1 (offline MWIR atmospheric transmittance calculator)"
 
-_DEFAULT_CACHE_DIR = Path(__file__).resolve().parents[2] / "data" / "hitran"
+from ..data_paths import hitran_data_dir
+
+_DEFAULT_CACHE_DIR = hitran_data_dir()
 
 #: HITRAN molecule ID per species (distinct from the *global* isotopologue ID
 #: used in the API's ``iso_ids_list``).
@@ -263,11 +265,14 @@ def ensure_linelists(
     *,
     cache_dir=None,
     force: bool = False,
+    allow_download: bool = False,
     numin: float = 1775.0,
     numax: float = 4325.0,
 ) -> dict[Species, LineList]:
-    """Load every species' line list from ``data/hitran/`` if present, else
-    fetch from hitran.org and cache.
+    """Load cached line lists without network access by default.
+
+    Missing files raise ``FileNotFoundError``. Set ``allow_download=True``
+    explicitly to populate a cache; ``force=True`` explicitly refreshes it.
 
     The ONLY function permitted to touch the network (CONTRACT.md invariant
     5). Fetches are sequential, one HTTP request per species (all of that
@@ -286,7 +291,17 @@ def ensure_linelists(
         if cached is not None:
             return dict(cached)
 
-    cdir.mkdir(parents=True, exist_ok=True)
+    if not (allow_download or force):
+        missing = [_cache_path(sp, cdir) for sp in MOLECULE_IDS
+                   if not _cache_path(sp, cdir).is_file()]
+        if missing:
+            raise FileNotFoundError(
+                "Missing offline HITRAN cache: " + ", ".join(str(p) for p in missing)
+                + ". Restore data/hitran or explicitly call "
+                "ensure_linelists(allow_download=True) on a connected machine."
+            )
+    else:
+        cdir.mkdir(parents=True, exist_ok=True)
 
     out: dict[Species, LineList] = {}
     fetched_any = False

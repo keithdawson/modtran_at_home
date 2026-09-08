@@ -28,6 +28,7 @@ INCLUDE_PATTERNS = [
     "wheels",
     "scenarios",
     "tests",
+    "scripts",
     "Dockerfile.rocky9",
     "Dockerfile.ubuntu",
     "docker-compose.yml",

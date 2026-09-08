@@ -90,6 +90,24 @@ def _color_for(index: int) -> str:
     return OVERFLOW_COLOR
 
 
+_SERIES_COLORS = {
+    name: CATEGORICAL_COLORS[i]
+    for names in (
+        ("total", "molecular", "aerosol", "rayleigh"),
+        ("H2O", "CO2", "O3", "N2O", "CO", "CH4"),
+        ("path_thermal", "surface_emitted", "surface_reflected_solar", "surface_reflected_lunar",
+         "solar_single_scatter", "lunar_single_scatter", "direct_solar", "direct_lunar"),
+    )
+    for i, name in enumerate(names)
+}
+_SERIES_COLORS["source_emitted"] = OVERFLOW_COLOR
+
+
+def _series_color(name: str, fallback_index: int) -> str:
+    """Filtering or reordering a known physical component preserves its color."""
+    return _SERIES_COLORS.get(name, _color_for(fallback_index))
+
+
 def _mpl_legend(ax, n_entries: int) -> None:
     ax.legend(
         loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=min(max(n_entries, 1), 4), frameon=False
@@ -127,7 +145,7 @@ def line_chart(
         fig = go.Figure()
         for i, (name, y) in enumerate(series.items()):
             fig.add_trace(
-                go.Scatter(x=x, y=y, mode="lines", name=name, line=dict(color=_color_for(i), width=2))
+                go.Scatter(x=x, y=y, mode="lines", name=name, line=dict(color=_series_color(name, i), width=2))
             )
         fig.update_layout(
             title=title,
@@ -144,7 +162,7 @@ def line_chart(
     elif HAS_MATPLOTLIB:
         fig, ax = plt.subplots(figsize=(9, 4.2))
         for i, (name, y) in enumerate(series.items()):
-            ax.plot(x, y, label=name, color=_color_for(i), linewidth=1.6)
+            ax.plot(x, y, label=name, color=_series_color(name, i), linewidth=1.6)
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
         if title:
@@ -192,7 +210,7 @@ def stacked_area_chart(
             fig.add_trace(
                 go.Scatter(
                     x=x, y=y, mode="lines", name=name, stackgroup="components",
-                    line=dict(width=0.5, color=_color_for(i)), fillcolor=_color_for(i),
+                    line=dict(width=0.5, color=_series_color(name, i)), fillcolor=_series_color(name, i),
                 )
             )
         if total is not None:
@@ -215,7 +233,7 @@ def stacked_area_chart(
     elif HAS_MATPLOTLIB:
         fig, ax = plt.subplots(figsize=(9, 4.2))
         names = list(nonzero.keys())
-        ax.stackplot(x, list(nonzero.values()), labels=names, colors=[_color_for(i) for i in range(len(names))], alpha=0.9)
+        ax.stackplot(x, list(nonzero.values()), labels=names, colors=[_series_color(name, i) for i, name in enumerate(names)], alpha=0.9)
         if total is not None:
             ax.plot(x, total, color=TOTAL_LINE_COLOR, linewidth=2, linestyle=":", label="total")
         ax.set_xlabel(x_label)
@@ -324,7 +342,7 @@ def line_chart_png(
         return None
     fig, ax = plt.subplots(figsize=(9, 4.5), dpi=150)
     for i, (name, y) in enumerate(series.items()):
-        ax.plot(x, y, label=name, color=_color_for(i), linewidth=1.6)
+        ax.plot(x, y, label=name, color=_series_color(name, i), linewidth=1.6)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     if title:
@@ -351,7 +369,7 @@ def stacked_area_png(
         return None
     fig, ax = plt.subplots(figsize=(9, 4.5), dpi=150)
     names = list(nonzero.keys())
-    ax.stackplot(x, list(nonzero.values()), labels=names, colors=[_color_for(i) for i in range(len(names))], alpha=0.9)
+    ax.stackplot(x, list(nonzero.values()), labels=names, colors=[_series_color(name, i) for i, name in enumerate(names)], alpha=0.9)
     if total is not None:
         ax.plot(x, total, color=TOTAL_LINE_COLOR, linewidth=2, linestyle=":", label="total")
     ax.set_xlabel(x_label)

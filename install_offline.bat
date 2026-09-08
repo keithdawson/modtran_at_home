@@ -4,6 +4,8 @@ rem MODTRAN-at-home Offline / Air-Gapped Installer for Windows (cmd)
 rem ==============================================================================
 
 setlocal enabledelayedexpansion
+cd /d "%~dp0"
+if errorlevel 1 exit /b 1
 
 echo ======================================================================
 echo     MODTRAN-at-home (mwir_atmos) Windows Offline Installation
@@ -36,15 +38,18 @@ rem 3. Setup Virtual Environment
 if not exist "venv" (
     echo [+] Creating virtual environment in .\venv...
     python -m venv venv
+    if errorlevel 1 exit /b 1
 ) else (
     echo [+] Using existing virtual environment in .\venv
 )
 
 call venv\Scripts\activate.bat
+if errorlevel 1 exit /b 1
 
 rem 4. Install dependencies strictly offline
 echo [+] Installing dependencies offline from local .\wheels...
 python -m pip install --no-index --find-links .\wheels --upgrade pip setuptools wheel
+if errorlevel 1 exit /b 1
 python -m pip install --no-index --find-links .\wheels -e ".[gui,dev]"
 
 if %ERRORLEVEL% NEQ 0 (
@@ -60,7 +65,8 @@ echo.
 echo ======================================================================
 echo     Running Offline Verification Test Suite
 echo ======================================================================
-pytest tests\ -v
+python -m pytest tests\ -v
+if errorlevel 1 exit /b 1
 
 echo.
 echo ======================================================================
@@ -69,5 +75,5 @@ echo ======================================================================
 echo To use mwir_atmos:
 echo   1. Activate environment:   call venv\Scripts\activate.bat
 echo   2. Run CLI commands:       mwir --help
-echo   3. Launch Web GUI:         streamlit run mwir_atmos\gui\app.py
+echo   3. Launch Web GUI:         streamlit run mwir_atmos\webgui\app.py
 echo ======================================================================

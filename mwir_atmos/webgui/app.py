@@ -124,7 +124,7 @@ def _scenario_cache_key(scenario: Scenario) -> str:
     return json.dumps(scenario_to_dict(scenario), sort_keys=True, default=str)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=8)
 def _run_scenario_cached(cache_key: str) -> ScenarioResult:
     scenario = scenario_from_dict(json.loads(cache_key))
     # Turbulence is computed whenever the sidebar selects a Cn^2 model; with
@@ -140,10 +140,10 @@ def _run_scenario_cached(cache_key: str) -> ScenarioResult:
 def _optional_number(label: str, *, key: str, default: float, help: Optional[str] = None, **kwargs) -> Optional[float]:
     """A checkbox-gated number_input: unchecked -> None (keep the model/scenario
     default), matching the CLI's "flag omitted -> None" semantics exactly."""
-    enabled = st.sidebar.checkbox(f"Override {label}", key=f"{key}__on")
+    enabled = st.checkbox(f"Override {label}", key=f"{key}__on")
     if not enabled:
         return None
-    return float(st.sidebar.number_input(label, value=default, key=key, help=help, **kwargs))
+    return float(st.number_input(label, value=default, key=key, help=help, **kwargs))
 
 
 def _enum_select(label: str, options: dict, current, *, key: str):
@@ -426,7 +426,7 @@ def _scenario_summary(result: ScenarioResult) -> None:
 
 
 def _transmittance_section(result: ScenarioResult, x: np.ndarray, x_label: str) -> None:
-    st.subheader("Transmittance vs wavelength")
+    st.subheader(f"Transmittance vs {'wavelength' if x_label.startswith('Wavelength') else 'wavenumber'}")
     t = result.transmittance
     available = {"total": t.total, "molecular": t.molecular, "aerosol": t.aerosol, "rayleigh": t.rayleigh}
     chosen = st.multiselect(
@@ -451,7 +451,7 @@ def _species_section(result: ScenarioResult, x: np.ndarray, x_label: str) -> Non
 
 
 def _radiance_section(result: ScenarioResult, x: np.ndarray, x_label: str) -> None:
-    st.subheader("Radiance vs wavelength")
+    st.subheader(f"Radiance vs {'wavelength' if x_label.startswith('Wavelength') else 'wavenumber'}")
     if result.radiance is None:
         st.info(
             "Radiance unavailable (radiometry module not present in this build). Every "
@@ -459,12 +459,20 @@ def _radiance_section(result: ScenarioResult, x: np.ndarray, x_label: str) -> No
         )
         return
     components = {name: getattr(result.radiance, name) for name in RADIANCE_COMPONENTS if name != "total"}
+    from mwir_atmos.spectral import radiance_to_per_um
+    total = result.radiance.total
+    y_label = "Radiance (W cm^-2 sr^-1 / cm^-1)"
+    if x_label.startswith("Wavelength"):
+        components = {name: radiance_to_per_um(y, result.grid.wavenumber_cm1)
+                      for name, y in components.items()}
+        total = radiance_to_per_um(total, result.grid.wavenumber_cm1)
+        y_label = "Radiance (W m^-2 sr^-1 / um)"
     plots.stacked_area_chart(
-        st, x, components, total=result.radiance.total,
-        x_label=x_label, y_label="Radiance (W cm^-2 sr^-1 / cm^-1)", title="",
+        st, x, components, total=total,
+        x_label=x_label, y_label=y_label, title="",
     )
     png = plots.stacked_area_png(
-        x, components, total=result.radiance.total, x_label=x_label, y_label="Radiance (W cm^-2 sr^-1 / cm^-1)"
+        x, components, total=total, x_label=x_label, y_label=y_label
     )
     _download_row("radiance", png)
 
@@ -619,7 +627,8 @@ def _download_row(name: str, png_bytes: Optional[bytes]) -> None:
 
 
 def main() -> None:
-    st.title("mwir_atmos -- MWIR atmospheric transmittance & radiance")
+    st.title("MODTRAN-at-home")
+    st.caption("MWIR atmospheric transmittance & radiance")
     st.caption(
         "HITRAN line-by-line molecular absorption, AFGL model atmospheres, MT_CKD H2O continuum, "
         "LOWTRAN-style aerosols and Rayleigh scattering. See README.md for the physics basis and limitations."

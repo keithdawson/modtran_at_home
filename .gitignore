@@ -10,3 +10,4 @@ wheels/
 .env
 .env.*
 artifacts/
+venv/

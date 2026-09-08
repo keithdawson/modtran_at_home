@@ -8,7 +8,7 @@ This guide details how to deploy, run, and optimize `mwir_atmos` (MODTRAN-at-hom
 
 `mwir_atmos` is engineered for 100% offline self-containment:
 - **Spectroscopic Databases**: Pre-computed and cached line-by-line parameters for all target molecules ($\text{H}_2\text{O}, \text{CO}_2, \text{O}_3, \text{N}_2\text{O}, \text{CO}, \text{CH}_4$), MT_CKD v4.3 water vapor continuum tables, and TIPS-2021 total internal partition sums are bundled in `data/hitran/`.
-- **Python Binary Wheels**: 88+ platform-matched binary wheels for Linux (`manylinux_x86_64`) and Windows (`win_amd64`) for Python 3.10, 3.11, and 3.12 are bundled in `wheels/`.
+- **Python Binary Wheels**: Platform-matched binary wheels are prepared in `wheels/` before building an air-gap bundle. The existing local cache covers Python 3.11 and 3.12 on Linux and Windows; Python 3.10 needs its own dependency download. Generated wheels and bundles are not stored in Git.
 - **Zero Network Invariants**: All core solvers, geometry tracers, aerosol models, radiance integrators, and Web GUIs operate strictly without internet connectivity.
 
 ---
@@ -55,7 +55,7 @@ This guide details how to deploy, run, and optimize `mwir_atmos` (MODTRAN-at-hom
 
 ## 3. Docker Container Deployment & Offline Validation
 
-The package includes pre-configured Docker definitions for Rocky Linux 9 and Ubuntu with hardware-level network isolation.
+The package includes Docker definitions for Rocky Linux 9 and Ubuntu. Initial image builds require access to base images and OS package repositories (apt/dnf). Build on a connected machine, then transfer the completed image with `docker save` / `docker load`. The verification container disables networking at runtime; this is software network isolation.
 
 ### Build and Run with Docker Compose
 

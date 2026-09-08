@@ -3,6 +3,12 @@
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
+Set-Location -LiteralPath $PSScriptRoot
+
+function Invoke-Python {
+    & python @args
+    if ($LASTEXITCODE -ne 0) { throw "Python command failed with exit code $LASTEXITCODE" }
+}
 
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host "    MODTRAN-at-home (mwir_atmos) Windows Offline Installation" -ForegroundColor Cyan
@@ -33,7 +39,7 @@ Write-Host "[+] Verified offline wheel cache and HITRAN spectroscopic data." -Fo
 # 3. Setup Virtual Environment
 if (-not (Test-Path "venv")) {
     Write-Host "[+] Creating virtual environment in .\venv..." -ForegroundColor Yellow
-    python -m venv venv
+    Invoke-Python -m venv venv
 } else {
     Write-Host "[+] Using existing virtual environment in .\venv" -ForegroundColor Green
 }
@@ -42,8 +48,8 @@ if (-not (Test-Path "venv")) {
 
 # 4. Install dependencies strictly offline
 Write-Host "[+] Installing dependencies offline from local .\wheels..." -ForegroundColor Yellow
-python -m pip install --no-index --find-links .\wheels --upgrade pip setuptools wheel
-python -m pip install --no-index --find-links .\wheels -e ".[gui,dev]"
+Invoke-Python -m pip install --no-index --find-links .\wheels --upgrade pip setuptools wheel
+Invoke-Python -m pip install --no-index --find-links .\wheels -e ".[gui,dev]"
 
 Write-Host "[+] Successfully installed mwir_atmos in offline mode." -ForegroundColor Green
 
@@ -51,7 +57,7 @@ Write-Host "[+] Successfully installed mwir_atmos in offline mode." -ForegroundC
 Write-Host "`n======================================================================" -ForegroundColor Cyan
 Write-Host "    Running Offline Verification Test Suite" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
-pytest tests\ -v
+Invoke-Python -m pytest tests\ -v
 
 Write-Host "`n======================================================================" -ForegroundColor Green
 Write-Host "    Installation & Verification Complete!" -ForegroundColor Green
@@ -59,5 +65,5 @@ Write-Host "====================================================================
 Write-Host "To use mwir_atmos:"
 Write-Host "  1. Activate environment:   .\venv\Scripts\Activate.ps1"
 Write-Host "  2. Run CLI commands:       mwir --help"
-Write-Host "  3. Launch Web GUI:         streamlit run mwir_atmos\gui\app.py"
+Write-Host "  3. Launch Web GUI:         streamlit run mwir_atmos\webgui\app.py"
 Write-Host "======================================================================"

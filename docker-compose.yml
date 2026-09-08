@@ -26,7 +26,7 @@ services:
     container_name: modtran-gui
     ports:
       - "8501:8501"
-    command: streamlit run mwir_atmos/gui/app.py --server.port=8501 --server.address=0.0.0.0
+    command: streamlit run mwir_atmos/webgui/app.py --server.port=8501 --server.address=0.0.0.0
 
   # 4. Strict Offline Air-Gapped Verification (Network Isolation: NONE)
   modtran-offline-verify:
@@ -38,9 +38,9 @@ services:
     network_mode: "none"
     command: >
       bash -c "
-        echo '=== RUNNING COMPLETE TEST SUITE WITH HARDWARE ZERO NETWORK ACCESS ===' &&
+        echo '=== RUNNING COMPLETE TEST SUITE WITH NETWORK DISABLED ===' &&
         python3 -m pytest tests/ -v &&
         echo '=== RUNNING CLI SCENARIO EXECUTION ===' &&
-        mwir --config scenarios/tropical_maritime_quicklook.yaml --output /tmp/test_out.csv &&
+        mwir --config scenarios/tropical_maritime_quicklook.yaml --format csv --output /tmp/test_out.csv &&
         echo '=== AIR-GAPPED VERIFICATION COMPLETED SUCCESSFULLY ==='
       "

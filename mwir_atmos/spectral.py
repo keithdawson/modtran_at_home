@@ -48,7 +48,11 @@ def make_grid(
     wavenumber_max_cm1: float = MWIR_GRID_MAX_CM1,
     resolution_cm1: float = DEFAULT_RESOLUTION_CM1,
 ) -> SpectralGrid:
-    """Build a uniform wavenumber grid, inclusive of both endpoints."""
+    """Build a uniform grid up to the upper bound (inclusive when aligned)."""
+    if not np.all(np.isfinite([wavenumber_min_cm1, wavenumber_max_cm1, resolution_cm1])):
+        raise ValueError("spectral bounds and resolution must be finite")
+    if wavenumber_min_cm1 <= 0:
+        raise ValueError("wavenumber_min_cm1 must be positive")
     if wavenumber_max_cm1 <= wavenumber_min_cm1:
         raise ValueError("wavenumber_max_cm1 must exceed wavenumber_min_cm1")
     if resolution_cm1 <= 0:
@@ -223,7 +227,9 @@ def convolve_gaussian(grid: SpectralGrid, spectrum: np.ndarray, fwhm_cm1: float)
     kernel = np.exp(-0.5 * (x / sigma_pts) ** 2)
     kernel /= kernel.sum()
 
-    flat = np.atleast_2d(y)
+    if y.ndim == 0 or y.shape[-1] != grid.n:
+        raise ValueError("spectrum's last axis must match the spectral grid")
+    flat = y.reshape(-1, grid.n)
     padded = np.pad(flat, ((0, 0), (half, half)), mode="reflect")
     out = np.empty_like(flat)
     for i in range(flat.shape[0]):

@@ -83,10 +83,36 @@ PYTHONPATH=path/to/modtran_at_home python -m mwir_atmos.cli --help
 
 **Offline data.** HITRAN line lists, the TIPS partition-function table, and
 the MT_CKD continuum coefficients are pre-fetched into `data/hitran/*.npz`
-and ship with the repository — normal runs never touch the network
-(`mwir_atmos.hitran.fetch.ensure_linelists` is the only function permitted
-to fetch, and only if the cache is missing). Nothing extra to download for
+and ship with the repository and built wheels — normal runs never touch the network.
+Missing line lists raise an actionable error; downloading requires an explicit
+`ensure_linelists(allow_download=True)` call on a connected machine (`force=True`
+explicitly refreshes the cache). Nothing extra to download for
 an air-gapped install.
+
+### Reproducible verification
+
+```bash
+python -m pytest -q
+python scripts/verify_examples.py
+```
+
+The second command runs all five shipped scenarios at their declared resolution,
+checks finite/bounded transmittance and radiance component sums, and writes JSON,
+CSV, and PNG output to `artifacts/examples/`. The test suite includes actual
+Streamlit reruns, display-unit switching, input validation, and offline-cache
+failure checks. GitHub Actions runs these on Windows and Linux and retains the
+outputs as downloadable artifacts.
+
+Scenario inputs reject nonfinite numbers, invalid physical ranges and quoted
+booleans (use YAML `false`, not `"false"`). Wavelength radiance plots use
+W m^-2 sr^-1 / um; wavenumber plots and spectral CSV exports retain the internal
+W cm^-2 sr^-1 / cm^-1 convention. Changing display units never changes the physics.
+
+Wheel installs place the eight scientific tables under
+`<environment>/share/mwir-atmos/hitran`; source/editable installs use `data/hitran`.
+The offline `wheels/` dependency cache and generated `dist/` bundles are excluded
+from Git. Prepare dependencies with `scripts/download_wheels.py` on a connected
+machine before building an air-gap bundle. A failed download now exits with an error.
 
 ## Command line
 

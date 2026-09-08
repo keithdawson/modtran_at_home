@@ -197,18 +197,20 @@ _COST_BYTES_PER_ELEMENT = 8
 def _estimate_run_cost(scenario: Scenario) -> _CostEstimate:
     """Points x layers, estimated memory, and estimated runtime for ``scenario``.
 
-    Builds the real grid and the real path geometry (cheap -- no line data
-    touched) so the estimate reflects the actual layer count, then applies
+    Counts grid points without allocating a spectral array, and builds the
+    real path geometry so the estimate reflects the actual layer count, then applies
     the calibration above. Raises whatever :func:`~mwir_atmos.api.build_profile`
     / :func:`~mwir_atmos.api.build_scenario_path` raise for a geometrically
     invalid scenario (e.g. an unreachable source) -- the same error
     :func:`~mwir_atmos.api.run_scenario` would raise later, just surfaced
     before any spectral work happens.
     """
-    grid = make_grid(scenario.wavenumber_min_cm1, scenario.wavenumber_max_cm1, scenario.resolution_cm1)
+    from .validation import validate_scenario
+    validate_scenario(scenario)
+    n_points = int(np.floor((scenario.wavenumber_max_cm1 - scenario.wavenumber_min_cm1)
+                           / scenario.resolution_cm1)) + 1
     profile = build_profile(scenario)
     path = build_scenario_path(scenario, profile)
-    n_points = grid.n
     n_layers = path.n_layers
     wing_pts = 2.0 * scenario.line_wing_cutoff_cm1 / scenario.resolution_cm1 + 1.0
 
@@ -333,7 +335,10 @@ def scenario_from_dict(data: dict[str, Any]) -> Scenario:
             kwargs[f.name] = val if isinstance(val, datetime) else _parse_datetime(str(val))
         else:
             kwargs[f.name] = val
-    return dataclasses.replace(Scenario(), **kwargs)
+    from .validation import validate_scenario
+    scenario = dataclasses.replace(Scenario(), **kwargs)
+    validate_scenario(scenario)
+    return scenario
 
 
 def load_scenario_yaml(path: Union[str, Path]) -> Scenario:
@@ -619,6 +624,8 @@ def _resolve_scenario(args: argparse.Namespace) -> Scenario:
                 resolution_um, resolved.wavenumber_min_cm1, resolved.wavenumber_max_cm1
             ),
         )
+    from .validation import validate_scenario
+    validate_scenario(resolved)
     return resolved
 
 

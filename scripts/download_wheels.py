@@ -13,15 +13,16 @@ from pathlib import Path
 
 # Requirements list
 REQUIREMENTS = [
-    "numpy>=1.24.0",
+    "numpy>=2.0",
     "scipy>=1.10.0",
     "pyyaml>=6.0",
-    "streamlit>=1.30.0",
+    "streamlit>=1.49",
     "plotly>=5.18.0",
     "matplotlib>=3.7.0",
     "pytest>=7.4.0",
     "setuptools>=68.0.0",
     "wheel",
+    "pip",
 ]
 
 
@@ -56,9 +57,7 @@ def download_wheels(target_dir: Path, platforms: list[str], py_version: str = "3
             ] + REQUIREMENTS)
 
         print("Executing:", " ".join(cmd))
-        res = subprocess.run(cmd)
-        if res.returncode != 0:
-            print(f"[-] Warning: Some wheels for {plat} could not be downloaded as binary. Falling back...")
+        subprocess.run(cmd, check=True)
 
 
 def main():

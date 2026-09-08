@@ -65,7 +65,9 @@ from ..types import PathLayer, Species, SpectralGrid
 
 __all__ = ["h2o_continuum_optical_depth", "co2_continuum_optical_depth"]
 
-_COEFF_PATH = Path(__file__).resolve().parents[2] / "data" / "hitran" / "mt_ckd_h2o_v4.3.npz"
+from ..data_paths import hitran_data_dir
+
+_COEFF_PATH = hitran_data_dir() / "mt_ckd_h2o_v4.3.npz"
 
 _coeff_cache: dict[str, object] | None = None
 

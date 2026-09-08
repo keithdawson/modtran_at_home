@@ -1,0 +1,11 @@
+.git
+.claude
+.pytest_cache
+**/__pycache__
+**/*.pyc
+artifacts
+dist
+build
+*.egg-info
+venv
+.venv
