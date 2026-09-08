@@ -1,0 +1,34 @@
+# hot_target_radiance.yaml -- discrete hot ground target, daytime.
+#
+# A sensor at 2 km altitude, looking down and out (sensor_zenith_deg: 150)
+# at a 4 m^2, 650 K, emissivity-0.85 target on the ground -- e.g. a vehicle
+# exhaust, industrial hot spot, or engine signature. Local time and position
+# are set for a mid-summer early afternoon (solar illumination on, lunar
+# off) so that once the radiometry layer lands, ScenarioResult.radiance
+# shows every component that applies to a mid-day discrete-source view:
+# path thermal emission, surface-reflected sunlight, and the source's own
+# thermal emission all contribute; source_emitted uses source_temp_k /
+# source_emissivity / source_area_m2 below.
+#
+# Until the radiometry layer lands, this still runs -- it just reports
+# transmittance only (ScenarioResult.radiance stays None); rerun once
+# dev-alpha's mwir_atmos.radiometry.radiance is in place to see radiance.
+
+atmosphere: midlat_summer
+surface_type: land_vegetated
+
+sensor_alt_km: 2.0
+sensor_zenith_deg: 150.0
+sensor_azimuth_deg: 45.0
+latitude_deg: 32.9
+longitude_deg: -97.3
+
+source_alt_km: 0.0        # target sits at the surface
+source_temp_k: 650.0
+source_emissivity: 0.85
+source_area_m2: 4.0
+
+local_datetime: "2026-07-15T13:30:00"
+utc_offset_hours: -5.0
+include_solar: true
+include_lunar: false

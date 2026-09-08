@@ -1,0 +1,9 @@
+Pandora Server Configuration
+Gigabyte G493-ZB3 Server/Motherboard
+Airgapped (NO INTERNET ACCESS)
+Rocky Linux 9.6
+2 X AMD Epyc 9665 96 core (192 thread) CPUs
+24 X 96 GB DDR5 5200Mhz DIMMS
+24 Memory channels (12 per CPU/NUMA node)
+4 X Nvidia Blackwell 6000 Server GPUs with 96GB of GDDR7 VRAM per card all attatched to CPU 0 through a Broadcom PCIE 5.0 switch
+1 X Ada 6000 48GB GPU on CPU 1

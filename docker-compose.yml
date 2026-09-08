@@ -1,0 +1,46 @@
+services:
+  # 1. Rocky Linux 9.6 Environment (Matches Pandora Server)
+  modtran-rocky:
+    build:
+      context: .
+      dockerfile: Dockerfile.rocky9
+    image: modtran-at-home:rocky9
+    container_name: modtran-rocky
+    command: python3 -m pytest tests/ -v
+
+  # 2. Ubuntu 24.04 LTS Environment
+  modtran-ubuntu:
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu
+    image: modtran-at-home:ubuntu
+    container_name: modtran-ubuntu
+    command: pytest tests/ -v
+
+  # 3. Interactive Streamlit Web GUI (Accessible on http://localhost:8501)
+  modtran-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile.rocky9
+    image: modtran-at-home:gui
+    container_name: modtran-gui
+    ports:
+      - "8501:8501"
+    command: streamlit run mwir_atmos/gui/app.py --server.port=8501 --server.address=0.0.0.0
+
+  # 4. Strict Offline Air-Gapped Verification (Network Isolation: NONE)
+  modtran-offline-verify:
+    build:
+      context: .
+      dockerfile: Dockerfile.rocky9
+    image: modtran-at-home:offline-verify
+    container_name: modtran-offline-verify
+    network_mode: "none"
+    command: >
+      bash -c "
+        echo '=== RUNNING COMPLETE TEST SUITE WITH HARDWARE ZERO NETWORK ACCESS ===' &&
+        python3 -m pytest tests/ -v &&
+        echo '=== RUNNING CLI SCENARIO EXECUTION ===' &&
+        mwir --config scenarios/tropical_maritime_quicklook.yaml --output /tmp/test_out.csv &&
+        echo '=== AIR-GAPPED VERIFICATION COMPLETED SUCCESSFULLY ==='
+      "

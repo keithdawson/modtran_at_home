@@ -1,0 +1,48 @@
+# Dockerfile for Rocky Linux 9.6 (Air-Gapped Pandora Server Compatible)
+FROM rockylinux:9
+
+LABEL maintainer="modtran_at_home"
+LABEL description="MODTRAN-at-home offline execution environment for Rocky Linux 9.6"
+
+# Install Python 3.11 and basic system runtime tools
+RUN dnf install -y epel-release && \
+    dnf install -y \
+        python3.11 \
+        python3.11-pip \
+        python3.11-devel \
+        procps-ng \
+        findutils \
+        tar \
+        gzip && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
+
+# Configure Python 3.11 as default python3
+RUN alternatives --set python3 /usr/bin/python3.11 || ln -sf /usr/bin/python3.11 /usr/bin/python3
+
+WORKDIR /app
+
+# Copy offline wheels, data, and application source
+COPY wheels /app/wheels
+COPY data /app/data
+COPY pyproject.toml README.md CONTRACT.md /app/
+COPY mwir_atmos /app/mwir_atmos
+COPY scenarios /app/scenarios
+COPY tests /app/tests
+
+# Install package and dependencies strictly offline from local wheels
+RUN python3 -m pip install --no-cache-dir --upgrade pip --no-index --find-links /app/wheels wheel setuptools && \
+    python3 -m pip install --no-cache-dir --no-index --find-links /app/wheels -e ".[gui,dev]"
+
+# Environment variables for hardware optimization on AMD Epyc
+ENV PYTHONUNBUFFERED=1
+ENV OMP_NUM_THREADS=64
+ENV OPENBLAS_NUM_THREADS=64
+ENV MKL_NUM_THREADS=64
+ENV NUMEXPR_NUM_THREADS=64
+
+# Streamlit Web GUI port
+EXPOSE 8501
+
+# Default command runs the offline validation test suite
+CMD ["python3", "-m", "pytest", "tests/", "-v"]

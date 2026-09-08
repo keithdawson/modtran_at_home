@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mwir-atmos"
+version = "0.1.0"
+description = "Mid-wave infrared atmospheric transmittance and radiance calculator (MODTRAN-at-home)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+gui = [
+    "streamlit>=1.30",
+    "plotly>=5.18",
+    "matplotlib>=3.7",
+]
+dev = [
+    "pytest>=7.4",
+]
+
+[project.scripts]
+mwir = "mwir_atmos.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mwir_atmos*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

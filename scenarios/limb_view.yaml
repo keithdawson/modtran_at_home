@@ -1,0 +1,27 @@
+# limb_view.yaml -- stratospheric limb-sounding geometry.
+#
+# Sensor at 50 km altitude looking 5.5 degrees past the local horizontal
+# (sensor_zenith_deg: 95.5). The line of sight grazes past the Earth,
+# reaches a tangent (closest-approach) altitude of about 20.4 km without
+# touching the ground, then climbs back out to the top of the modelled
+# atmosphere -- a ~1600 km slant path, all in `build_path`'s spherical
+# geometry (verified: hits_ground=False, reaches_space=True,
+# tangent_alt_km=20.4). Aerosols are boundary-layer phenomena in this model
+# (scale heights of 1-8 km -- see mwir_atmos/optics/aerosol.py) and are
+# negligible at a 20 km tangent point either way, so this scenario turns
+# them off entirely to isolate the molecular limb absorption.
+#
+# Referenced from `mwir --help` (see the CLI epilog): overriding
+# --sensor-alt-km on this file changes the geometry (e.g. --sensor-alt-km 22
+# with the same zenith angle intersects the ground instead of grazing the
+# limb) -- both are valid paths, `build_path` just resolves whichever
+# stopping condition is reached first.
+#   mwir --config scenarios/limb_view.yaml --sensor-alt-km 22 \
+#        --save-config resolved.yaml --quiet --format npz -o run.npz
+
+atmosphere: us_standard
+aerosol: none
+
+sensor_alt_km: 50.0
+sensor_zenith_deg: 95.5
+sensor_azimuth_deg: 0.0

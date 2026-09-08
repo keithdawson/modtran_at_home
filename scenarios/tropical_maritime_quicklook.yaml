@@ -1,0 +1,19 @@
+# tropical_maritime_quicklook.yaml -- shipboard sensor, humid tropical air.
+#
+# A mast-height sensor (20 m) over open water, looking just past horizontal
+# (sensor_zenith_deg: 100) in a moist tropical atmosphere with a
+# navy-maritime aerosol loading driven by wind-roughened seas. Demonstrates
+# the wind_speed_m_s knob (navy_maritime only) and a sea_water surface. The
+# tropical profile's high boundary-layer water vapor also makes this a good
+# scenario for seeing the H2O continuum matter in the 4.5-5.0 um window
+# (see mwir_atmos/optics/continuum.py).
+
+atmosphere: tropical
+surface_type: sea_water
+aerosol: navy_maritime
+visibility_km: 10.0
+wind_speed_m_s: 8.0
+
+sensor_alt_km: 0.02
+sensor_zenith_deg: 100.0
+sensor_azimuth_deg: 0.0

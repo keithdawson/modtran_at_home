@@ -1,0 +1,32 @@
+# horizontal_haze.yaml -- low-level horizontal path through urban haze.
+#
+# A 5 km line of sight at a 10 m mast height, straight out to the horizon
+# (sensor_zenith_deg: 90 = horizontal), through a hazy urban aerosol loading
+# on a hot, moderately humid summer afternoon. Good for looking at how
+# visibility/aerosol choice attenuates transmittance in the atmospheric
+# windows (3.7-4.0 um, 4.5-5.0 um) where aerosol extinction -- not molecular
+# absorption -- is the dominant loss.
+#
+# Referenced from `mwir --help` (see the CLI epilog): try it with a coarser
+# --resolution-cm1 override for a quick look, e.g.
+#   mwir --config scenarios/horizontal_haze.yaml --resolution-cm1 2.0 \
+#        --format csv --output run1.csv
+#
+# Any field not listed here keeps its mwir_atmos.types.Scenario default
+# (see `mwir --save-config resolved.yaml` on this file to see the fully
+# resolved scenario, including every default).
+
+atmosphere: midlat_summer
+surface_type: land_vegetated
+aerosol: urban
+visibility_km: 8.0          # hazy -- clear-day visibility is more like 20-25 km
+ground_temp_k: 303.15       # 30 C
+ground_rh_pct: 55.0
+
+sensor_alt_km: 0.01         # 10 m mast
+sensor_zenith_deg: 90.0     # horizontal
+sensor_azimuth_deg: 0.0
+
+source_range_km: 5.0        # fixed 5 km line of sight (else this look angle
+                             # would otherwise run to the edge of the grid /
+                             # top of atmosphere rather than a bounded path)

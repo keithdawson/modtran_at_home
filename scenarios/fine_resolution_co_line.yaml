@@ -1,0 +1,35 @@
+# fine_resolution_co_line.yaml -- a single resolved CO absorption line.
+#
+# This is the "narrow window at fine resolution" use case the CLI/GUI cost
+# estimate is built around: a 2.5 cm^-1 window around the strongest CO line
+# in the fetched database (nu0 = 2172.76 cm^-1, verified against the cached
+# line list), at 0.001 cm^-1 resolution (2501 points) -- fine enough to
+# fully resolve the Voigt line shape rather than a coarse average over it.
+# CO is a trace background gas here (background_vmr ~0.1 ppmv,
+# constants.BACKGROUND_VMR_PPMV), so even a full vertical atmospheric
+# column does not saturate the line wings, only its very core -- you should
+# see transmittance sweep from ~0.84 in the continuum down to a sharply
+# saturated core and back, not a flat wall of opacity.
+#
+# Measured on this repository (2026-08-02): ~20-30 s and ~14 MB of layer
+# arrays with the settings below -- comfortably under the CLI/GUI
+# confirmation-gate thresholds (~1 GB / ~3 min), so it runs with no --yes
+# needed. Contrast with the *default* full 1800-4300 cm^-1 band at this same
+# 0.001 cm^-1 resolution, which is the expensive case (~2 h, ~13 GB) the
+# gate exists to catch -- see README.md "Choosing spectral resolution".
+#
+# Note the accuracy controls, both pulled in from their full-band defaults
+# per their own docstrings (mwir_atmos/types.py Scenario):
+#   line_strength_cutoff: 1e-4 -> 1e-6 (the default can visibly distort a
+#     line core at this resolution even though it barely moves a band
+#     average)
+#   line_wing_cutoff_cm1: 25.0 -> 3.0 (the per-line evaluation window is
+#     2*line_wing_cutoff_cm1/resolution_cm1 + 1 points, independent of the
+#     requested window width -- at fine resolution this is usually the
+#     dominant cost, so shrink it to match a narrow window)
+
+wavenumber_min_cm1: 2171.5
+wavenumber_max_cm1: 2174.0
+resolution_cm1: 0.001
+line_strength_cutoff: 1.0e-6
+line_wing_cutoff_cm1: 3.0
