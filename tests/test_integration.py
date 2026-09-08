@@ -283,15 +283,11 @@ def test_repeated_runs_are_bit_identical():
 
 
 def test_band_average_converges_once_lines_are_resolved():
-    """Band averages agree between fine grids, but NOT with a coarse one.
+    """Check fine-grid agreement in this band and scenario.
 
-    A band average integrates exp(-tau), which is violently non-linear across a
-    line. Sampling a line-dense band too sparsely aliases: measured in the CO2
-    nu3 R-branch against a converged 0.25 cm^-1 reference, a 20 cm^-1 grid is
-    36% wrong, 5 cm^-1 is 2.9% wrong, and 1 cm^-1 is 0.3% wrong. Smooth window
-    regions are far more forgiving. This is a sampling property, not a defect --
-    but it means coarse-resolution band averages in structured bands must not be
-    trusted quantitatively.
+    Integrating exp(-tau) is nonlinear across a line: coarse sampling can
+    alias, and fine-grid convergence must be checked for each application.
+    This test does not establish 0.5 cm^-1 as a universal resolved grid.
     """
     band = (2350.0, 2450.0)
     fine = run_scenario(_sc(resolution_cm1=1.0))
@@ -301,15 +297,20 @@ def test_band_average_converges_once_lines_are_resolved():
     )
 
 
-def test_coarse_sampling_aliases_a_line_dense_band():
-    """Guard the caveat above: it must stay visible if someone 'fixes' it."""
-    band = (2350.0, 2450.0)
+def test_grid_spacing_preserves_physics_at_shared_wavenumbers():
+    """Grid rounding must not change the physical line-wing cutoff.
+
+    The former test demanded >15% coarse-grid error, much of which actually
+    came from evaluating wings outside their cutoff on coarse grids.
+    Sampling error can remain in integrals, but shared samples must agree.
+    """
     coarse = run_scenario(_sc(resolution_cm1=20.0))
     fine = run_scenario(_sc(resolution_cm1=0.5))
-    coarse_avg = band_average(coarse.grid, coarse.transmittance.total, band)
-    fine_avg = band_average(fine.grid, fine.transmittance.total, band)
-    assert abs(coarse_avg - fine_avg) / fine_avg > 0.15
-    assert coarse_avg < fine_avg      # sparse sampling over-weights the line cores here
+    np.testing.assert_array_equal(coarse.grid.wavenumber_cm1, fine.grid.wavenumber_cm1[::40])
+    np.testing.assert_allclose(coarse.transmittance.total, fine.transmittance.total[::40],
+                               rtol=2e-12, atol=1e-15)
+    np.testing.assert_allclose(coarse.radiance.total, fine.radiance.total[::40],
+                               rtol=2e-12, atol=0)
 
 
 def test_line_strength_cutoff_reaches_the_engine():

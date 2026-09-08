@@ -35,3 +35,6 @@ include = ["mwir_atmos*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+"mwir_atmos.optics" = ["AER_LICENSE.txt"]

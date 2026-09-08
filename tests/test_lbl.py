@@ -332,3 +332,37 @@ def test_performance_50_layers_default_grid():
     # Generous bound (measured ~5s during development) to absorb slower CI
     # hardware while still catching a gross performance regression.
     assert elapsed < 30.0, f"50-layer molecular_optical_depth took {elapsed:.1f}s, expected a few seconds"
+
+
+@pytest.mark.parametrize('nu0', [2350.0, 2350.37])
+def test_local_water_pedestal_and_exact_cutoff(nu0):
+    """HITRAN MT_CKD prescription: subtract the Lorentz value at +/-25."""
+    line = _single_line(nu0=nu0)
+    grid = make_grid(2324.0, 2377.0, 0.1)
+    raw = absorption_cross_section(line, grid, 1013.25, 296., 0.)
+    local = absorption_cross_section(line, grid, 1013.25, 296., 0., subtract_pedestal=True)
+    inside = abs(grid.wavenumber_cm1-nu0) <= 25.
+    pedestal = 1e-19 * .07 / (np.pi*(25.**2+.07**2))
+    np.testing.assert_allclose(raw[inside]-local[inside], pedestal, rtol=1e-9, atol=0)
+    assert np.all(raw[~inside] == 0.)
+    assert np.all(local[~inside] == 0.)
+    assert np.all(local >= 0.)
+
+
+def test_mt_ckd_requires_fixed_local_water_cutoff():
+    from mwir_atmos.optics.continuum import h2o_continuum_optical_depth
+    line = _single_line()
+    grid = make_grid(2320.,2380.,.1)
+    layer = _sea_level_horizontal_layer(1.)
+    p = layer.p_eff_mbar[Species.H2O]
+    t = layer.t_eff_k[Species.H2O]
+    column = layer.column_cm2[Species.H2O]
+    expected = absorption_cross_section(line,grid,p,t,p*column/layer.air_column_cm2,
+                                        subtract_pedestal=True)*column
+    expected += h2o_continuum_optical_depth([layer],grid)[0]
+    for requested_cutoff in [3.,25.,100.]:
+        actual,_ = molecular_optical_depth([layer],grid,species=[Species.H2O],
+                     linelists={Species.H2O:line},wing_cutoff_cm1=requested_cutoff)
+        np.testing.assert_allclose(actual[0],expected,rtol=1e-13,atol=0)
+    with pytest.raises(ValueError,match='25 cm'):
+        absorption_cross_section(line,grid,p,t,0.,wing_cutoff_cm1=3.,subtract_pedestal=True)

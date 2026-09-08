@@ -117,6 +117,7 @@ def absorption_cross_section(
     *,
     wing_cutoff_cm1: float = 25.0,
     min_strength_fraction: float = 1.0e-4,
+    subtract_pedestal: bool = False,
 ) -> np.ndarray:
     """Voigt cross-section, cm^2/molecule, shape ``(grid.n,)``.
 
@@ -131,6 +132,10 @@ def absorption_cross_section(
     ``(n_lines, n_window)`` Voigt evaluation scattered onto the grid with
     ``numpy.bincount`` -- not a per-line Python loop over the full grid.
 
+    ``subtract_pedestal=True`` subtracts the Lorentz value at +/-25 cm^-1
+    before summation, as required when combining local H2O lines with MT_CKD.
+    It requires a 25 cm^-1 cutoff; the default returns an ordinary Voigt profile.
+
     ``min_strength_fraction`` drops lines whose temperature-scaled intensity
     is below this fraction of the strongest line *in this call* (same
     species, same layer conditions) before the dense Voigt evaluation. This
@@ -144,6 +149,8 @@ def absorption_cross_section(
     this, a 50-layer x 2500-point run is roughly a minute instead of a few
     seconds. Set to 0 to disable and use every line.
     """
+    if subtract_pedestal and wing_cutoff_cm1 != 25.0:
+        raise ValueError("MT_CKD pedestal subtraction requires a 25 cm^-1 cutoff")
     if temperature_k <= 0:
         raise ValueError("temperature_k must be positive")
     if len(linelist) == 0:
@@ -173,28 +180,29 @@ def absorption_cross_section(
     n_grid = grid.n
     grid_min = nu_grid[0]
 
-    half_width_pts = int(np.ceil(wing_cutoff_cm1 / resolution))
-    offsets = np.arange(-half_width_pts, half_width_pts + 1)
-    center_idx = np.round((nu_shifted - grid_min) / resolution).astype(np.int64)
+    # Clip windows before allocation, especially for narrow, finely sampled grids.
+    left = np.maximum(np.ceil((nu_shifted-wing_cutoff_cm1-grid_min)/resolution).astype(np.int64), 0)
+    right = np.minimum(np.floor((nu_shifted+wing_cutoff_cm1-grid_min)/resolution).astype(np.int64), n_grid-1)
 
     # Drop lines whose window doesn't touch the grid at all, and (unless
     # disabled) negligibly weak lines -- both keep the dense matrix below
     # limited to lines that can actually matter, without a per-line loop.
-    keep = (center_idx + half_width_pts >= 0) & (center_idx - half_width_pts < n_grid)
+    keep = right >= left
     if min_strength_fraction > 0.0:
         s_max = s_t.max() if s_t.size else 0.0
         if s_max > 0.0:
             keep &= s_t >= (min_strength_fraction * s_max)
     if not np.any(keep):
         return np.zeros(n_grid, dtype=np.float64)
-    center_idx = center_idx[keep]
+    left, right = left[keep], right[keep]
     s_t = s_t[keep]
     alpha_d = alpha_d[keep]
     gamma_l = gamma_l[keep]
     nu_shifted = nu_shifted[keep]
 
-    idx_matrix = center_idx[:, None] + offsets[None, :]        # (n_lines, n_window)
-    valid = (idx_matrix >= 0) & (idx_matrix < n_grid)
+    offsets = np.arange(np.max(right-left)+1)
+    idx_matrix = left[:, None] + offsets[None, :]
+    valid = idx_matrix <= right[:, None]
     safe_idx = np.clip(idx_matrix, 0, n_grid - 1)
 
     dnu = nu_grid[safe_idx] - nu_shifted[:, None]               # exact offset from centre, cm^-1
@@ -204,6 +212,12 @@ def absorption_cross_section(
     y = np.sqrt(ln2) * gamma_l[:, None] / alpha_d[:, None]
     voigt_shape = np.sqrt(ln2 / np.pi) / alpha_d[:, None] * wofz(x + 1j * y).real
 
+    valid &= np.abs(dnu) <= wing_cutoff_cm1
+    if subtract_pedestal:
+        # HITRAN/MT_CKD local-line convention: the continuum already contains
+        # this constant Lorentz wing pedestal. Do not renormalize the local line.
+        pedestal = gamma_l / (np.pi * (25.0**2 + gamma_l**2))
+        voigt_shape = np.maximum(voigt_shape - pedestal[:, None], 0.0)
     contribution = s_t[:, None] * voigt_shape
     contribution = np.where(valid, contribution, 0.0)
 
@@ -230,6 +244,10 @@ def molecular_optical_depth(
     six species every profile must supply -- excludes O2, which has no
     HITRAN line data fetched for this package and negligible MWIR line
     absorption anyway).
+
+    With continuum enabled, H2O always uses MT_CKD's required 25 cm^-1
+    local-line cutoff and pedestal subtraction. Other species use the requested
+    ``wing_cutoff_cm1``. With continuum disabled, all profiles are ordinary Voigt.
 
     Per layer and species, broadening/shift use the Curtis-Godson effective
     pressure and temperature (``PathLayer.p_eff_mbar`` / ``t_eff_k``); the
@@ -267,7 +285,8 @@ def molecular_optical_depth(
                 p_eff,
                 t_eff,
                 p_self,
-                wing_cutoff_cm1=wing_cutoff_cm1,
+                wing_cutoff_cm1=25.0 if (sp == Species.H2O and include_continuum) else wing_cutoff_cm1,
+                subtract_pedestal=(sp == Species.H2O and include_continuum),
                 min_strength_fraction=min_strength_fraction,
             )
             tau_by_species[sp][row] = xsec * column

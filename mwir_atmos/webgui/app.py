@@ -329,9 +329,9 @@ def _spectral_and_accuracy_controls() -> dict:
     )
     line_wing_cutoff_cm1 = st.sidebar.number_input(
         "Line wing cutoff (cm^-1)", min_value=0.1, max_value=200.0, step=0.5, key="line_wing_cutoff_cm1",
-        help="Per-line evaluation half-width. Each surviving line costs "
-             "2*this/resolution + 1 grid points to evaluate, independent of window width -- "
-             "often the dominant cost at fine resolution. Shrink to a few cm^-1 for a narrow window.",
+        help="Local-line half-width for gases other than water. H2O with MT_CKD always uses "
+             "25 cm^-1 with pedestal subtraction. Smaller cutoffs can omit absorption; "
+             "check convergence. Evaluation windows are clipped to the requested grid.",
     )
     return dict(
         wavenumber_min_cm1=wn_min, wavenumber_max_cm1=wn_max, resolution_cm1=resolution_cm1,

@@ -142,14 +142,14 @@ def test_h2o_continuum_uses_effective_state_not_bulk_layer():
     assert not np.allclose(tau_perturbed, tau_baseline)
 
 
-def test_h2o_continuum_matches_manual_formula_at_one_point():
-    """Spot-check the self+foreign formula (transcribed from AER's
-    mt_ckd_h2o_module.f90) against a hand-computed value at a single
-    wavenumber, using the raw cached reference table directly."""
-    from mwir_atmos.optics.continuum import _load_coefficients
-    from mwir_atmos.constants import C2_RAD
+def test_h2o_continuum_matches_manual_formula_at_native_knots():
+    """Check high-frequency scaling at native knots without interpolation.
 
-    grid = make_grid()
+    Independent off-knot Fortran reference tests live in test_physics_references.
+    """
+    from mwir_atmos.optics.continuum import _load_coefficients
+
+    grid = make_grid(2500.0, 4300.0, 10.0)
     layer = _horizontal_layer(10.0)
     tau = h2o_continuum_optical_depth([layer], grid)
 
@@ -168,7 +168,7 @@ def test_h2o_continuum_matches_manual_formula_at_one_point():
     rho_rat = (p_eff / p_ref) * (t_ref / t_eff)
     self_coeff = self_ref * (t_ref / t_eff) ** texp * h2o_vmr * rho_rat
     for_coeff = for_ref * (1.0 - h2o_vmr) * rho_rat
-    radiation = nu * np.tanh(C2_RAD * nu / (2.0 * t_eff))
+    radiation = nu  # AER MYRADFN high-frequency branch, c2*nu/T > 10
     expected = (self_coeff + for_coeff) * radiation * h2o_col
 
     np.testing.assert_allclose(tau[0], expected, rtol=1e-10)

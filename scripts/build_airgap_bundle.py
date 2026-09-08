@@ -37,6 +37,8 @@ INCLUDE_PATTERNS = [
     "install_offline.ps1",
     "pyproject.toml",
     "README.md",
+    "PHYSICS_VALIDATION.md",
+    "docs",
     "CONTRACT.md",
     "OFFLINE_DEPLOYMENT.md",
     "SERVER CONFIGURATION.txt",

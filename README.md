@@ -25,7 +25,8 @@ own emission).
   self + foreign broadened, from AER's reference coefficient table (cached
   locally, see `mwir_atmos/optics/continuum.py`). This matters a lot in the
   3.7–4.0 µm and 4.5–5.0 µm atmospheric windows — the line-by-line engine
-  alone is not enough there.
+  alone is not enough there. Local water lines use the matching +/-25 cm^-1
+  pedestal subtraction. See [reference checks](PHYSICS_VALIDATION.md).
 - **Model atmospheres**: the six standard AFGL/LOWTRAN/MODTRAN profiles
   (tropical, mid-latitude summer/winter, subarctic summer/winter, US
   Standard), transcribed from AFGL-TR-86-0110. See
@@ -240,19 +241,12 @@ things:
    same 0.001 cm⁻¹ resolution is the expensive case this package protects
    against: **~2 hours and ~13 GB** of layer arrays (60 layers × 2.5M
    points × 12 float64 arrays).
-2. **The line-wing cutoff** (`line_wing_cutoff_cm1`, default 25 cm⁻¹) —
-   every surviving spectral line is evaluated over a window of
-   `2*line_wing_cutoff_cm1/resolution_cm1 + 1` grid points, **independent of
-   how narrow the requested band is**. At the default 25 cm⁻¹ cutoff and
-   0.001 cm⁻¹ resolution, that window alone is ~50,000 points *per line* —
-   measured directly, a 2 cm⁻¹-wide window at that resolution took anywhere
-   from ~50 s to ~160 s depending on how many real HITRAN lines happened to
-   fall nearby, *before* narrowing the cutoff. Shrinking
-   `line_wing_cutoff_cm1` to match the window (a few cm⁻¹, as
-   `fine_resolution_co_line.yaml` does) is what actually makes a narrow,
-   fine-resolution run fast — narrowing the wavenumber window alone is not
-   sufficient on its own if the wing cutoff is left at its full-band
-   default. Both CLI and GUI cost estimates account for this.
+2. **The line-wing cutoff** (`line_wing_cutoff_cm1`, default 25 cm^-1) sets
+   the local evaluation width for gases other than water. H2O with MT_CKD
+   always uses +/-25 cm^-1 and subtracts the Lorentz pedestal already included
+   in the continuum. Evaluation windows are clipped to the requested grid
+   before allocation, so a narrow grid now limits the per-line working array.
+   The runtime estimator retains its older, conservative wing-width calibration.
 
 `line_strength_cutoff` (default `1e-4`) is the other accuracy control: it
 drops lines weaker than that fraction of the strongest line in each
@@ -264,8 +258,8 @@ fine-resolution work, lower it to `1e-6` or `1e-7`; `0.0` keeps every line
 
 Practical guidance: if you need fine resolution, narrow the *wavenumber
 window* to what you actually need rather than reducing resolution over the
-full band, and lower `line_wing_cutoff_cm1` to roughly match that window's
-width.
+full band. Reducing the wing cutoff changes the absorption model for other
+gases; use convergence checks before relying on a smaller cutoff.
 
 Both estimates are calibrated directly against measurements on this
 codebase (see `mwir_atmos/cli.py`'s `_estimate_run_cost` docstring for the
@@ -292,13 +286,10 @@ physics modules' own docstrings:
   spherical atmosphere; real rays curve slightly toward the surface
   (refraction adds on the order of a percent to airmass near the horizon).
   See `mwir_atmos/geometry/path.py`.
-- **The CO₂ continuum is a documented zero stub** —
-  `mwir_atmos.optics.continuum.co2_continuum_optical_depth` always returns
-  zero. This is a small correction relative to the CO₂ line database
-  already used (the 4.2–4.4 µm band is already essentially opaque from
-  lines alone), not a missing headline effect, but it means CO₂-band
-  numbers slightly underestimate absorption relative to a full continuum
-  treatment.
+- **CO2 continuum, collision-induced absorption and line mixing are missing.**
+  `co2_continuum_optical_depth` returns zero. An opaque band core does not
+  establish accuracy in the wings: the 4.17 micrometer edge is sensitive
+  to the line cutoff, and its error is not bounded by the present tests.
 - **The ephemeris is loose by design, and the timezone is the weak link.**
   The underlying algorithm (Spencer 1971) is good to ~0.4° in declination and
   ~0.03° in hour angle. What dominates the error is the *timezone*: with no
@@ -332,14 +323,15 @@ physics modules' own docstrings:
   0.36%. Going finer still (2 m) buys almost nothing, so the default sits at
   the point of diminishing returns; it costs ~25% more runtime than the
   unrefined grid.
-- **Rayleigh scattering** uses a constant (not spectrally-resolved)
-  King depolarization factor — an excellent approximation this far from
-  any electronic resonance, and negligible in the MWIR either way
-  (τ ≈ 1–9×10⁻⁵ for a full sea-level column, vs. ≈0.09 at 550 nm).
-- **The MT_CKD continuum** is linearly interpolated onto the working grid
-  from AER's reference table, a simplification of MT_CKD's own
-  cubic-Hermite interpolation (the continuum is smooth by construction, so
-  this is a minor difference).
+- **Rayleigh scattering** uses a dry-air approximation with the standard-air
+  reference density and wavelength-dependent King factors. It agrees within
+  0.22% with Tomasi et al.'s moist-air cross-sections over 0.5-4 micrometers;
+  humidity and composition do not update refractivity or the King factor.
+- **The MT_CKD continuum** follows AER 4.3 native-grid scaling, radiation
+  factors and cubic-Hermite interpolation. Numerical agreement with AER's
+  Fortran kernel does not validate the complete radiative-transfer model.
+  See [Physics validation](PHYSICS_VALIDATION.md) for external reference
+  data, tolerances, reproducible calculations and remaining priorities.
 - **Turbulence** (`mwir_atmos/turbulence/`) is an explicit wave-3 stretch
   goal and is not built — `TurbulenceModel` exists in `types.py` and
   `Scenario.turbulence` can be set, but `ScenarioResult.turbulence` will

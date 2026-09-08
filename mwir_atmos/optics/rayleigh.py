@@ -15,19 +15,13 @@ References
 ----------
 Bodhaine, B.A., Wood, N.B., Dutton, E.G., Slusser, J.R. (1999), "On Rayleigh
 Optical Depth Calculations," J. Atmos. Oceanic Technol., 16, 1854-1861.
-  -- cross-section formula (their eq. 5-6) and F_king ~ 1.0455 for air
-  (their Table 3, ~visible/NIR depolarization ratio rho_n = 0.0279; treated
-  here as wavelength-independent, an excellent approximation far from any
-  electronic resonance, which certainly holds in the MWIR).
+  -- cross-section and wavelength-dependent N2/O2 King factors.
 Peck, E.R. & Reeder, K. (1972), "Dispersion of air," J. Opt. Soc. Am. 62,
   958-962 -- refractive index of standard air, n(lambda), used here.
 
-Sanity check (see tests/test_aerosol.py-adjacent check in test_geometry or
-inline below): this formula integrated over a full sea-level US Standard
-column at 550 nm gives tau ~ 0.087, matching the well-known literature
-benchmark of ~0.097 (Bodhaine et al. 1999) to ~10%, consistent with using a
-constant (rather than the fully wavelength-resolved) King factor. In the
-MWIR the same column gives tau ~ 1-9e-5 -- confirms "negligible".
+The refractive index is referenced to 288.15 K, so its matching molecular
+density is 2.54743e19 cm^-3 (Bodhaine et al.), not the 273.15 K Loschmidt
+number. Published cross-section comparisons: PHYSICS_VALIDATION.md.
 """
 
 from __future__ import annotations
@@ -36,14 +30,21 @@ from typing import Sequence
 
 import numpy as np
 
-from ..constants import LOSCHMIDT_CM3
 from ..types import PathLayer, SpectralGrid
 
 __all__ = ["rayleigh_optical_depth"]
 
-#: Depolarization (King) correction factor for air, ~wavelength-independent
-#: away from resonances (Bodhaine et al. 1999, Table 3).
-_KING_FACTOR = 1.0455
+# Standard dry air at 288.15 K, matching the refractive-index reference.
+_REFERENCE_DENSITY_CM3 = 2.54743e19
+
+
+def _king_factor(wavelength_um: np.ndarray) -> np.ndarray:
+    """Bodhaine et al. (1999), dry air with 300 ppm CO2."""
+    inv2 = 1.0 / np.asarray(wavelength_um)**2
+    nitrogen = 1.034 + 3.17e-4*inv2
+    oxygen = 1.096 + 1.385e-3*inv2 + 1.448e-4*inv2**2
+    return (78.084*nitrogen + 20.946*oxygen + 0.934 + 0.03*1.15) / 99.994
+
 
 # Peck & Reeder (1972) dispersion formula coefficients for standard air.
 _PR_A = 8060.51
@@ -66,8 +67,8 @@ def _rayleigh_cross_section_cm2(wavelength_um: np.ndarray) -> np.ndarray:
     lam_cm = wavelength_um * 1.0e-4
     return (
         (24.0 * np.pi**3 * n2m1**2)
-        / (lam_cm**4 * LOSCHMIDT_CM3**2 * (n * n + 2.0) ** 2)
-        * _KING_FACTOR
+        / (lam_cm**4 * _REFERENCE_DENSITY_CM3**2 * (n * n + 2.0) ** 2)
+        * _king_factor(wavelength_um)
     )
 
 

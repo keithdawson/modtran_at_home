@@ -549,12 +549,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_float(
         accuracy, "line_wing_cutoff_cm1",
-        "Per-line Voigt evaluation half-width, cm^-1 (default: 25.0). Each surviving line costs "
-        "a window of 2*line_wing_cutoff_cm1/resolution_cm1 + 1 grid points to evaluate -- "
-        "independent of how narrow the requested window is, and often the dominant cost at fine "
-        "resolution (the mwir cost estimate accounts for it). For a narrow high-resolution "
-        "window, shrink this to a few cm^-1 to match; the default 25 cm^-1 is sized for full-band, "
-        "coarser-resolution runs.",
+        "Local-line half-width for gases other than water, cm^-1 (default: 25.0). "
+        "H2O with MT_CKD always uses 25 cm^-1 with pedestal subtraction. "
+        "Evaluation windows are clipped to the requested grid. Smaller cutoffs can omit "
+        "absorption; check convergence before relying on them.",
     )
 
     turb = parser.add_argument_group("turbulence (stretch goal)")
