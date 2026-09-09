@@ -383,3 +383,73 @@ core; `mwir_atmos/{radiometry,ephemeris}` are the radiance layer;
 `mwir_atmos/{types,spectral,api}.py` are the shared contracts every other
 module is built against; `mwir_atmos/cli.py` and `mwir_atmos/webgui/` are
 the two front ends, both calling nothing but `mwir_atmos.api.run_scenario`.
+
+## Saved setups and distance sweeps
+
+In the app, expand **Save setup / use from a script** and choose **Download
+setup (YAML)**. The file contains all active scenario inputs and uses the same
+format as CLI `--config` / `--save-config`. To reopen it, choose **Saved YAML**
+in the sidebar. The optional **Overrides (YAML)** mapping changes only named
+fields; `null` clears an optional field. Current controls are hidden while a
+saved file is active, so they do not silently replace its settings.
+
+Python scripts can load a setup once and vary just a few inputs:
+
+```python
+from mwir_atmos.setups import load_setup, with_overrides
+from mwir_atmos.api import run_scenario
+
+base = load_setup("mwir_setup.yaml")
+trial = with_overrides(base, source_range_km=5.0, source_alt_km=None)
+result = run_scenario(trial)
+```
+
+`load_setup(path, visibility_km=10.0)` also accepts overrides directly.
+`save_setup(scenario, path)` writes all resolved inputs. Overrides are validated,
+unknown fields fail clearly, and the original object/file remains unchanged.
+`run_setup(path, overrides={...})` combines loading and running.
+
+Choose **Calculation -> Distance sweep** to increase slant range until the
+mean transmittance in a chosen band drops below a threshold. Set the start,
+maximum, step and band, then click **Run distance sweep**. The chart and CSV
+report completed samples; normal app reruns reuse the result. The maximum
+endpoint is included even when it is not aligned with the step. No crossing
+means only that the threshold was not crossed within the tested distances.
+
+For command-line use:
+
+```sh
+python scripts/distance_sweep.py mwir_setup.yaml --start 0.1 --stop 10 --step 0.5 --threshold 0.1 --output sweep.csv
+```
+
+For your own detectability/SNR calculation, supply a Python callback:
+
+```python
+from mwir_atmos.setups import load_setup, sweep_distance
+from my_detector import calculate_snr  # Your target/background/sensor model.
+
+base = load_setup("mwir_setup.yaml")
+sweep = sweep_distance(
+    base,
+    [0.5 * i for i in range(1, 101)],
+    metric=calculate_snr,  # Receives the full ScenarioResult at each distance.
+    threshold=5.0,
+    include_radiance=True,
+)
+print(sweep.last_passing_distance_km, sweep.first_failing_distance_km)
+```
+
+Equality passes; the first strictly lower score stops the loop. A custom
+`on_sample` callback can save intermediate results. The sweep stores scalar
+samples rather than every spectrum. It does not assume that arbitrary custom
+metrics are monotonic or claim a global maximum range.
+
+Distance controls source placement along the saved sensor direction, so sweeps
+clear `source_alt_km` and replace `source_range_km`. All other scenario inputs
+are retained unless overridden. If the ray hits ground or leaves the modeled
+atmosphere before the requested distance, the sweep raises instead of silently
+labeling a clipped path with the requested distance. Band transmittance is
+atmospheric throughput, **not a detector detectability model**; use your own
+metric for target contrast, sensor noise and detection thresholds. Saved YAML
+contains simulation inputs; GUI sweep limits and metric settings are supplied
+separately when running the sweep.

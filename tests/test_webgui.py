@@ -45,3 +45,35 @@ def test_gui_axis_units_controls_and_validation(monkeypatch):
     app.number_input(key="wn_min").set_value(4400.0).run()
     assert not app.exception
     assert any("wavenumber_max_cm1" in e.value for e in app.error)
+
+
+def test_gui_sweep_runs_only_on_submit_and_keeps_results(monkeypatch):
+    import streamlit as st
+    from mwir_atmos import api
+    original = api.run_scenario
+    calls = []
+    def counted(*args, **kwargs):
+        calls.append(args[0].source_range_km)
+        return original(*args, **kwargs)
+    monkeypatch.setattr(api, 'run_scenario', counted)
+    st.cache_data.clear()
+    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    assert not app.exception
+    assert any(e.label == 'Download setup (YAML)' for e in app.get('download_button'))
+    previous = len(calls)
+    app.radio(key='calculation_mode').set_value('Distance sweep').run()
+    assert not app.exception and len(calls) == previous
+    app.number_input(key='sweep_stop').set_value(.2)
+    app.number_input(key='sweep_step').set_value(.1)
+    app.number_input(key='sweep_threshold').set_value(0.)
+    next(b for b in app.button if b.label == 'Run distance sweep').click().run()
+    assert not app.exception and not app.error
+    assert len(calls) == previous+2
+    assert len(app.dataframe[0].value) == 2
+    assert any('Threshold not crossed' in e.value for e in app.info)
+    app.run()
+    assert len(calls) == previous+2, 'reruns/downloads must not repeat a sweep'
+    app.number_input(key='sweep_stop').set_value(.01)
+    next(b for b in app.button if b.label == 'Run distance sweep').click().run()
+    assert any('Maximum distance' in e.value for e in app.error)
+    assert len(calls) == previous+2

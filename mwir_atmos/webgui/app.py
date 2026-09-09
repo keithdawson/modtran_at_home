@@ -60,6 +60,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import io
 import json
+import yaml
 from datetime import date, datetime, time as dtime
 from typing import Optional
 
@@ -69,6 +70,8 @@ import streamlit as st
 
 from mwir_atmos import constants
 from mwir_atmos.api import run_scenario
+from mwir_atmos.setups import with_overrides, sweep_distance
+from mwir_atmos.spectral import band_average
 from mwir_atmos.cli import (
     RADIANCE_COMPONENTS,
     _band_rows,
@@ -341,6 +344,24 @@ def _spectral_and_accuracy_controls() -> dict:
 
 def build_scenario_from_sidebar() -> Scenario:
     st.sidebar.title("mwir_atmos")
+    source = st.sidebar.radio("Setup source", ["Current controls", "Saved YAML"], key="setup_source")
+    if source == "Saved YAML":
+        uploaded = st.sidebar.file_uploader("Open saved setup", type=["yaml", "yml"], key="setup_upload")
+        st.sidebar.caption("Use a downloaded setup or an existing CLI configuration. Overrides replace only the named values.")
+        overrides = st.sidebar.text_area("Overrides (YAML)", value="{}", key="setup_overrides",
+                                         help="Example: source_range_km: 5.0. Use null to clear an optional value.")
+        if uploaded is None:
+            st.info("Choose a YAML setup in the sidebar to continue.")
+            st.stop()
+        try:
+            data = yaml.safe_load(uploaded.getvalue().decode("utf-8-sig"))
+            changes = yaml.safe_load(overrides)
+            if not isinstance(data, dict) or not isinstance(changes, dict):
+                raise ValueError("Setup and overrides must be YAML mappings")
+            return with_overrides(scenario_from_dict(data), **changes)
+        except (ValueError, TypeError, UnicodeError, yaml.YAMLError) as exc:
+            st.error(f"Could not load saved setup: {exc}")
+            st.stop()
     fields: dict = {}
     fields.update(_atmosphere_controls())
     fields.update(_sensor_controls())
@@ -621,6 +642,89 @@ def _download_row(name: str, png_bytes: Optional[bytes]) -> None:
         )
 
 
+def _setup_download(scenario: Scenario) -> None:
+    with st.expander("Save setup / use from a script"):
+        st.caption("Saves every active simulation input. Load this YAML in the sidebar, CLI or Python; override just the fields you want to vary.")
+        st.download_button("Download setup (YAML)",
+                           data=yaml.safe_dump(scenario_to_dict(scenario), sort_keys=False),
+                           file_name="mwir_setup.yaml", mime="application/yaml", key="download_setup")
+        st.code('from mwir_atmos.setups import load_setup, with_overrides\n'
+                'from mwir_atmos.api import run_scenario\n\n'
+                'base = load_setup("mwir_setup.yaml")\n'
+                'trial = with_overrides(base, source_range_km=5.0, source_alt_km=None)\n'
+                'result = run_scenario(trial)', language="python")
+        st.caption("For repeated runs with a custom detectability score, see the distance-sweep example in README.md.")
+
+
+def _distance_sweep_section(scenario: Scenario) -> None:
+    st.subheader("Distance sweep")
+    st.caption("Move the source outward along the saved sensor direction, holding other inputs fixed. Source-altitude limits are cleared. Stop at the first sampled band transmittance below the threshold.")
+    st.info("Transmittance is atmospheric throughput, not detector detectability. A Python script can supply its own detectability or SNR metric.")
+    with st.form("distance_sweep_controls"):
+        c1, c2, c3 = st.columns(3)
+        start = c1.number_input("Start distance (km)", min_value=0.001, value=0.1, key="sweep_start")
+        stop = c2.number_input("Maximum distance (km)", min_value=0.001, value=10.0, key="sweep_stop")
+        step = c3.number_input("Distance step (km)", min_value=0.001, value=1.0, key="sweep_step")
+        c1, c2, c3 = st.columns(3)
+        lo = c1.number_input("Band minimum (cm^-1)", min_value=0.001,
+                             value=float(scenario.wavenumber_min_cm1), key="sweep_band_lo")
+        hi = c2.number_input("Band maximum (cm^-1)", min_value=0.001,
+                             value=float(scenario.wavenumber_max_cm1), key="sweep_band_hi")
+        threshold = c3.number_input("Stop below transmittance", min_value=0.0, max_value=1.0,
+                                    value=0.1, step=0.01, format="%.4f", key="sweep_threshold")
+        submitted = st.form_submit_button("Run distance sweep")
+    signature = (_scenario_cache_key(scenario), start, stop, step, lo, hi, threshold)
+    if submitted:
+        try:
+            if stop < start:
+                raise ValueError("Maximum distance must be at least the start distance")
+            count = int(np.floor((stop-start)/step))+1
+            if count > 200:
+                raise ValueError("Use at most 200 distances per sweep; increase the distance step")
+            distances = start + np.arange(count)*step
+            if not np.isclose(distances[-1], stop):
+                distances = np.append(distances, stop)
+            if len(distances) > 200:
+                raise ValueError("Use at most 200 distances per sweep")
+            with_overrides(scenario)  # Validate inputs before sizing a grid.
+            if lo >= hi or lo < scenario.wavenumber_min_cm1 or hi > scenario.wavenumber_max_cm1:
+                raise ValueError("Choose a band inside the saved spectral window, with minimum below maximum")
+            first_index = np.ceil((lo-scenario.wavenumber_min_cm1)/scenario.resolution_cm1)
+            last_index = np.floor((hi-scenario.wavenumber_min_cm1)/scenario.resolution_cm1)
+            if last_index-first_index < 1:
+                raise ValueError("The band must contain at least two computed spectral samples")
+            progress = st.progress(0.0, text="Starting distance sweep")
+            completed = []
+            def update(sample):
+                completed.append(sample)
+                progress.progress(len(completed)/len(distances), text=f"Computed {sample.distance_km:g} km: transmittance {sample.score:.4f}")
+            sweep = sweep_distance(scenario, distances, threshold=threshold,
+                                   metric=lambda r: band_average(r.grid, r.transmittance.total, (lo, hi)),
+                                   include_radiance=False, on_sample=update)
+            progress.empty()
+            st.session_state["distance_sweep_result"] = (signature, sweep)
+        except (ValueError, RuntimeError) as exc:
+            st.error(f"Distance sweep stopped: {exc}")
+            return
+    stored = st.session_state.get("distance_sweep_result")
+    if stored is None or stored[0] != signature:
+        return
+    sweep = stored[1]
+    if sweep.crossed_threshold:
+        if sweep.last_passing_distance_km is None:
+            st.warning(f"Already below threshold at the first sample ({sweep.first_failing_distance_km:g} km). Try a shorter start distance.")
+        else:
+            st.success(f"First sampled crossing: {sweep.last_passing_distance_km:g} to {sweep.first_failing_distance_km:g} km. Reduce the step to refine this interval.")
+    else:
+        st.info("Threshold not crossed within the sampled distances. This does not establish a maximum range.")
+    frame = pd.DataFrame({"distance_km": [v.distance_km for v in sweep.samples],
+                          "band_transmittance": [v.score for v in sweep.samples]})
+    st.line_chart(frame.set_index("distance_km").assign(threshold=threshold))
+    st.dataframe(frame, hide_index=True)
+    st.download_button("Download distance sweep (CSV)", frame.to_csv(index=False),
+                       file_name="mwir_distance_sweep.csv", mime="text/csv", key="download_sweep")
+
+
 # =========================================================================
 # App
 # =========================================================================
@@ -636,6 +740,11 @@ def main() -> None:
 
     scenario = build_scenario_from_sidebar()
     cache_key = _scenario_cache_key(scenario)
+    _setup_download(scenario)
+    mode = st.radio("Calculation", ["Single calculation", "Distance sweep"], horizontal=True, key="calculation_mode")
+    if mode == "Distance sweep":
+        _distance_sweep_section(scenario)
+        return
 
     proceed = _cost_and_gate(scenario, cache_key)
     if not proceed:
