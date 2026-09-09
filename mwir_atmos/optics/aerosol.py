@@ -1,4 +1,7 @@
-"""LOWTRAN-style boundary-layer aerosol extinction: rural/urban/maritime/desert.
+"""Legacy parametric aerosols and dispatch to the LOWTRAN 7 table backend.
+
+The description below applies only to legacy model names. Models prefixed
+``lowtran_`` use original optical tables; see ``lowtran_aerosol.py``.
 
 This is a *parametric* aerosol model, not a transcription of LOWTRAN/MODTRAN's
 own Mie-scattering lookup tables (those are extensive numerical databases
@@ -55,17 +58,10 @@ Building blocks
 6. **Absorption/scattering split and asymmetry**: single-scattering albedo
    omega0(lambda) and asymmetry g(lambda) are linearly interpolated between
    representative values at 3 and 5 um (clamped outside [3,5] um) per type.
-   Every endpoint is kept at or below 0.42, well clear of 0.5, so that
-   absorption dominates scattering for every type at every wavelength in the
-   grid (CONTRACT.md: "scattering is weak, absorption dominates" in the
-   MWIR, stated without exception for any one aerosol type) -- since the
-   aggregate single-scattering albedo returned by any spectral integration
-   is a weighted average of omega0(lambda), bounding every endpoint below
-   0.5 bounds the aggregate below 0.5 too, regardless of how a caller
-   integrates it. Within that ceiling, maritime and desert (large particles,
-   weakly-to-moderately absorbing material, size parameter still O(1) at
-   3-5 um) are given the highest omega0, and urban (small, soot-rich,
-   strongly absorbing) the lowest.
+   These legacy endpoints impose absorption dominance, an approximation that
+   is not valid for all aerosol conditions. The table backend does not impose
+   this restriction and is recommended when source-based optical properties
+   are needed.
 """
 
 from __future__ import annotations
@@ -122,6 +118,7 @@ def aerosol_optical_depth(
     *,
     visibility_km: float = 23.0,
     wind_speed_m_s: float = 5.0,
+    winter: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """LOWTRAN-style aerosol absorption/scattering optical depth and asymmetry.
 
@@ -136,6 +133,11 @@ def aerosol_optical_depth(
     the returned spectral arrays; this field is the only place it is
     recorded). ``layers`` is mutated in place for this purpose.
     """
+    from .lowtran_aerosol import TABLE_MODELS, table_optical_depth
+
+    if model in TABLE_MODELS:
+        return table_optical_depth(layers, grid, model, visibility_km=visibility_km, winter=winter)
+
     n_layers = len(layers)
     n_wn = grid.n
 

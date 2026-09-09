@@ -52,5 +52,10 @@ def validate_scenario(scenario: Scenario) -> None:
             raise ValueError(f"{name} must be between {lo} and {hi}")
     if scenario.wavenumber_max_cm1 <= scenario.wavenumber_min_cm1:
         raise ValueError("wavenumber_max_cm1 must exceed wavenumber_min_cm1")
+    if scenario.aerosol.value.startswith("lowtran_"):
+        if not 2. <= scenario.visibility_km <= 50.:
+            raise ValueError("LOWTRAN table aerosols require visibility_km between 2 and 50")
+        if scenario.wavenumber_min_cm1 < 250. or scenario.wavenumber_max_cm1 > 50000.:
+            raise ValueError("LOWTRAN aerosol tables support wavelengths from 0.2 to 40 micrometers")
     if scenario.sensor_alt_km < scenario.surface_altitude_km:
         raise ValueError("sensor_alt_km must be at or above surface_altitude_km")

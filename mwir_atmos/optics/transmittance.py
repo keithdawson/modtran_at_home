@@ -40,6 +40,7 @@ def compute_layer_optics(
     aerosol: AerosolModel = AerosolModel.RURAL,
     visibility_km: float = 23.0,
     wind_speed_m_s: float = 5.0,
+    aerosol_winter: bool = False,
     species: Sequence[Species] | None = None,
     linelists: dict | None = None,
     include_continuum: bool = True,
@@ -76,7 +77,8 @@ def compute_layer_optics(
         tau_mol = tau_mol + co2_continuum_optical_depth(layers, grid)
 
     tau_aer_abs, tau_aer_sca, g_aer = aerosol_optical_depth(
-        layers, grid, aerosol, visibility_km=visibility_km, wind_speed_m_s=wind_speed_m_s
+        layers, grid, aerosol, visibility_km=visibility_km, wind_speed_m_s=wind_speed_m_s,
+        winter=aerosol_winter,
     )
 
     tau_ray = (

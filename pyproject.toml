@@ -32,6 +32,7 @@ include = ["mwir_atmos*"]
 
 [tool.setuptools.data-files]
 "share/mwir-atmos/hitran" = ["data/hitran/*.npz"]
+"share/mwir-atmos/aerosol" = ["data/aerosol/*.npz", "data/aerosol/*.json", "data/aerosol/*LICENSE.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

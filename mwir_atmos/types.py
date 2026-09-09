@@ -53,6 +53,10 @@ class AerosolModel(str, Enum):
     NAVY_MARITIME = "navy_maritime"
     DESERT = "desert"
     TROPOSPHERIC = "tropospheric"
+    LOWTRAN_RURAL = "lowtran_rural"
+    LOWTRAN_URBAN = "lowtran_urban"
+    LOWTRAN_MARITIME = "lowtran_maritime"
+    LOWTRAN_TROPOSPHERIC = "lowtran_tropospheric"
     NONE = "none"
 
 

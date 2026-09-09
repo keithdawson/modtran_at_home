@@ -35,11 +35,11 @@ own emission).
   horizontal, and limb/tangent paths, ground intersection, and a finite
   source range or altitude), with Curtis–Godson effective pressure/temperature
   per layer per species. See `mwir_atmos/geometry/path.py`.
-- **Aerosols and Rayleigh scattering**: LOWTRAN-style rural/urban/navy-maritime/
-  desert/tropospheric aerosol models (Koschmieder visibility relation,
-  Ångström spectral falloff, Hänel hygroscopic growth) and a standard
-  molecular-scattering Rayleigh formula. See `mwir_atmos/optics/aerosol.py`
-  and `mwir_atmos/optics/rayleigh.py`.
+- **Aerosols and Rayleigh scattering**: original LOWTRAN 7 table options for
+  rural/urban/maritime/tropospheric aerosols, with humidity-dependent optical
+  properties and background altitude profiles. Legacy parametric models remain
+  available. Molecular Rayleigh scattering is calculated separately. See
+  [aerosol data and validation](docs/lowtran_aerosols.md).
 - **Radiance and ephemeris** (`mwir_atmos/radiometry/`, `mwir_atmos/ephemeris/`):
   path thermal emission, surface emission/reflection, solar/lunar
   scattering and direct terms, and a discrete source's own emission, using a
@@ -275,13 +275,14 @@ This is a from-scratch reconstruction of MODTRAN/LOWTRAN-style physics for
 offline use, not a drop-in replacement for either. Specifically, per the
 physics modules' own docstrings:
 
-- **Aerosols are a parametric model**, not a transcription of
-  LOWTRAN/MODTRAN's digitized Mie-scattering lookup tables. Extinction
-  shape (Koschmieder + Ångström spectral falloff + Hänel hygroscopic
-  growth) is physically grounded and cited to the literature, but the
-  per-type numeric endpoints (Ångström exponent, single-scattering albedo,
-  asymmetry parameter) are representative values, not digitized table
-  lookups. See `mwir_atmos/optics/aerosol.py`.
+- **Aerosols offer two backends.** Existing names preserve the legacy parametric
+  approximation. `lowtran_rural`, `lowtran_urban`, `lowtran_maritime`, and
+  `lowtran_tropospheric` use original LOWTRAN 7 optical tables and background
+  altitude profiles, checked against its Fortran routines. Select **LOWTRAN
+  table:** in the GUI or use the same value in YAML/CLI. These options support
+  visibility 2–50 km and aerosol wavelengths 0.2–40 µm; this does not extend the
+  validated spectral range of the gas/radiance models. See
+  [data sources, validation and limitations](docs/lowtran_aerosols.md).
 - **Refraction is omitted.** Rays are geometric straight lines through the
   spherical atmosphere; real rays curve slightly toward the surface
   (refraction adds on the order of a percent to airmass near the horizon).

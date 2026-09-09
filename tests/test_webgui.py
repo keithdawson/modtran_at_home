@@ -77,3 +77,15 @@ def test_gui_sweep_runs_only_on_submit_and_keeps_results(monkeypatch):
     next(b for b in app.button if b.label == 'Run distance sweep').click().run()
     assert any('Maximum distance' in e.value for e in app.error)
     assert len(calls) == previous+2
+
+
+def test_gui_lowtran_selection_and_visibility_bounds():
+    from mwir_atmos.types import AerosolModel
+    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    app.selectbox(key='aerosol').set_value(AerosolModel.LOWTRAN_MARITIME).run()
+    assert not app.exception and not app.error
+    assert any('LOWTRAN 7 optical tables' in c.value for c in app.sidebar.caption)
+    assert any('LOWTRAN table: Maritime' in m.value for m in app.markdown)
+    app.number_input(key='visibility_km').set_value(1.).run()
+    assert not app.exception
+    assert any('between 2 and 50' in e.value for e in app.error)

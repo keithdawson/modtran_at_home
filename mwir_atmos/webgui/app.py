@@ -102,6 +102,8 @@ st.set_page_config(page_title="mwir_atmos", page_icon=":thermometer:", layout="w
 _MODEL_LABELS = {m: m.value.replace("_", " ").title() for m in ModelAtmosphere}
 _SURFACE_LABELS = {s: s.value.replace("_", " ").title() for s in SurfaceType}
 _AEROSOL_LABELS = {a: a.value.replace("_", " ").title() for a in AerosolModel}
+_AEROSOL_LABELS.update({a: "LOWTRAN table: " + a.value.removeprefix("lowtran_").title()
+                        for a in AerosolModel if a.value.startswith("lowtran_")})
 
 #: Quick spectral-range presets (job brief: "make selecting a narrow window
 #: quick and obvious"). Selecting one pins wavenumber-min/max/resolution and
@@ -166,9 +168,15 @@ def _atmosphere_controls() -> dict:
     atmosphere = _enum_select("Model atmosphere", _MODEL_LABELS, ModelAtmosphere.MIDLAT_SUMMER, key="atmosphere")
     surface_type = _enum_select("Surface type", _SURFACE_LABELS, SurfaceType.LAND_VEGETATED, key="surface_type")
     aerosol = _enum_select("Aerosol model", _AEROSOL_LABELS, AerosolModel.RURAL, key="aerosol")
+    if aerosol.value.startswith("lowtran_"):
+        st.sidebar.caption(
+            "LOWTRAN 7 optical tables, RH 0–99%, background altitude profiles. "
+            "Visibility: 2–50 km. Winter profiles follow winter atmospheres; "
+            "otherwise spring/summer. Rayleigh is included separately."
+        )
     visibility_km = st.sidebar.number_input(
         "Visibility (km)", min_value=0.1, value=23.0, step=1.0, key="visibility_km",
-        help="Surface visibility; drives the Koschmieder aerosol extinction.",
+        help="Legacy models use Koschmieder extinction. LOWTRAN tables use their original 550 nm profiles (2–50 km visibility).",
     )
     wind_speed_m_s = st.sidebar.number_input(
         "Wind speed (m/s)", min_value=0.0, value=5.0, step=0.5, key="wind_speed_m_s",

@@ -1,0 +1,14 @@
+{
+  "source": "https://github.com/space-physics/lowtran",
+  "commit": "5b8d38714b204eaa12595f5f15e2babec1dbdfb5",
+  "source_file": "src/lowtran/fortran/lowtran7.f",
+  "source_sha256_lf": "25e83d94e24bb8acc3242dfd3b97e0bd8ca8ffceff9ec6dce1f5a37c9c5459ac",
+  "release": "LOWTRAN 7, revision 4.2, February 1992",
+  "units": "VX2: micrometers; ZHT: km MSL; profiles: km^-1 at 550 nm; E/A: normalized to extinction at 550 nm; G: dimensionless",
+  "humidity_percent": [
+    0,
+    70,
+    80,
+    99
+  ]
+}

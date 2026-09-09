@@ -147,8 +147,10 @@ and in `mwir_atmos/optics/AER_LICENSE.txt`, which is included in built wheels.
 - CO2 line mixing, continuum/CIA and validated far wings need compatible
   published data and separate reference spectra. Band-core opacity does not
   bound band-edge error. No empirical correction was fitted to the plots.
-- Aerosol optical properties are still representative parameterizations;
-  digitized Mie/aerosol reference tables would be the next substantial data project.
+- Original LOWTRAN 7 aerosol optical tables and background profiles are now
+  available alongside the legacy parameterizations. See
+  [aerosol validation](docs/lowtran_aerosols.md). Full multiple scattering and
+  modern aerosol datasets remain future work.
 - Coarse-grid sampling, line-strength pruning and path discretization still
   require convergence checks for each quantitative application. Gaussian
   smoothing cannot recover spectral structure missed by the underlying grid.

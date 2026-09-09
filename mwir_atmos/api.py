@@ -93,6 +93,7 @@ def run_scenario(
         aerosol=scenario.aerosol,
         visibility_km=scenario.visibility_km,
         wind_speed_m_s=scenario.wind_speed_m_s,
+        aerosol_winter=scenario.atmosphere.value.endswith("winter"),
         wing_cutoff_cm1=scenario.line_wing_cutoff_cm1,
         min_strength_fraction=scenario.line_strength_cutoff,
     )
