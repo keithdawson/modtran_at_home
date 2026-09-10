@@ -380,6 +380,7 @@ def build_scenario_from_sidebar() -> Scenario:
     solver = _enum_select("Radiance solver", {
         RadianceSolver.SINGLE_SCATTER: "Single scattering (spherical paths)",
         RadianceSolver.DISORT: "DISORT multiple scattering (plane-parallel)",
+        RadianceSolver.SPHERICAL_MC: "Spherical multiple scattering (Monte Carlo)",
     }, RadianceSolver.SINGLE_SCATTER, key="radiance_solver")
     fields['radiance_solver'] = solver
     if solver == RadianceSolver.DISORT:
@@ -387,6 +388,10 @@ def build_scenario_from_sidebar() -> Scenario:
         st.sidebar.caption("Solves the full vertical column and repeated surface reflection. "
                            "Plane-parallel geometry replaces spherical paths. Horizontal views need a finite target range. "
                            "Increase streams to check angular convergence; near-horizon curvature is not modeled.")
+    if solver == RadianceSolver.SPHERICAL_MC:
+        fields["spherical_photons"] = st.sidebar.number_input("Photon histories per spectral point", min_value=128, max_value=1000000, value=4096, step=1024)
+        fields["spherical_seed"] = st.sidebar.number_input("Monte Carlo seed", min_value=0, max_value=2**32-1, value=0)
+        st.sidebar.caption("Experimental solver: curved atmospheric shells for every photon path; scalar, no refraction. Sampling noise decreases approximately as 1/sqrt(histories). Start with a narrow spectrum.")
     return Scenario(**fields)
 
 
@@ -450,6 +455,8 @@ def _scenario_summary(result: ScenarioResult) -> None:
     ]
     if sc.radiance_solver == RadianceSolver.DISORT:
         bits.insert(0, f"**DISORT multiple scattering**, {sc.disort_streams} streams, **plane-parallel geometry**")
+    if sc.radiance_solver == RadianceSolver.SPHERICAL_MC:
+        bits.insert(0, f"**Spherical multiple scattering**, {sc.spherical_photons} photon histories per spectral point, seed {sc.spherical_seed}")
     if result.sun is not None:
         bits.append(
             f"sun: zenith {result.sun.zenith_deg:.1f} deg, above_horizon={result.sun.is_above_horizon}"
@@ -500,8 +507,12 @@ def _radiance_section(result: ScenarioResult, x: np.ndarray, x_label: str) -> No
             "RadianceResult component will render here, stacked, once it lands."
         )
         return
+    if result.radiance.sampling_standard_error:
+        error = result.radiance.sampling_standard_error["total"]
+        relative = np.divide(error, result.radiance.total, out=np.zeros_like(error), where=result.radiance.total>0)
+        st.caption(f"Monte Carlo sampling uncertainty: maximum relative standard error {100*float(np.max(relative)):.2g}% over this spectrum. One standard error, not a bound on physical-model error; rare unsampled contributions can be missed. Increase histories and change the seed to check convergence.")
     components = {name: getattr(result.radiance, name) for name in RADIANCE_COMPONENTS if name != "total"}
-    if result.scenario.radiance_solver == RadianceSolver.DISORT:
+    if result.scenario.radiance_solver in (RadianceSolver.DISORT, RadianceSolver.SPHERICAL_MC):
         st.caption("Thermal components include subsequent scattering and surface reflection. "
                    "Solar/lunar multiple-scattering components include all diffuse atmospheric and surface contributions. "
                    "Direct discs and target emission are separate.")

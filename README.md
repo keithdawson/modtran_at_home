@@ -44,7 +44,9 @@ own emission).
   **DISORT multiple-scattering** solver. DISORT includes full-column thermal,
   solar and lunar transfer with repeated Lambertian ground reflection, using
   consistent plane-parallel paths. Supports saved setups and finite targets.
-  See [multiple-scattering physics and validation](docs/multiple_scattering.md).
+  A separate experimental **spherical Monte Carlo** solver traces all photon
+  paths through curved shells and reports sampling uncertainty.
+  See [DISORT](docs/multiple_scattering.md) and [spherical transfer](docs/spherical_scattering.md).
 
 See **Limitations** below before trusting any specific number this tool
 produces — it is a from-scratch reconstruction of MODTRAN/LOWTRAN-style
@@ -341,11 +343,14 @@ physics modules' own docstrings:
   (`constants.BACKGROUND_VMR_PPMV`, a 2025-era estimate for CO₂), applied
   uniformly with altitude and independent of the scenario's date — there is
   no historical/future CO₂ trend model.
-- **Scattering has two solver options.** The default preserves the legacy
+- **Scattering has three solver options.** The default preserves the legacy
   single-scattering calculation and spherical paths. Optional `disort` solves
   all scattering orders in a plane-parallel column with repeated Lambertian
   surface reflection. It uses scalar HG/Rayleigh phase moments, not polarization
-  or a full Mie phase function. See [solver limits and convergence checks](docs/multiple_scattering.md).
+  or a full Mie phase function. Experimental `spherical_mc` traces all scattering
+  orders in concentric shells, with reported Monte Carlo uncertainty; it still
+  omits polarization and refraction. See [DISORT limits](docs/multiple_scattering.md)
+  and [spherical solver validation](docs/spherical_scattering.md).
 
 Do not treat any single number from this tool as validated against a real
 MODTRAN/LOWTRAN run; treat it as a physically-grounded estimate with the

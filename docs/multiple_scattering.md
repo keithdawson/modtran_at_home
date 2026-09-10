@@ -147,7 +147,8 @@ run is not automatically accurate. The source tables' HG approximation is also
 different from a full measured/Mie phase function.
 
 This is **full multiple scattering within a scalar 1D plane-parallel model**.
-It is not full MODTRAN equivalence, polarized transfer, a 3D cloud/terrain solver,
+For curved-shell transport, use the separate experimental [spherical Monte Carlo solver](spherical_scattering.md).
+DISORT mode is not full MODTRAN equivalence, polarized transfer, a 3D cloud/terrain solver,
 or spherical/pseudo-spherical multiple scattering. Near-horizon, limb and long
 horizontal paths require particular care because Earth curvature and refraction
 are omitted in this mode. Solar/lunar spectra and surface optical properties

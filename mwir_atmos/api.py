@@ -56,6 +56,9 @@ def build_scenario_path(scenario: Scenario, profile: AtmosphereProfile) -> PathG
     if scenario.radiance_solver == RadianceSolver.DISORT:
         from .geometry.plane_parallel import geometry
         return geometry(scenario, profile)[1]
+    if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
+        from .geometry.spherical_shells import geometry
+        return geometry(scenario, profile)[1]
     return build_path(
         profile,
         sensor_alt_km=scenario.sensor_alt_km,
@@ -92,6 +95,10 @@ def run_scenario(
     column = None
     if scenario.radiance_solver == RadianceSolver.DISORT:
         from .geometry.plane_parallel import geometry, sightline_optics
+        column, path, indices, factors = geometry(scenario, profile)
+    elif scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
+        from .geometry.spherical_shells import geometry
+        from .geometry.plane_parallel import sightline_optics
         column, path, indices, factors = geometry(scenario, profile)
     else:
         path = build_scenario_path(scenario, profile)
@@ -146,6 +153,13 @@ def _attach_radiance(result: ScenarioResult, optics: LayerOptics, column=None, c
     if scenario.radiance_solver == RadianceSolver.DISORT:
         from .radiometry.multiple_scattering import compute_multiple_scattering
         result.radiance = compute_multiple_scattering(
+            scenario=scenario, grid=result.grid, profile=result.profile, path=result.path,
+            optics=optics, column=column, column_optics=column_optics,
+            transmittance=result.transmittance, sun=sun, moon=moon)
+        return
+    if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
+        from .radiometry.spherical_scattering import compute_spherical_scattering
+        result.radiance = compute_spherical_scattering(
             scenario=scenario, grid=result.grid, profile=result.profile, path=result.path,
             optics=optics, column=column, column_optics=column_optics,
             transmittance=result.transmittance, sun=sun, moon=moon)

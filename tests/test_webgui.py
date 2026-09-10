@@ -101,3 +101,14 @@ def test_gui_disort_solver_controls_and_result_label():
     assert app.selectbox(key='disort_streams').value == 32
     assert any('plane-parallel geometry' in m.value for m in app.markdown)
     assert any('Direct discs and target emission are separate' in c.value for c in app.caption)
+
+
+def test_gui_spherical_solver_and_sampling_uncertainty():
+    from mwir_atmos.types import RadianceSolver
+    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    app.number_input(key='wn_min').set_value(2500.)
+    app.number_input(key='wn_max').set_value(2504.)
+    app.selectbox(key='radiance_solver').set_value(RadianceSolver.SPHERICAL_MC).run()
+    assert not app.exception and not app.error
+    assert any('Spherical multiple scattering' in m.value for m in app.markdown)
+    assert any('sampling uncertainty' in c.value for c in app.caption)

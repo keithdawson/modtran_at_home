@@ -157,3 +157,10 @@ and in `mwir_atmos/optics/AER_LICENSE.txt`, which is included in built wheels.
 - Optional DISORT multiple scattering is now available; see
   [its validation and geometry limits](docs/multiple_scattering.md). Refraction
   remains omitted. Component checks are not full LBLRTM/MODTRAN validation.
+
+## Spherical multiple scattering
+
+The experimental `spherical_mc` option follows full spherical-shell photon paths,
+including Earth shadow and repeated surface reflection. Analytic geometry/thermal
+checks and the large-radius DISORT limit pass. This is not yet a full-spherical
+external-code validation. See [method, uncertainty, and limits](docs/spherical_scattering.md).

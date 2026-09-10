@@ -221,6 +221,9 @@ def _estimate_run_cost(scenario: Scenario) -> _CostEstimate:
     if scenario.radiance_solver == RadianceSolver.DISORT:
         from .geometry.plane_parallel import geometry
         n_layers = geometry(scenario, profile)[0].n_layers
+    if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
+        from .geometry.spherical_shells import geometry
+        n_layers = geometry(scenario, profile)[0].n_layers
     wing_pts = 2.0 * scenario.line_wing_cutoff_cm1 / scenario.resolution_cm1 + 1.0
 
     elements = max(float(n_points), wing_pts) * n_layers
@@ -232,6 +235,9 @@ def _estimate_run_cost(scenario: Scenario) -> _CostEstimate:
         est_bytes *= 2
         sources = 2 + int(scenario.include_solar) + int(scenario.include_lunar)
         est_seconds += n_points * .005 * sources * (scenario.disort_streams / 16.)**4
+    if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
+        est_bytes += min(scenario.spherical_photons,4096) * n_layers * 200
+        est_seconds += n_points * (scenario.spherical_photons / 4096.) * 2.
     return _CostEstimate(
         n_points=n_points,
         n_layers=n_layers,
@@ -554,7 +560,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     accuracy = parser.add_argument_group("accuracy")
     _add_enum(accuracy, "radiance_solver", RadianceSolver,
-              "single_scatter (legacy spherical paths) or disort (multiple scattering, plane-parallel column).")
+              "single_scatter, disort (plane-parallel), or spherical_mc (spherical multiple scattering).")
+    accuracy.add_argument("--spherical-photons", type=int, default=None, help="Independent photon histories per spectral point (default 4096).")
+    accuracy.add_argument("--spherical-seed", type=int, default=None, help="Reproducible Monte Carlo seed (default 0).")
+    accuracy.add_argument("--spherical-max-events", type=int, default=None, help="Safety limit: reaching this raises an error, never silently truncates.")
     accuracy.add_argument("--disort-streams", type=int, choices=[8,16,32,64], default=None,
                          help="Discrete-ordinate streams; increase and compare for angular convergence (default: 32).")
     _add_float(
@@ -921,11 +930,13 @@ def _write_csv(result: ScenarioResult, fh) -> None:
     fieldnames += [f"trans_{sp.value}" for sp in species]
     if has_radiance:
         fieldnames += [f"radiance_{c}" for c in RADIANCE_COMPONENTS]
+        fieldnames += [f"radiance_stderr_{c}" for c in result.radiance.sampling_standard_error]
 
     columns: list[np.ndarray] = [grid.wavenumber_cm1, grid.wavelength_um, t.total, t.molecular, t.aerosol, t.rayleigh]
     columns += [t.by_species[sp] for sp in species]
     if has_radiance:
         columns += [getattr(result.radiance, c) for c in RADIANCE_COMPONENTS]
+        columns += list(result.radiance.sampling_standard_error.values())
 
     writer = csv.writer(fh)
     writer.writerow(fieldnames)
@@ -975,6 +986,8 @@ def _write_json(result: ScenarioResult, rows: list[_BandRow], fh) -> None:
     }
     if result.radiance is not None:
         payload["radiance"] = {c: getattr(result.radiance, c).tolist() for c in RADIANCE_COMPONENTS}
+        if result.radiance.sampling_standard_error:
+            payload["radiance_sampling_standard_error"] = {k:v.tolist() for k,v in result.radiance.sampling_standard_error.items()}
     json.dump(payload, fh, indent=2)
     fh.write("\n")
 
@@ -995,6 +1008,9 @@ def _write_npz(result: ScenarioResult, rows: list[_BandRow], path: str) -> None:
     if result.radiance is not None:
         for c in RADIANCE_COMPONENTS:
             arrays[f"radiance_{c}"] = getattr(result.radiance, c)
+
+        for name, error in result.radiance.sampling_standard_error.items():
+            arrays[f"radiance_stderr_{name}"] = error
 
     if rows:
         arrays["band_label"] = np.array([r.label for r in rows])

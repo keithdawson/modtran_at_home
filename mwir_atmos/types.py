@@ -75,6 +75,7 @@ class Species(str, Enum):
 class RadianceSolver(str, Enum):
     SINGLE_SCATTER = "single_scatter"
     DISORT = "disort"
+    SPHERICAL_MC = "spherical_mc"
 
 
 #: Species whose column amounts every profile must supply.
@@ -325,6 +326,8 @@ class RadianceResult:
     total: np.ndarray
     solar_multiple_scatter: Optional[np.ndarray] = None
     lunar_multiple_scatter: Optional[np.ndarray] = None
+    #: Monte Carlo one-standard-error arrays; not radiance components.
+    sampling_standard_error: dict[str, np.ndarray] = field(default_factory=dict)
 
     def __post_init__(self):
         for name in ("solar_multiple_scatter", "lunar_multiple_scatter"):
@@ -442,6 +445,9 @@ class Scenario:
     #: DISORT uses a complete plane-parallel column, including surface feedback.
     radiance_solver: RadianceSolver = RadianceSolver.SINGLE_SCATTER
     disort_streams: int = 32
+    spherical_photons: int = 4096
+    spherical_seed: int = 0
+    spherical_max_events: int = 256
 
     # --- spectral ---------------------------------------------------------
     wavenumber_min_cm1: float = 1800.0
