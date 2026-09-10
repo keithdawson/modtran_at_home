@@ -20,7 +20,12 @@ own emission).
   evaluated as Voigt profiles (`scipy.special.wofz`) with the full HITRAN
   temperature-scaling relation, pressure broadening/shift, and per-line
   isotopologue mass for the Doppler width. See
-  `mwir_atmos/optics/lbl.py`.
+  `mwir_atmos/optics/lbl.py`. A line is evaluated in a layer when its
+  peak optical depth there reaches `line_optical_depth_cutoff` (default
+  1e-5), so weak lines are kept exactly where the gas column makes them
+  matter. Fine grids use exact line cores with interpolated far wings, and
+  layers are evaluated on all CPUs. See
+  [line selection and spectral sampling](docs/spectral_sampling.md).
 - **Water vapor continuum**: MT_CKD 4.3 (Mlawer–Tobin–Clough–Kneizys–Davies),
   self + foreign broadened, from AER's reference coefficient table (cached
   locally, see `mwir_atmos/optics/continuum.py`). This matters a lot in the
@@ -127,7 +132,9 @@ Every field of `mwir_atmos.types.Scenario` is settable as a flag, grouped in
 `mwir --help` as: **configuration** (`--config`/`--save-config`),
 **atmosphere**, **sensor**, **source**, **illumination**, **spectral**,
 **accuracy**, **turbulence** (stretch goal, currently a no-op — see
-Limitations), and **output**.
+Limitations), **output**, and **performance** (`--threads N`; the
+`MWIR_THREADS` environment variable does the same for the API and GUI).
+Thread count never changes results.
 
 - **`--config scenario.yaml`** loads a `Scenario`; any other flag on the
   command line overrides that field. **`--save-config out.yaml`** writes the
@@ -241,7 +248,10 @@ things:
    on the development machine. The full default 1800–4300 cm⁻¹ band at the
    same 0.001 cm⁻¹ resolution is the expensive case this package protects
    against: **~2 hours and ~13 GB** of layer arrays (60 layers × 2.5M
-   points × 12 float64 arrays).
+   points × 12 float64 arrays). Both figures predate the September 2026
+   engine rewrite, which is several times faster and processes resolved
+   runs in bounded-memory chunks; they are being re-measured, and the
+   estimator errs on the slow side until then.
 2. **The line-wing cutoff** (`line_wing_cutoff_cm1`, default 25 cm^-1) sets
    the local evaluation width for gases other than water. H2O with MT_CKD
    always uses +/-25 cm^-1 and subtracts the Lorentz pedestal already included
@@ -249,13 +259,41 @@ things:
    before allocation, so a narrow grid now limits the per-line working array.
    The runtime estimator retains its older, conservative wing-width calibration.
 
-`line_strength_cutoff` (default `1e-4`) is the other accuracy control: it
-drops lines weaker than that fraction of the strongest line in each
-(layer, species) evaluation, which is a good tradeoff for full-band runs
-near 1 cm⁻¹ but **can visibly distort an individual line core** at fine
-resolution even though it barely moves a band average. For narrow,
-fine-resolution work, lower it to `1e-6` or `1e-7`; `0.0` keeps every line
-(exact, but slow across a full-width path).
+**Line selection.** `line_optical_depth_cutoff` (default `1e-5`) skips a
+line in a layer when its peak optical depth there is below the threshold.
+Lower it (or set `0.0` to keep every line) for convergence checks. The
+legacy `line_strength_cutoff` (fraction of each species' strongest line) is
+**off by default**. At its former default of `1e-4` it discarded every water
+line in the 3.5–4.1 µm window and overstated window transmittance by up to
+24 percentage points on a 10 km tropical path; see
+[docs/spectral_sampling.md](docs/spectral_sampling.md).
+
+### Point or line-resolved sampling
+
+`spectral_sampling: point` (the default) evaluates the physics only at the
+output grid points. Those are exact monochromatic values, but absorption
+lines are ~0.07 cm⁻¹ wide, so a 1 cm⁻¹ grid samples line cores at random
+(errors of up to 3.8 percentage points per bin were measured on a 2 km
+surface path). `spectral_sampling: resolved` evaluates the physics on an
+internal grid that resolves the lines and averages it through an instrument
+function (`box`, `triangle` or `gaussian`, FWHM `instrument_fwhm_cm1`,
+default = `resolution_cm1`). That is what an instrument of that resolution
+measures. The output grid is the same in both modes. In resolved mode the
+cost follows the bandwidth and the internal step (`fine_step_cm1`, chosen
+automatically from the line widths along the path), not the output
+resolution:
+
+```bash
+mwir --spectral-sampling resolved --resolution-cm1 1 --instrument-function triangle \
+     --wavenumber-min-cm1 2000 --wavenumber-max-cm1 2200 --format csv -o run.csv
+```
+
+Resolved band transmittances do not factorise exactly into
+molecular × aerosol × Rayleigh (an average of a product is not a product of
+averages). DISORT and spherical Monte Carlo radiance use a correlated-k
+binning inside each instrument function; transmittance is always exact.
+Details, assumptions and validation status:
+[docs/spectral_sampling.md](docs/spectral_sampling.md).
 
 Practical guidance: if you need fine resolution, narrow the *wavenumber
 window* to what you actually need rather than reducing resolution over the
@@ -329,6 +367,12 @@ physics modules' own docstrings:
   reference density and wavelength-dependent King factors. It agrees within
   0.22% with Tomasi et al.'s moist-air cross-sections over 0.5-4 micrometers;
   humidity and composition do not update refractivity or the King factor.
+- **Point sampling is the default.** At output spacings coarser than the
+  line widths it misrepresents band averages; use
+  `spectral_sampling: resolved` for quantities an instrument would measure.
+  The resolved mode's automatic fine step, and the correlated-k binning it
+  uses for DISORT/Monte Carlo radiance, are still being validated (see
+  [docs/spectral_sampling.md](docs/spectral_sampling.md#pending-validation)).
 - **The MT_CKD continuum** follows AER 4.3 native-grid scaling, radiation
   factors and cubic-Hermite interpolation. Numerical agreement with AER's
   Fortran kernel does not validate the complete radiative-transfer model.
@@ -373,7 +417,12 @@ the suite fast.
 Other test files exercise the physics core directly: `test_hitran.py`,
 `test_lbl.py`, `test_continuum.py` (line-by-line engine and HITRAN data),
 `test_profiles.py`, `test_geometry.py`, `test_aerosol.py` (model
-atmospheres, slant-path geometry, aerosol optics).
+atmospheres, slant-path geometry, aerosol optics). `test_lbl_engine.py`
+checks the fast paths against exact evaluation (naive Voigt sums,
+multigrid error bound, chunk and thread invariance) and the line-selection
+regression; `test_resolved.py` checks instrument functions, the fine-grid
+plan, correlated-k identities, and resolved output against a hand-averaged
+fine-grid run.
 
 ## Project layout
 

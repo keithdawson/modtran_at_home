@@ -87,7 +87,9 @@ from mwir_atmos.cli import (
 )
 from mwir_atmos.types import (
     AerosolModel,
+    InstrumentFunction,
     RadianceSolver,
+    SpectralSampling,
     ModelAtmosphere,
     REQUIRED_SPECIES,
     Scenario,
@@ -113,10 +115,17 @@ _AEROSOL_LABELS.update({a: "LOWTRAN table: " + a.value.removeprefix("lowtran_").
 _SPECTRAL_PRESETS: dict[str, dict[str, float]] = {
     "Full band (default)": dict(
         wn_min=constants.MWIR_GRID_MIN_CM1, wn_max=constants.MWIR_GRID_MAX_CM1,
-        resolution=4.0, wing=25.0, strength=1.0e-4,
+        resolution=4.0, wing=25.0, strength=0.0, tau=1.0e-5,
     ),
-    "MWIR core, 3-5 um": dict(wn_min=2000.0, wn_max=3333.33, resolution=2.0, wing=25.0, strength=1.0e-4),
-    "Narrow + fine (CO line demo)": dict(wn_min=2171.5, wn_max=2174.0, resolution=0.01, wing=3.0, strength=1.0e-6),
+    "MWIR core, 3-5 um": dict(wn_min=2000.0, wn_max=3333.33, resolution=2.0, wing=25.0,
+                              strength=0.0, tau=1.0e-5),
+    "Narrow + fine (CO line demo)": dict(wn_min=2171.5, wn_max=2174.0, resolution=0.01, wing=3.0,
+                                         strength=0.0, tau=1.0e-7),
+}
+
+_SAMPLING_LABELS = {
+    SpectralSampling.POINT: "Point (fast: physics at output points only)",
+    SpectralSampling.RESOLVED: "Line-resolved + instrument function (accurate)",
 }
 
 
@@ -302,7 +311,7 @@ def _spectral_and_accuracy_controls() -> dict:
     for k, v in dict(
         wn_min=constants.MWIR_GRID_MIN_CM1, wn_max=constants.MWIR_GRID_MAX_CM1,
         resolution_cm1=4.0,  # coarser than the CLI/Scenario default (1.0) -- keeps the GUI interactive
-        line_wing_cutoff_cm1=25.0, line_strength_cutoff=1.0e-4,
+        line_wing_cutoff_cm1=25.0, line_strength_cutoff=0.0, line_optical_depth_cutoff=1.0e-5,
     ).items():
         st.session_state.setdefault(k, v)
     st.session_state.setdefault("_last_spectral_preset", None)
@@ -315,6 +324,7 @@ def _spectral_and_accuracy_controls() -> dict:
         st.session_state["resolution_cm1"] = p["resolution"]
         st.session_state["line_wing_cutoff_cm1"] = p["wing"]
         st.session_state["line_strength_cutoff"] = p["strength"]
+        st.session_state["line_optical_depth_cutoff"] = p["tau"]
     st.session_state["_last_spectral_preset"] = None if preset == "Custom" else preset
 
     wn_min = st.sidebar.number_input("Wavenumber min (cm^-1)", min_value=400.0, max_value=8000.0, step=1.0, key="wn_min")
@@ -327,17 +337,44 @@ def _spectral_and_accuracy_controls() -> dict:
              "see the cost estimate below before running a wide window at fine resolution.",
     )
 
+    sampling = _enum_select("Spectral sampling", _SAMPLING_LABELS, SpectralSampling.POINT,
+                               key="spectral_sampling")
+    resolved_fields: dict = {}
+    if sampling == SpectralSampling.RESOLVED:
+        resolved_fields["instrument_function"] = _enum_select(
+            "Instrument function", {f: f.value.title() for f in InstrumentFunction},
+            InstrumentFunction.BOX, key="instrument_function")
+        fwhm = st.sidebar.number_input(
+            "Instrument FWHM (cm^-1, 0 = resolution)", min_value=0.0, max_value=100.0, value=0.0,
+            step=0.1, format="%.4f", key="instrument_fwhm_cm1")
+        fine = st.sidebar.number_input(
+            "Fine step (cm^-1, 0 = automatic)", min_value=0.0, max_value=1.0, value=0.0,
+            step=0.001, format="%.4f", key="fine_step_cm1")
+        resolved_fields["instrument_fwhm_cm1"] = fwhm if fwhm > 0 else None
+        resolved_fields["fine_step_cm1"] = fine if fine > 0 else None
+        st.sidebar.caption(
+            "The physics runs on a grid fine enough to resolve absorption lines, then is "
+            "averaged through the instrument function onto the output grid. Cost follows the "
+            "bandwidth and the fine step, not the output resolution.")
+
     st.sidebar.subheader("Accuracy")
     # NOTE: value= is deliberately omitted on both widgets below -- the key
     # is pre-seeded into session_state above (and by the preset block), and
     # passing both value= and a session_state-backed key for the same widget
     # is what Streamlit's "handle caching/state properly" warning is about.
+    line_optical_depth_cutoff = st.sidebar.number_input(
+        "Line optical-depth cutoff", min_value=0.0, max_value=1.0, step=1.0e-6, format="%.2e",
+        key="line_optical_depth_cutoff",
+        help="Drop a line from a layer when its peak optical depth there is below this. "
+             "Tied to the actual gas amount, so humid layers keep the weak water lines that "
+             "matter in the windows. 0.0 keeps every line.",
+    )
     line_strength_cutoff = st.sidebar.number_input(
-        "Line strength cutoff", min_value=0.0, max_value=1.0, step=1.0e-5, format="%.2e",
+        "Legacy line strength cutoff", min_value=0.0, max_value=1.0, step=1.0e-5, format="%.2e",
         key="line_strength_cutoff",
-        help="Drop lines weaker than this fraction of the strongest line per (layer, species). "
-             "Default 1e-4 suits full-band runs. Lower to 1e-6 or 1e-7 for narrow, fine-resolution "
-             "windows -- the default can distort individual line cores there. 0.0 keeps every line.",
+        help="Drop lines weaker than this fraction of each species' strongest line. Off (0.0) "
+             "by default: the former default of 1e-4 discarded every water line in the "
+             "3.5-4.1 um window.",
     )
     line_wing_cutoff_cm1 = st.sidebar.number_input(
         "Line wing cutoff (cm^-1)", min_value=0.1, max_value=200.0, step=0.5, key="line_wing_cutoff_cm1",
@@ -348,6 +385,8 @@ def _spectral_and_accuracy_controls() -> dict:
     return dict(
         wavenumber_min_cm1=wn_min, wavenumber_max_cm1=wn_max, resolution_cm1=resolution_cm1,
         line_strength_cutoff=line_strength_cutoff, line_wing_cutoff_cm1=line_wing_cutoff_cm1,
+        line_optical_depth_cutoff=line_optical_depth_cutoff, spectral_sampling=sampling,
+        **resolved_fields,
     )
 
 
@@ -451,7 +490,10 @@ def _scenario_summary(result: ScenarioResult) -> None:
         + (f", tangent_alt={path.tangent_alt_km:.2f} km" if path.tangent_alt_km is not None else ""),
         f"grid: {result.grid.wavenumber_cm1[0]:.2f}-{result.grid.wavenumber_cm1[-1]:.2f} cm^-1 "
         f"({result.grid.wavelength_um[-1]:.3f}-{result.grid.wavelength_um[0]:.3f} um), "
-        f"{result.grid.resolution_cm1:g} cm^-1 resolution, {result.grid.n} points",
+        f"{result.grid.resolution_cm1:g} cm^-1 resolution, {result.grid.n} points"
+        + (f", line-resolved at {result.fine_step_cm1:.4g} cm^-1 through a "
+           f"{sc.instrument_function.value} instrument function"
+           if result.fine_step_cm1 is not None else ", point-sampled"),
     ]
     if sc.radiance_solver == RadianceSolver.DISORT:
         bits.insert(0, f"**DISORT multiple scattering**, {sc.disort_streams} streams, **plane-parallel geometry**")

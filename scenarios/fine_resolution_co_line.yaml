@@ -18,11 +18,12 @@
 # 0.001 cm^-1 resolution, which is the expensive case (~2 h, ~13 GB) the
 # gate exists to catch -- see README.md "Choosing spectral resolution".
 #
-# Note the accuracy controls, both pulled in from their full-band defaults
-# per their own docstrings (mwir_atmos/types.py Scenario):
-#   line_strength_cutoff: 1e-4 -> 1e-6 (the default can visibly distort a
-#     line core at this resolution even though it barely moves a band
-#     average)
+# (Timings above predate the September 2026 engine rewrite.)
+#
+# Note the accuracy controls (mwir_atmos/types.py Scenario):
+#   line_optical_depth_cutoff: 1e-5 -> 1e-7 (keep lines down to a peak
+#     optical depth of 1e-7 per layer, so weak neighbours of the CO line are
+#     represented at this resolution; line_strength_cutoff stays off)
 #   line_wing_cutoff_cm1: 25.0 -> 3.0 (the per-line evaluation window is
 #     2*line_wing_cutoff_cm1/resolution_cm1 + 1 points, independent of the
 #     requested window width -- at fine resolution this is usually the
@@ -31,5 +32,5 @@
 wavenumber_min_cm1: 2171.5
 wavenumber_max_cm1: 2174.0
 resolution_cm1: 0.001
-line_strength_cutoff: 1.0e-6
+line_optical_depth_cutoff: 1.0e-7
 line_wing_cutoff_cm1: 3.0

@@ -28,11 +28,12 @@ def validate_scenario(scenario: Scenario) -> None:
     positive = (
         "visibility_km", "ground_temp_k", "surface_skin_temp_k", "source_temp_k",
         "resolution_cm1", "wavenumber_min_cm1", "line_wing_cutoff_cm1",
-        "sensor_aperture_diameter_m",
+        "sensor_aperture_diameter_m", "fine_step_cm1", "instrument_fwhm_cm1",
     )
     nonnegative = (
         "wind_speed_m_s", "co2_ppmv", "surface_altitude_km", "sensor_alt_km",
         "source_alt_km", "source_range_km", "source_area_m2", "turbulence_cn2_ground",
+        "line_optical_depth_cutoff",
     )
     for name in positive + nonnegative:
         value = getattr(scenario, name)
@@ -52,8 +53,28 @@ def validate_scenario(scenario: Scenario) -> None:
             raise ValueError(f"{name} must be between {lo} and {hi}")
     if scenario.wavenumber_max_cm1 <= scenario.wavenumber_min_cm1:
         raise ValueError("wavenumber_max_cm1 must exceed wavenumber_min_cm1")
+    if scenario.spectral_sampling.value == "resolved" and scenario.sensor_response_file:
+        raise ValueError("sensor_response_file is not supported with resolved spectral sampling")
     if type(scenario.disort_streams) is not int or scenario.disort_streams not in (8, 16, 32, 64):
         raise ValueError("disort_streams must be one of 8, 16, 32, 64")
+    for name in ('refraction','polarization'):
+        if type(getattr(scenario,name)) is not bool: raise ValueError(f'{name} must be boolean')
+    if (scenario.refraction or scenario.polarization) and scenario.radiance_solver.value!='spherical_mc':
+        raise ValueError('Refraction and polarization require the spherical_mc solver')
+    if scenario.refractive_index_file and not scenario.refraction: raise ValueError('Enable refraction to use refractive_index_file')
+    if scenario.sensor_response_file and not scenario.polarization: raise ValueError('Enable polarization to apply a sensor analyzer')
+    if scenario.aerosol_polarization not in ('hg_depolarizing','mie_sphere'): raise ValueError('Unknown aerosol_polarization model')
+    if scenario.surface_polarization not in ('lambertian','fresnel'): raise ValueError('Unknown surface_polarization model')
+    if (scenario.aerosol_polarization=='mie_sphere' or scenario.surface_polarization=='fresnel') and not scenario.polarization:
+        raise ValueError('Mie and Fresnel polarization options require polarization enabled')
+    if scenario.surface_polarization=='fresnel' and scenario.surface_emissivity is not None:
+        raise ValueError('Fresnel derives emissivity from the material index; remove surface_emissivity override')
+    for name in ('mie_radius_um','mie_index_real','surface_index_real','refraction_reference_um'):
+        value=getattr(scenario,name)
+        if not math.isfinite(value) or value<=0: raise ValueError(f'{name} must be finite and positive')
+    for name in ('mie_index_imag','surface_index_imag'):
+        value=getattr(scenario,name)
+        if not math.isfinite(value) or value<0: raise ValueError(f'{name} must be finite and nonnegative')
     for name, lo, hi in (("spherical_photons", 128, 1000000), ("spherical_seed", 0, 2**32-1), ("spherical_max_events", 16, 100000)):
         value = getattr(scenario, name)
         if type(value) is not int or not lo <= value <= hi:

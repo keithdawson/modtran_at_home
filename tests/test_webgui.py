@@ -112,3 +112,14 @@ def test_gui_spherical_solver_and_sampling_uncertainty():
     assert not app.exception and not app.error
     assert any('Spherical multiple scattering' in m.value for m in app.markdown)
     assert any('sampling uncertainty' in c.value for c in app.caption)
+
+
+def test_gui_line_resolved_sampling_controls_and_summary():
+    from mwir_atmos.types import InstrumentFunction, SpectralSampling
+    app = AppTest.from_file(str(APP), default_timeout=180).run()
+    app.number_input(key='wn_min').set_value(2500.)
+    app.number_input(key='wn_max').set_value(2504.)
+    app.selectbox(key='spectral_sampling').set_value(SpectralSampling.RESOLVED).run()
+    assert not app.exception and not app.error
+    assert app.selectbox(key='instrument_function').value == InstrumentFunction.BOX
+    assert any('line-resolved at' in m.value for m in app.markdown)

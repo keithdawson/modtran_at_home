@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+import numpy as np
+
 from .atmosphere.humidity import apply_surface_conditions
 from .atmosphere.profiles import get_profile
 from .geometry.path import build_path
@@ -22,10 +24,12 @@ from .types import (
     AtmosphereProfile,
     LayerOptics,
     PathGeometry,
+    RadianceResult,
     Scenario,
     ScenarioResult,
     RadianceSolver,
     SpectralGrid,
+    SpectralSampling,
 )
 
 __all__ = ["build_profile", "build_scenario_path", "run_scenario"]
@@ -75,6 +79,7 @@ def run_scenario(
     include_radiance: bool = True,
     include_turbulence: bool = True,
     grid: Optional[SpectralGrid] = None,
+    n_threads: Optional[int] = None,
 ) -> ScenarioResult:
     """Run a full scenario.
 
@@ -82,6 +87,12 @@ def run_scenario(
     corresponding module has not been built yet, the matching field of the
     result is left as ``None`` rather than raising. Transmittance is always
     computed.
+
+    ``grid`` overrides the output grid (uniform spacing). ``n_threads`` sets
+    the line-by-line worker threads (default: ``MWIR_THREADS`` or every CPU);
+    results do not depend on it. With ``spectral_sampling="resolved"`` the
+    physics runs on a fine internal grid and is convolved with the instrument
+    function onto the output grid -- see :mod:`mwir_atmos.resolved`.
     """
     validate_scenario(scenario)
     if grid is None:
@@ -92,33 +103,31 @@ def run_scenario(
         )
 
     profile = build_profile(scenario)
-    column = None
+    column = indices = factors = None
     if scenario.radiance_solver == RadianceSolver.DISORT:
-        from .geometry.plane_parallel import geometry, sightline_optics
+        from .geometry.plane_parallel import geometry
         column, path, indices, factors = geometry(scenario, profile)
     elif scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
         from .geometry.spherical_shells import geometry
-        from .geometry.plane_parallel import sightline_optics
         column, path, indices, factors = geometry(scenario, profile)
     else:
         path = build_scenario_path(scenario, profile)
 
-    optics: LayerOptics = compute_layer_optics(
-        column if column is not None else path,
-        grid,
-        aerosol=scenario.aerosol,
-        visibility_km=scenario.visibility_km,
-        wind_speed_m_s=scenario.wind_speed_m_s,
-        aerosol_winter=scenario.atmosphere.value.endswith("winter"),
-        wing_cutoff_cm1=scenario.line_wing_cutoff_cm1,
-        min_strength_fraction=scenario.line_strength_cutoff,
-    )
-    column_optics = optics if column is not None else None
-    if column is not None:
-        for j, i in enumerate(indices):
-            path.layers[j].aerosol_od_550nm = column.layers[i].aerosol_od_550nm * factors[j]
-        optics = sightline_optics(column_optics, path, indices, factors)
-    transmittance = path_transmittance(optics)
+    sun = moon = None
+    if include_radiance:
+        sky = _sky_positions(scenario)
+        if sky is None:
+            include_radiance = False  # radiometry layer absent: transmittance only
+        else:
+            sun, moon = sky
+
+    spectral_pass = _SpectralPass(scenario, profile, path, column, indices, factors, sun, moon,
+                                  include_radiance, n_threads)
+    fine_step = None
+    if scenario.spectral_sampling == SpectralSampling.RESOLVED:
+        transmittance, radiance, fine_step = _run_resolved(spectral_pass, grid)
+    else:
+        _, _, transmittance, radiance = spectral_pass.run(grid)
 
     result = ScenarioResult(
         scenario=scenario,
@@ -126,51 +135,174 @@ def run_scenario(
         profile=profile,
         path=path,
         transmittance=transmittance,
+        radiance=radiance,
+        sun=sun,
+        moon=moon,
+        fine_step_cm1=fine_step,
     )
-
-    if include_radiance:
-        _attach_radiance(result, optics, column, column_optics)
     if include_turbulence and scenario.turbulence.value != "none":
         _attach_turbulence(result)
 
     return result
 
 
-def _attach_radiance(result: ScenarioResult, optics: LayerOptics, column=None, column_optics=None) -> None:
-    """Populate radiance and sky positions if the radiometry layer is present."""
+def _sky_positions(scenario: Scenario):
+    """``(sun, moon)``, or None if the radiometry/ephemeris layer is absent."""
     try:
         from .ephemeris.moon import lunar_position
         from .ephemeris.sun import solar_position
-        from .radiometry.radiance import compute_radiance
+        from .radiometry.radiance import compute_radiance  # noqa: F401 (availability)
     except ImportError:
-        return  # wave 2 not built yet; transmittance-only result is still valid
-
-    scenario = result.scenario
+        return None  # wave 2 not built yet; transmittance-only result is still valid
     sun = solar_position(scenario)
-    moon = lunar_position(scenario, sun)
-    result.sun = sun
-    result.moon = moon
+    return sun, lunar_position(scenario, sun)
+
+
+class _SpectralPass:
+    """Layer optics, transmittance and radiance for one spectral grid.
+
+    Point sampling runs this once on the output grid; resolved sampling runs
+    it on each fine-grid chunk.
+    """
+
+    def __init__(self, scenario, profile, path, column, indices, factors, sun, moon,
+                 include_radiance, n_threads, strength_references=None):
+        self.scenario = scenario
+        self.profile = profile
+        self.path = path
+        self.column = column
+        self.indices = indices
+        self.factors = factors
+        self.sun = sun
+        self.moon = moon
+        self.include_radiance = include_radiance
+        self.n_threads = n_threads
+        self.strength_references = strength_references
+
+    @property
+    def optics_layers(self):
+        return (self.column if self.column is not None else self.path).layers
+
+    def optics(self, grid: SpectralGrid):
+        """``(sightline optics, column optics or None, transmittance)`` on ``grid``."""
+        scenario, column = self.scenario, self.column
+        optics: LayerOptics = compute_layer_optics(
+            column if column is not None else self.path,
+            grid,
+            aerosol=scenario.aerosol,
+            visibility_km=scenario.visibility_km,
+            wind_speed_m_s=scenario.wind_speed_m_s,
+            aerosol_winter=scenario.atmosphere.value.endswith("winter"),
+            wing_cutoff_cm1=scenario.line_wing_cutoff_cm1,
+            min_strength_fraction=scenario.line_strength_cutoff,
+            min_peak_optical_depth=scenario.line_optical_depth_cutoff,
+            n_threads=self.n_threads,
+            strength_references=self.strength_references,
+        )
+        if scenario.aerosol_polarization == "mie_sphere":
+            from .radiometry.spherical_scattering import apply_mie_optics
+            optics=apply_mie_optics(scenario,column,optics,grid)
+        column_optics = optics if column is not None else None
+        if column is not None:
+            from .geometry.plane_parallel import sightline_optics
+            for j, i in enumerate(self.indices):
+                self.path.layers[j].aerosol_od_550nm = column.layers[i].aerosol_od_550nm * self.factors[j]
+            optics = sightline_optics(column_optics, self.path, self.indices, self.factors)
+        return optics, column_optics, path_transmittance(optics)
+
+    def radiance(self, grid, optics, column_optics, transmittance) -> RadianceResult:
+        return _solve_radiance(self.scenario, grid, self.profile, self.path, optics,
+                               self.column, column_optics, transmittance, self.sun, self.moon)
+
+    def run(self, grid: SpectralGrid):
+        optics, column_optics, transmittance = self.optics(grid)
+        radiance = (self.radiance(grid, optics, column_optics, transmittance)
+                    if self.include_radiance else None)
+        return optics, column_optics, transmittance, radiance
+
+
+def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
+    """Resolved sampling: fine-grid chunks reduced by the instrument function."""
+    from . import resolved
+    from .hitran.fetch import ensure_linelists
+    from .optics.lbl import line_strength_reference
+    from .types import REQUIRED_SPECIES
+
+    scenario = spectral_pass.scenario
+    if grid.n > 1 and not np.allclose(np.diff(grid.wavenumber_cm1), grid.resolution_cm1,
+                                      rtol=1e-9, atol=0.0):
+        raise ValueError("Resolved sampling requires a uniform output grid")
+    layers = spectral_pass.optics_layers
+    step = scenario.fine_step_cm1
+    if step is None:
+        step = resolved.automatic_fine_step(spectral_pass.path.layers,
+                                            float(grid.wavenumber_cm1[0]))
+    plan = resolved.plan_fine_grid(grid, fine_step_cm1=step,
+                                   function=scenario.instrument_function,
+                                   fwhm_cm1=scenario.instrument_fwhm_cm1)
+
+    if scenario.line_strength_cutoff > 0.0:
+        # Every chunk must prune the same lines as an undivided evaluation.
+        linelists = ensure_linelists()
+        spectral_pass.strength_references = {
+            (row, sp): line_strength_reference(linelists[sp], layer.t_eff_k.get(sp, layer.t_k))
+            for row, layer in enumerate(layers) for sp in REQUIRED_SPECIES if sp in linelists}
+
+    binned = (spectral_pass.include_radiance
+              and scenario.radiance_solver != RadianceSolver.SINGLE_SCATTER)
+    transmittances, radiances = [], []
+    for first, stop, fine in resolved.chunks(plan, grid.n, len(layers)):
+        n_out = stop - first
+        out_grid = SpectralGrid(wavenumber_cm1=grid.wavenumber_cm1[first:stop],
+                                resolution_cm1=grid.resolution_cm1)
+        optics, column_optics, transmittance = spectral_pass.optics(fine)
+        transmittances.append(resolved.degrade_transmittance(transmittance, plan, n_out, out_grid))
+        if not spectral_pass.include_radiance:
+            continue
+        if binned:
+            radiances.append(resolved.binned_radiance(
+                column_optics, plan, n_out, out_grid.wavenumber_cm1,
+                lambda g, col: _binned_solve(spectral_pass, g, col), out_grid))
+        else:
+            radiances.append(resolved.degrade_radiance(
+                spectral_pass.radiance(fine, optics, column_optics, transmittance),
+                plan, n_out, out_grid))
+
+    transmittance = resolved.concatenate_transmittance(transmittances, grid)
+    radiance = resolved.concatenate_radiance(radiances, grid) if radiances else None
+    return transmittance, radiance, plan.step_cm1
+
+
+def _binned_solve(spectral_pass: _SpectralPass, grid: SpectralGrid, column_optics: LayerOptics):
+    from .geometry.plane_parallel import sightline_optics
+    optics = sightline_optics(column_optics, spectral_pass.path, spectral_pass.indices,
+                              spectral_pass.factors)
+    return spectral_pass.radiance(grid, optics, column_optics, path_transmittance(optics))
+
+
+def _solve_radiance(scenario, grid, profile, path, optics, column, column_optics,
+                    transmittance, sun, moon) -> RadianceResult:
+    """Dispatch to the configured radiance solver."""
     if scenario.radiance_solver == RadianceSolver.DISORT:
         from .radiometry.multiple_scattering import compute_multiple_scattering
-        result.radiance = compute_multiple_scattering(
-            scenario=scenario, grid=result.grid, profile=result.profile, path=result.path,
+        return compute_multiple_scattering(
+            scenario=scenario, grid=grid, profile=profile, path=path,
             optics=optics, column=column, column_optics=column_optics,
-            transmittance=result.transmittance, sun=sun, moon=moon)
-        return
+            transmittance=transmittance, sun=sun, moon=moon)
     if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
         from .radiometry.spherical_scattering import compute_spherical_scattering
-        result.radiance = compute_spherical_scattering(
-            scenario=scenario, grid=result.grid, profile=result.profile, path=result.path,
+        return compute_spherical_scattering(
+            scenario=scenario, grid=grid, profile=profile, path=path,
             optics=optics, column=column, column_optics=column_optics,
-            transmittance=result.transmittance, sun=sun, moon=moon)
-        return
-    result.radiance = compute_radiance(
+            transmittance=transmittance, sun=sun, moon=moon)
+    from .radiometry.radiance import compute_radiance
+    return compute_radiance(
         scenario=scenario,
-        grid=result.grid,
-        profile=result.profile,
-        path=result.path,
+        grid=grid,
+        profile=profile,
+        path=path,
         optics=optics,
-        transmittance=result.transmittance,
+        transmittance=transmittance,
         sun=sun,
         moon=moon,
     )

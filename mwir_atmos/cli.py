@@ -75,11 +75,13 @@ from .spectral import (
 from .types import (
     AerosolModel,
     RadianceSolver,
+    InstrumentFunction,
     ModelAtmosphere,
     REQUIRED_SPECIES,
     Scenario,
     ScenarioResult,
     SkyPosition,
+    SpectralSampling,
     SurfaceType,
     TurbulenceModel,
 )
@@ -138,6 +140,8 @@ _ENUM_FIELD_TYPES: dict[str, type[Enum]] = {
     "aerosol": AerosolModel,
     "turbulence": TurbulenceModel,
     "radiance_solver": RadianceSolver,
+    "spectral_sampling": SpectralSampling,
+    "instrument_function": InstrumentFunction,
 }
 
 _FORMATS = ("table", "csv", "json", "npz")
@@ -191,6 +195,11 @@ _CONFIRM_SECONDS_THRESHOLD = 180.0
 #: populate the requested window, which is not knowable without loading the
 #: line data -- exactly the expensive step this estimate is trying to avoid
 #: paying for up front.
+#: RECALIBRATION PENDING: these constants predate the September 2026 engine
+#: rewrite (cached per-line constants, ragged batches, multigrid wings,
+#: threads), which is several times faster, and the line-selection change,
+#: which alters how many lines are evaluated. Until re-measured on an idle
+#: machine, estimates err on the slow side.
 _COST_FIXED_OVERHEAD_S = 4.0
 _COST_RATE_ELEMENTS_PER_S = 19_000.0
 #: float64 (n_layers[+1], grid.n) arrays materialised per run: tau_molecular,
@@ -224,20 +233,41 @@ def _estimate_run_cost(scenario: Scenario) -> _CostEstimate:
     if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
         from .geometry.spherical_shells import geometry
         n_layers = geometry(scenario, profile)[0].n_layers
-    wing_pts = 2.0 * scenario.line_wing_cutoff_cm1 / scenario.resolution_cm1 + 1.0
+    from .optics.lbl import evaluations_per_line
+    step = scenario.resolution_cm1
+    evaluated_points = n_points      # spectral points the line-by-line engine fills
+    resident_points = n_points       # spectral points held in layer arrays at once
+    solver_points = n_points         # spectral points DISORT / Monte Carlo solve
+    if scenario.spectral_sampling == SpectralSampling.RESOLVED:
+        from . import resolved
+        from .types import SpectralGrid
+        fine = scenario.fine_step_cm1
+        if fine is None:
+            fine = resolved.automatic_fine_step(path.layers, scenario.wavenumber_min_cm1)
+        plan = resolved.plan_fine_grid(
+            SpectralGrid(wavenumber_cm1=np.array([scenario.wavenumber_min_cm1]),
+                         resolution_cm1=scenario.resolution_cm1),
+            fine_step_cm1=fine, function=scenario.instrument_function,
+            fwhm_cm1=scenario.instrument_fwhm_cm1)
+        step = plan.step_cm1
+        evaluated_points = (n_points - 1) * plan.ratio + 2 * plan.support + 1
+        resident_points = min(evaluated_points, max(resolved._MIN_CHUNK_FINE_POINTS,
+                                                    resolved._CHUNK_ELEMENTS // max(n_layers, 1)))
+        solver_points = n_points * (len(resolved._G_EDGES) - 1)
+    wing_pts = evaluations_per_line(step, scenario.line_wing_cutoff_cm1)
 
-    elements = max(float(n_points), wing_pts) * n_layers
+    elements = max(float(evaluated_points), wing_pts) * n_layers
     est_seconds = _COST_FIXED_OVERHEAD_S + elements / _COST_RATE_ELEMENTS_PER_S
-    est_bytes = int(n_points * n_layers * _COST_BYTES_PER_ELEMENT * _COST_N_LAYER_ARRAYS)
+    est_bytes = int(resident_points * n_layers * _COST_BYTES_PER_ELEMENT * _COST_N_LAYER_ARRAYS)
     if scenario.radiance_solver == RadianceSolver.DISORT:
         # Additional full-column arrays and sequential angular solves. This is
         # a rough estimate; actual Fourier work depends on illumination.
         est_bytes *= 2
         sources = 2 + int(scenario.include_solar) + int(scenario.include_lunar)
-        est_seconds += n_points * .005 * sources * (scenario.disort_streams / 16.)**4
+        est_seconds += solver_points * .005 * sources * (scenario.disort_streams / 16.)**4
     if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
         est_bytes += min(scenario.spherical_photons,4096) * n_layers * 200
-        est_seconds += n_points * (scenario.spherical_photons / 4096.) * 2.
+        est_seconds += solver_points * (scenario.spherical_photons / 4096.) * 2.
     return _CostEstimate(
         n_points=n_points,
         n_layers=n_layers,
@@ -422,6 +452,16 @@ def _add_enum(group, field: str, enum_cls: type[Enum], help_text: str) -> None:
     )
 
 
+def _positive_int(text: str) -> int:
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected a positive integer, got {text!r}") from None
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"expected a positive integer, got {text!r}")
+    return value
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the ``mwir`` argument parser.
 
@@ -558,6 +598,26 @@ def build_parser() -> argparse.ArgumentParser:
              "0.001 um = 0.4 cm^-1.",
     )
 
+    _add_enum(
+        spectral, "spectral_sampling", SpectralSampling,
+        "point: physics evaluated only at the output grid points (fast; a grid coarser than "
+        "the ~0.07 cm^-1 absorption lines samples line cores at random). resolved: evaluated "
+        "on a line-resolving internal grid and convolved with --instrument-function onto the "
+        "output grid, i.e. what an instrument of that resolution measures (default: point).",
+    )
+    _add_float(
+        spectral, "fine_step_cm1",
+        "Internal monochromatic step for --spectral-sampling resolved, cm^-1 (default: chosen "
+        "from the line widths along the path). Set explicitly to check convergence.",
+    )
+    _add_enum(spectral, "instrument_function", InstrumentFunction,
+              "Instrument line shape for resolved sampling: box (bin average), triangle, "
+              "or gaussian (default: box).")
+    _add_float(
+        spectral, "instrument_fwhm_cm1",
+        "Instrument FWHM for resolved sampling, cm^-1 (default: --resolution-cm1).",
+    )
+
     accuracy = parser.add_argument_group("accuracy")
     _add_enum(accuracy, "radiance_solver", RadianceSolver,
               "single_scatter, disort (plane-parallel), or spherical_mc (spherical multiple scattering).")
@@ -569,11 +629,15 @@ def build_parser() -> argparse.ArgumentParser:
     _add_float(
         accuracy, "line_strength_cutoff",
         "Drop lines weaker than this fraction of the strongest line in each per-layer, "
-        "per-species evaluation (default: 1e-4). Tuned for full-band runs near 1 cm^-1. For "
-        "fine-resolution work on a narrow window, lower this to 1e-6 or 1e-7: at the default, "
-        "weak lines the cutoff discards can still shift an individual line core by a large "
-        "fraction of its depth even though a band average barely notices. 0.0 keeps every line "
-        "(exact, but slow over a full-width path).",
+        "per-species evaluation (default: 0.0, off). Legacy rule: at its former default "
+        "(1e-4) it discarded every water line in the 3.5-4.1 um window, overstating "
+        "transmittance there by up to ~24 percentage points. Prefer --line-optical-depth-cutoff.",
+    )
+    _add_float(
+        accuracy, "line_optical_depth_cutoff",
+        "Drop a line from a layer when its peak optical depth in that layer is below this "
+        "(default: 1e-5). Tied to the actual gas amount, so thick humid layers keep the weak "
+        "water lines that matter in the windows. 0.0 keeps every line.",
     )
     _add_float(
         accuracy, "line_wing_cutoff_cm1",
@@ -608,6 +672,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     out.add_argument(
         "--no-turbulence", action="store_true", help="Skip the turbulence layer even if available."
+    )
+
+    perf = parser.add_argument_group("performance")
+    perf.add_argument(
+        "--threads", type=_positive_int, default=None, metavar="N",
+        help="Line-by-line worker threads (default: MWIR_THREADS or every CPU). "
+             "Results do not depend on this.",
     )
 
     return parser
@@ -1192,6 +1263,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             scenario,
             include_radiance=not args.no_radiance,
             include_turbulence=not args.no_turbulence,
+            n_threads=args.threads,
         )
     except Exception as exc:  # noqa: BLE001 - CLI boundary: report, don't crash
         print(f"mwir: error running scenario: {exc}", file=sys.stderr)

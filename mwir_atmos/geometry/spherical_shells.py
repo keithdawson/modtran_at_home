@@ -41,6 +41,8 @@ def geometry(scenario, profile):
     """Use one shell discretization for the LOS and all scattered photon paths."""
     if not profile.altitude_km[0] <= scenario.sensor_alt_km <= profile.altitude_km[-1]:
         raise ValueError('Spherical MC requires the sensor within the atmospheric column')
+    if scenario.refraction:
+        return refracted_geometry(scenario,profile)
     original = build_path(profile, sensor_alt_km=scenario.sensor_alt_km,
                           zenith_deg=scenario.sensor_zenith_deg, azimuth_deg=scenario.sensor_azimuth_deg,
                           source_alt_km=scenario.source_alt_km, source_range_km=scenario.source_range_km)
@@ -61,3 +63,41 @@ def geometry(scenario, profile):
                               air_column_cm2=l.air_column_cm2*factor,
                               column_cm2={sp:n*factor for sp,n in l.column_cm2.items()}))
     return column, replace(original, layers=layers), indices, factors
+
+
+def refracted_geometry(scenario,profile):
+    """One reference wavelength for geometry; range means curved arc length."""
+    from .refraction import trace,profile_index,advance
+    from .path import DEFAULT_SURFACE_REFINEMENT_KM
+    from ..types import PathGeometry
+    ground=float(profile.altitude_km[0])
+    extra=[scenario.sensor_alt_km-ground]
+    if scenario.source_alt_km is not None: extra.append(scenario.source_alt_km-ground)
+    column=build_path(profile,sensor_alt_km=ground,zenith_deg=0.,max_layers=300,uniform_fill=40,
+        surface_refinement_km=(*DEFAULT_SURFACE_REFINEMENT_KM,*extra))
+    heights=np.r_[column.layers[0].z_bottom_km,[l.z_top_km for l in column.layers]]
+    radii=EARTH_RADIUS_KM+heights; index=profile_index(scenario,profile,heights)
+    p=np.array([0.,0.,EARTH_RADIUS_KM+scenario.sensor_alt_km]); d=direction(scenario.sensor_zenith_deg,scenario.sensor_azimuth_deg)
+    flight=trace(p,d,radii,index,scenario.source_range_km if scenario.source_range_km is not None else np.inf)
+    ends,_=advance(flight.starts[0],flight.directions[0],flight.lengths[0],flight.layer[0],radii,index)
+    end_z=np.linalg.norm(ends,axis=1)-EARTH_RADIUS_KM
+    lengths=flight.lengths[0].copy(); hit=bool(flight.hits_ground[0]); space=bool(flight.reaches_space[0])
+    if scenario.source_alt_km is not None:
+        candidates=np.flatnonzero((abs(end_z-scenario.source_alt_km)<1e-6)&(lengths>1e-9))
+        if not len(candidates):
+            if scenario.source_range_km is None: raise ValueError('Refracted ray does not reach the target altitude')
+        else:
+            lengths[candidates[0]+1:]=0; hit &= abs(scenario.source_alt_km-ground)<1e-6
+            space &= abs(scenario.source_alt_km-heights[-1])<1e-6
+    keep=lengths>1e-9; ids=flight.layer[0,keep]; lengths=lengths[keep]
+    if not len(lengths): raise ValueError('Refracted line of sight must have positive length')
+    factors=lengths/np.array([column.layers[i].ds_km for i in ids])
+    start_z=np.linalg.norm(flight.starts[0,keep],axis=1)-EARTH_RADIUS_KM
+    end_z=end_z[keep]; layers=[]
+    for j,(i,length,factor,z0,z1) in enumerate(zip(ids,lengths,factors,start_z,end_z)):
+        l=column.layers[i]
+        layers.append(replace(l,index=j,ds_km=float(length),z_bottom_km=min(z0,z1),z_top_km=max(z0,z1),
+            air_column_cm2=l.air_column_cm2*factor,column_cm2={sp:n*factor for sp,n in l.column_cm2.items()}))
+    path=PathGeometry(layers,scenario.sensor_alt_km,scenario.sensor_zenith_deg,scenario.sensor_azimuth_deg,
+        scenario.source_alt_km,float(sum(lengths)),hit,space,ground_temp_k=float(profile.temperature_k[0]) if hit else None)
+    return column,path,ids,factors

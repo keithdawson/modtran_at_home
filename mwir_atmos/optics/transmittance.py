@@ -27,7 +27,7 @@ from ..types import (
 )
 from .aerosol import aerosol_optical_depth
 from .continuum import co2_continuum_optical_depth
-from .lbl import molecular_optical_depth
+from .lbl import DEFAULT_LINE_OPTICAL_DEPTH_CUTOFF, molecular_optical_depth
 from .rayleigh import rayleigh_optical_depth
 
 __all__ = ["compute_layer_optics", "path_transmittance", "transmittance_for_path"]
@@ -47,17 +47,21 @@ def compute_layer_optics(
     include_rayleigh: bool = True,
     include_co2_continuum: bool = False,
     wing_cutoff_cm1: float = 25.0,
-    min_strength_fraction: float = 1.0e-4,
+    min_strength_fraction: float = 0.0,
+    min_peak_optical_depth: float = DEFAULT_LINE_OPTICAL_DEPTH_CUTOFF,
+    n_threads: int | None = None,
+    strength_references: dict | None = None,
 ) -> LayerOptics:
     """Compute every optical-depth contribution for each layer of ``path``.
 
     ``include_co2_continuum`` is off by default: the CO2 continuum is currently
     a documented zero stub, so enabling it costs a call and changes nothing.
 
-    ``min_strength_fraction`` and ``wing_cutoff_cm1`` control line-by-line
-    accuracy versus cost. The defaults suit full-band runs near 1 cm^-1; for
-    fine-resolution work on a narrow window, drop ``min_strength_fraction`` to
-    1e-7 or 0.0 so weak lines that the default discards are retained.
+    ``min_strength_fraction``, ``min_peak_optical_depth`` and
+    ``wing_cutoff_cm1`` control line-by-line accuracy versus cost; see
+    :func:`mwir_atmos.optics.lbl.absorption_cross_section`. ``n_threads`` and
+    ``strength_references`` are passed to
+    :func:`~mwir_atmos.optics.lbl.molecular_optical_depth`.
     """
     layers = path.layers
     n_layers = len(layers)
@@ -71,6 +75,9 @@ def compute_layer_optics(
         include_continuum=include_continuum,
         wing_cutoff_cm1=wing_cutoff_cm1,
         min_strength_fraction=min_strength_fraction,
+        min_peak_optical_depth=min_peak_optical_depth,
+        n_threads=n_threads,
+        strength_references=strength_references,
     )
 
     if include_co2_continuum:
