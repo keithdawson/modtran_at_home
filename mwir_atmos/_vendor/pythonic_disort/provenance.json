@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/LDEO-CREW/Pythonic-DISORT",
+  "commit": "febb19f290a2ad860f74922d58d2f719e2fde771",
+  "source_sha256": {
+    "pydisort.py": "5247ffc42cfdc64b9db2592442d1a51311d8c7ea6bf0c2510b2543bad0145ebc",
+    "subroutines.py": "94216dc6d76fade4360838508ddbaf4b983f2a3d30958135509a647ae24e8e18",
+    "_assemble_intensity_and_fluxes.py": "fb8536b9285d97ce01d262128865fa10a0d234993ab74516c47bab33d9cdbef0",
+    "_solve_for_coeffs.py": "7494685fe6144b2757b9638824164f6a14b3d16c5ebf3454fb73eb55f0a359b8",
+    "_solve_for_gen_and_part_sols.py": "e0cfd1f5a7eee7214ed796d07bac55097aee60d3f43902c9e0d551e74e96a227",
+    "__init__.py": "575a1b37368582a227c6a609e61febe891db651c71e15339560cc2212e841332"
+  },
+  "modifications": "Only absolute package imports renamed for vendoring."
+}

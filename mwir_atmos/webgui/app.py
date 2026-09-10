@@ -87,6 +87,7 @@ from mwir_atmos.cli import (
 )
 from mwir_atmos.types import (
     AerosolModel,
+    RadianceSolver,
     ModelAtmosphere,
     REQUIRED_SPECIES,
     Scenario,
@@ -376,6 +377,16 @@ def build_scenario_from_sidebar() -> Scenario:
     fields.update(_source_controls())
     fields.update(_illumination_controls())
     fields.update(_spectral_and_accuracy_controls())
+    solver = _enum_select("Radiance solver", {
+        RadianceSolver.SINGLE_SCATTER: "Single scattering (spherical paths)",
+        RadianceSolver.DISORT: "DISORT multiple scattering (plane-parallel)",
+    }, RadianceSolver.SINGLE_SCATTER, key="radiance_solver")
+    fields['radiance_solver'] = solver
+    if solver == RadianceSolver.DISORT:
+        fields['disort_streams'] = st.sidebar.selectbox("DISORT streams", [8,16,32,64], index=2, key="disort_streams")
+        st.sidebar.caption("Solves the full vertical column and repeated surface reflection. "
+                           "Plane-parallel geometry replaces spherical paths. Horizontal views need a finite target range. "
+                           "Increase streams to check angular convergence; near-horizon curvature is not modeled.")
     return Scenario(**fields)
 
 
@@ -437,6 +448,8 @@ def _scenario_summary(result: ScenarioResult) -> None:
         f"({result.grid.wavelength_um[-1]:.3f}-{result.grid.wavelength_um[0]:.3f} um), "
         f"{result.grid.resolution_cm1:g} cm^-1 resolution, {result.grid.n} points",
     ]
+    if sc.radiance_solver == RadianceSolver.DISORT:
+        bits.insert(0, f"**DISORT multiple scattering**, {sc.disort_streams} streams, **plane-parallel geometry**")
     if result.sun is not None:
         bits.append(
             f"sun: zenith {result.sun.zenith_deg:.1f} deg, above_horizon={result.sun.is_above_horizon}"
@@ -488,6 +501,10 @@ def _radiance_section(result: ScenarioResult, x: np.ndarray, x_label: str) -> No
         )
         return
     components = {name: getattr(result.radiance, name) for name in RADIANCE_COMPONENTS if name != "total"}
+    if result.scenario.radiance_solver == RadianceSolver.DISORT:
+        st.caption("Thermal components include subsequent scattering and surface reflection. "
+                   "Solar/lunar multiple-scattering components include all diffuse atmospheric and surface contributions. "
+                   "Direct discs and target emission are separate.")
     from mwir_atmos.spectral import radiance_to_per_um
     total = result.radiance.total
     y_label = "Radiance (W cm^-2 sr^-1 / cm^-1)"

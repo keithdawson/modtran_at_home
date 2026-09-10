@@ -52,6 +52,8 @@ def validate_scenario(scenario: Scenario) -> None:
             raise ValueError(f"{name} must be between {lo} and {hi}")
     if scenario.wavenumber_max_cm1 <= scenario.wavenumber_min_cm1:
         raise ValueError("wavenumber_max_cm1 must exceed wavenumber_min_cm1")
+    if type(scenario.disort_streams) is not int or scenario.disort_streams not in (8, 16, 32, 64):
+        raise ValueError("disort_streams must be one of 8, 16, 32, 64")
     if scenario.aerosol.value.startswith("lowtran_"):
         if not 2. <= scenario.visibility_km <= 50.:
             raise ValueError("LOWTRAN table aerosols require visibility_km between 2 and 50")

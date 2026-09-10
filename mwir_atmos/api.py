@@ -24,6 +24,7 @@ from .types import (
     PathGeometry,
     Scenario,
     ScenarioResult,
+    RadianceSolver,
     SpectralGrid,
 )
 
@@ -52,6 +53,9 @@ def build_profile(scenario: Scenario) -> AtmosphereProfile:
 
 def build_scenario_path(scenario: Scenario, profile: AtmosphereProfile) -> PathGeometry:
     """Slant path implied by the scenario's sensor and source placement."""
+    if scenario.radiance_solver == RadianceSolver.DISORT:
+        from .geometry.plane_parallel import geometry
+        return geometry(scenario, profile)[1]
     return build_path(
         profile,
         sensor_alt_km=scenario.sensor_alt_km,
@@ -85,10 +89,15 @@ def run_scenario(
         )
 
     profile = build_profile(scenario)
-    path = build_scenario_path(scenario, profile)
+    column = None
+    if scenario.radiance_solver == RadianceSolver.DISORT:
+        from .geometry.plane_parallel import geometry, sightline_optics
+        column, path, indices, factors = geometry(scenario, profile)
+    else:
+        path = build_scenario_path(scenario, profile)
 
     optics: LayerOptics = compute_layer_optics(
-        path,
+        column if column is not None else path,
         grid,
         aerosol=scenario.aerosol,
         visibility_km=scenario.visibility_km,
@@ -97,6 +106,11 @@ def run_scenario(
         wing_cutoff_cm1=scenario.line_wing_cutoff_cm1,
         min_strength_fraction=scenario.line_strength_cutoff,
     )
+    column_optics = optics if column is not None else None
+    if column is not None:
+        for j, i in enumerate(indices):
+            path.layers[j].aerosol_od_550nm = column.layers[i].aerosol_od_550nm * factors[j]
+        optics = sightline_optics(column_optics, path, indices, factors)
     transmittance = path_transmittance(optics)
 
     result = ScenarioResult(
@@ -108,14 +122,14 @@ def run_scenario(
     )
 
     if include_radiance:
-        _attach_radiance(result, optics)
+        _attach_radiance(result, optics, column, column_optics)
     if include_turbulence and scenario.turbulence.value != "none":
         _attach_turbulence(result)
 
     return result
 
 
-def _attach_radiance(result: ScenarioResult, optics: LayerOptics) -> None:
+def _attach_radiance(result: ScenarioResult, optics: LayerOptics, column=None, column_optics=None) -> None:
     """Populate radiance and sky positions if the radiometry layer is present."""
     try:
         from .ephemeris.moon import lunar_position
@@ -129,6 +143,13 @@ def _attach_radiance(result: ScenarioResult, optics: LayerOptics) -> None:
     moon = lunar_position(scenario, sun)
     result.sun = sun
     result.moon = moon
+    if scenario.radiance_solver == RadianceSolver.DISORT:
+        from .radiometry.multiple_scattering import compute_multiple_scattering
+        result.radiance = compute_multiple_scattering(
+            scenario=scenario, grid=result.grid, profile=result.profile, path=result.path,
+            optics=optics, column=column, column_optics=column_optics,
+            transmittance=result.transmittance, sun=sun, moon=moon)
+        return
     result.radiance = compute_radiance(
         scenario=scenario,
         grid=result.grid,

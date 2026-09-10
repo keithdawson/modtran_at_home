@@ -1,0 +1,12 @@
+{
+  "scenario": "100 m sensor, zenith 60\u00b0, maritime visibility 2 km, equinox noon at equator; 2200\u20132900 cm^-1 at 10 cm^-1",
+  "runtime_seconds": {
+    "16": 7.494449799996801,
+    "32": 21.771192999993218,
+    "64": 190.64289350000035
+  },
+  "max_relative_radiance_difference": {
+    "16": 0.010258064260094457,
+    "32": 1.616248201130599e-05
+  }
+}

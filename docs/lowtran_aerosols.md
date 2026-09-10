@@ -100,10 +100,11 @@ run. The aerosol data and license are also included in installed wheels.
 
 This validates the aerosol component against LOWTRAN source routines. It does
 not validate full atmospheric radiance or transmittance against MODTRAN. The
-current radiance solver still uses single scattering and a Henyey–Greenstein
-aerosol phase function from table g; it does not reproduce LOWTRAN's full phase
-tables or a multiple-scattering solver. Higher-scattering cases make those
-radiance limitations more consequential. Direct-beam transmittance includes
+legacy radiance solver uses single scattering. An optional
+[DISORT multiple-scattering mode](multiple_scattering.md) now handles repeated
+scattering and surface reflection in plane-parallel geometry. Both use a
+Henyey–Greenstein aerosol phase function from table g, rather than the full
+LOWTRAN phase tables. Direct-beam transmittance includes
 both absorption and scattering losses. Refraction remains omitted.
 
 See [existing Rayleigh reference checks](../PHYSICS_VALIDATION.md#rayleigh) and

@@ -149,10 +149,11 @@ and in `mwir_atmos/optics/AER_LICENSE.txt`, which is included in built wheels.
   bound band-edge error. No empirical correction was fitted to the plots.
 - Original LOWTRAN 7 aerosol optical tables and background profiles are now
   available alongside the legacy parameterizations. See
-  [aerosol validation](docs/lowtran_aerosols.md). Full multiple scattering and
-  modern aerosol datasets remain future work.
+  [aerosol validation](docs/lowtran_aerosols.md). Modern aerosol datasets and
+  full phase tables remain future work.
 - Coarse-grid sampling, line-strength pruning and path discretization still
   require convergence checks for each quantitative application. Gaussian
   smoothing cannot recover spectral structure missed by the underlying grid.
-- These changes do not add multiple scattering or refraction. Agreement with
-  AER's continuum kernel is not agreement with the full LBLRTM or MODTRAN solver.
+- Optional DISORT multiple scattering is now available; see
+  [its validation and geometry limits](docs/multiple_scattering.md). Refraction
+  remains omitted. Component checks are not full LBLRTM/MODTRAN validation.

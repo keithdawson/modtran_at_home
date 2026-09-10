@@ -1,0 +1,35 @@
+{
+  "repository": "https://github.com/LDEO-CREW/Pythonic-DISORT",
+  "commit": "febb19f290a2ad860f74922d58d2f719e2fde771",
+  "outputs": "Upstream Stamnes DISORT 4.0.99 fixtures, not recalculated.",
+  "cases": {
+    "1a": {
+      "setup_sha256": "dafeb0e916306a5e2d4150399f6e5f3fb4aab989079247eb876bd278671547fd",
+      "output_sha256": "13dd845e11a936766af45589daaed64300483e36b235e658f32f29097f686da1"
+    },
+    "1d": {
+      "setup_sha256": "dafeb0e916306a5e2d4150399f6e5f3fb4aab989079247eb876bd278671547fd",
+      "output_sha256": "c86237799964464e1b53bbaaab066ddaae0a6fcfea948cd2b998e224847504f8"
+    },
+    "2a": {
+      "setup_sha256": "ab5db64ba7ebae7f8105b18bce33fa94e96188b520d64d4ff6f2a5c92bf08a8c",
+      "output_sha256": "b4a4d898bf2c3eb2626418232be62e2c4e252369f1f11031cacb0a1afa91b516"
+    },
+    "2d": {
+      "setup_sha256": "ab5db64ba7ebae7f8105b18bce33fa94e96188b520d64d4ff6f2a5c92bf08a8c",
+      "output_sha256": "98b15e278f51007f6095afb3a40782e27880269684636b24c441ea9137276a8a"
+    },
+    "7a": {
+      "setup_sha256": "62bac9c7ac7c50249312769894d4ba36b45130f27ea01f179bf0b0efbbf57fea",
+      "output_sha256": "a5fe15bb56cd6fcc4ee5f5e257a511f073bbd49327af54e1e8fec583ab2043d5"
+    },
+    "8a": {
+      "setup_sha256": "018ca1b7a2133ee58ee38b674163f25d77ab2e9187d74348c9ef0fc7eb3755e0",
+      "output_sha256": "2c808dbcd28dbe49714eafb41d463c833e6ccc5a275cba74ddbdae5b9d30e59c"
+    },
+    "9c": {
+      "setup_sha256": "2036a4e31d8c7ce18e01155761b1b26c7d53e4a9db69d380878806f82d994b64",
+      "output_sha256": "b1062c8f8cc9ab7533ddfb2bf125904aae343f1fb0a5b3a1fdea7d0d79a5072c"
+    }
+  }
+}

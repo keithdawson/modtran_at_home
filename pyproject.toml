@@ -39,3 +39,4 @@ testpaths = ["tests"]
 
 [tool.setuptools.package-data]
 "mwir_atmos.optics" = ["AER_LICENSE.txt"]
+"mwir_atmos._vendor.pythonic_disort" = ["LICENSE.txt", "provenance.json"]

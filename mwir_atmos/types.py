@@ -72,6 +72,11 @@ class Species(str, Enum):
     O2 = "O2"
 
 
+class RadianceSolver(str, Enum):
+    SINGLE_SCATTER = "single_scatter"
+    DISORT = "disort"
+
+
 #: Species whose column amounts every profile must supply.
 REQUIRED_SPECIES: tuple[Species, ...] = (
     Species.H2O,
@@ -318,6 +323,13 @@ class RadianceResult:
     direct_lunar: np.ndarray
     source_emitted: np.ndarray
     total: np.ndarray
+    solar_multiple_scatter: Optional[np.ndarray] = None
+    lunar_multiple_scatter: Optional[np.ndarray] = None
+
+    def __post_init__(self):
+        for name in ("solar_multiple_scatter", "lunar_multiple_scatter"):
+            if getattr(self, name) is None:
+                setattr(self, name, np.zeros(self.grid.n))
 
     @property
     def wavelength_um(self) -> np.ndarray:
@@ -427,6 +439,9 @@ class Scenario:
     moon_phase: float = 0.5
     include_solar: bool = True
     include_lunar: bool = True
+    #: DISORT uses a complete plane-parallel column, including surface feedback.
+    radiance_solver: RadianceSolver = RadianceSolver.SINGLE_SCATTER
+    disort_streams: int = 32
 
     # --- spectral ---------------------------------------------------------
     wavenumber_min_cm1: float = 1800.0

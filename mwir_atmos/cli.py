@@ -74,6 +74,7 @@ from .spectral import (
 )
 from .types import (
     AerosolModel,
+    RadianceSolver,
     ModelAtmosphere,
     REQUIRED_SPECIES,
     Scenario,
@@ -108,6 +109,8 @@ RADIANCE_COMPONENTS: tuple[str, ...] = (
     "direct_solar",
     "direct_lunar",
     "source_emitted",
+    "solar_multiple_scatter",
+    "lunar_multiple_scatter",
     "total",
 )
 
@@ -123,6 +126,8 @@ _RADIANCE_ABBREV: dict[str, str] = {
     "direct_solar": "dir_sol",
     "direct_lunar": "dir_lun",
     "source_emitted": "src_emit",
+    "solar_multiple_scatter": "sol_multi",
+    "lunar_multiple_scatter": "lun_multi",
 }
 
 #: Scenario fields that are enums, mapped to their enum class -- drives both
@@ -132,6 +137,7 @@ _ENUM_FIELD_TYPES: dict[str, type[Enum]] = {
     "surface_type": SurfaceType,
     "aerosol": AerosolModel,
     "turbulence": TurbulenceModel,
+    "radiance_solver": RadianceSolver,
 }
 
 _FORMATS = ("table", "csv", "json", "npz")
@@ -212,11 +218,20 @@ def _estimate_run_cost(scenario: Scenario) -> _CostEstimate:
     profile = build_profile(scenario)
     path = build_scenario_path(scenario, profile)
     n_layers = path.n_layers
+    if scenario.radiance_solver == RadianceSolver.DISORT:
+        from .geometry.plane_parallel import geometry
+        n_layers = geometry(scenario, profile)[0].n_layers
     wing_pts = 2.0 * scenario.line_wing_cutoff_cm1 / scenario.resolution_cm1 + 1.0
 
     elements = max(float(n_points), wing_pts) * n_layers
     est_seconds = _COST_FIXED_OVERHEAD_S + elements / _COST_RATE_ELEMENTS_PER_S
     est_bytes = int(n_points * n_layers * _COST_BYTES_PER_ELEMENT * _COST_N_LAYER_ARRAYS)
+    if scenario.radiance_solver == RadianceSolver.DISORT:
+        # Additional full-column arrays and sequential angular solves. This is
+        # a rough estimate; actual Fourier work depends on illumination.
+        est_bytes *= 2
+        sources = 2 + int(scenario.include_solar) + int(scenario.include_lunar)
+        est_seconds += n_points * .005 * sources * (scenario.disort_streams / 16.)**4
     return _CostEstimate(
         n_points=n_points,
         n_layers=n_layers,
@@ -538,6 +553,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     accuracy = parser.add_argument_group("accuracy")
+    _add_enum(accuracy, "radiance_solver", RadianceSolver,
+              "single_scatter (legacy spherical paths) or disort (multiple scattering, plane-parallel column).")
+    accuracy.add_argument("--disort-streams", type=int, choices=[8,16,32,64], default=None,
+                         help="Discrete-ordinate streams; increase and compare for angular convergence (default: 32).")
     _add_float(
         accuracy, "line_strength_cutoff",
         "Drop lines weaker than this fraction of the strongest line in each per-layer, "

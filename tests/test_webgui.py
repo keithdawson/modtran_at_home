@@ -89,3 +89,15 @@ def test_gui_lowtran_selection_and_visibility_bounds():
     app.number_input(key='visibility_km').set_value(1.).run()
     assert not app.exception
     assert any('between 2 and 50' in e.value for e in app.error)
+
+
+def test_gui_disort_solver_controls_and_result_label():
+    from mwir_atmos.types import RadianceSolver
+    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    app.number_input(key='wn_min').set_value(2500.)
+    app.number_input(key='wn_max').set_value(2504.)
+    app.selectbox(key='radiance_solver').set_value(RadianceSolver.DISORT).run()
+    assert not app.exception and not app.error
+    assert app.selectbox(key='disort_streams').value == 32
+    assert any('plane-parallel geometry' in m.value for m in app.markdown)
+    assert any('Direct discs and target emission are separate' in c.value for c in app.caption)

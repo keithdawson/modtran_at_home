@@ -40,12 +40,11 @@ own emission).
   properties and background altitude profiles. Legacy parametric models remain
   available. Molecular Rayleigh scattering is calculated separately. See
   [aerosol data and validation](docs/lowtran_aerosols.md).
-- **Radiance and ephemeris** (`mwir_atmos/radiometry/`, `mwir_atmos/ephemeris/`):
-  path thermal emission, surface emission/reflection, solar/lunar
-  scattering and direct terms, and a discrete source's own emission, using a
-  deliberately "loose" (not ephemeris-grade) sun/moon position. See
-  **Limitations** below for exactly what "loose" means and whether this
-  layer is present in your build.
+- **Radiance and ephemeris**: the legacy single-scattering solver and an optional
+  **DISORT multiple-scattering** solver. DISORT includes full-column thermal,
+  solar and lunar transfer with repeated Lambertian ground reflection, using
+  consistent plane-parallel paths. Supports saved setups and finite targets.
+  See [multiple-scattering physics and validation](docs/multiple_scattering.md).
 
 See **Limitations** below before trusting any specific number this tool
 produces — it is a from-scratch reconstruction of MODTRAN/LOWTRAN-style
@@ -342,15 +341,11 @@ physics modules' own docstrings:
   (`constants.BACKGROUND_VMR_PPMV`, a 2025-era estimate for CO₂), applied
   uniformly with altitude and independent of the scenario's date — there is
   no historical/future CO₂ trend model.
-- **Scattering is single-scatter only.** Solar and lunar photons are allowed
-  exactly one scattering event. This is a good approximation in the MWIR,
-  where scattering optical depths are small next to molecular absorption, but
-  it under-predicts diffuse illumination in heavy aerosol at short MWIR
-  wavelengths. Illumination-beam transmittance is also reconstructed by
-  de-slanting the line-of-sight layers to vertical and re-slanting along the
-  sun/moon direction with a Kasten-Young airmass — exact for a
-  plane-parallel atmosphere, approximate otherwise, and blind to horizontal
-  inhomogeneity.
+- **Scattering has two solver options.** The default preserves the legacy
+  single-scattering calculation and spherical paths. Optional `disort` solves
+  all scattering orders in a plane-parallel column with repeated Lambertian
+  surface reflection. It uses scalar HG/Rayleigh phase moments, not polarization
+  or a full Mie phase function. See [solver limits and convergence checks](docs/multiple_scattering.md).
 
 Do not treat any single number from this tool as validated against a real
 MODTRAN/LOWTRAN run; treat it as a physically-grounded estimate with the
