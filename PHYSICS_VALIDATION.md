@@ -5,6 +5,46 @@ local-line/continuum overlap, the numerical MT_CKD continuum calculation,
 and Rayleigh reference-state normalization. These are component checks;
 they do not establish agreement of the complete application with MODTRAN.
 
+## Line selection and spectral sampling (late September 2026, validation in progress)
+
+Two further inconsistencies were measured and corrected; full method and
+status are in [docs/spectral_sampling.md](docs/spectral_sampling.md).
+
+**Line selection.** The former default kept only lines stronger than 1e-4 of
+their species' strongest line. For water that threshold (2.5e-23 cm/molecule
+at 296 K) exceeds every line between 2440 and 2860 cm^-1, so all 6,162 local
+water lines in the 3.5-4.1 um window were discarded. Against a calculation
+keeping every line (1 cm^-1 point sampling), mean window transmittance was
+overstated by:
+
+| Path | 4.5-5.0 um | 3.5-4.1 um | 2.9-3.5 um |
+|---|---:|---:|---:|
+| Tropical, 10 km horizontal | +5.00 pp | +23.65 pp | +3.47 pp |
+| Mid-latitude summer, ground to space | +9.62 pp | +9.79 pp | +5.04 pp |
+| 20 km nadir to ground | +9.87 pp | +9.81 pp | +5.04 pp |
+
+The default is now a per-layer peak-optical-depth threshold (1e-5,
+provisional), following LBLRTM's absolute line rejection. `tests/test_lbl_engine.py`
+checks that it is an exact threshold and that the window water lines are kept.
+The earlier end-to-end table below was computed with the old selection;
+window values change substantially under the new default.
+
+**Spectral sampling.** Point sampling at 1 cm^-1 on a 2 km horizontal path
+(2040-2060 cm^-1) differed from line-resolved 1 cm^-1 bin averages by up to
+3.76 pp (0.67 pp mean). Optional `spectral_sampling: resolved` computes on a
+line-resolving grid and applies an instrument function;
+`tests/test_resolved.py` checks it against an independently hand-averaged
+fine-grid calculation.
+
+**Engine rewrite.** The rewritten direct evaluation reproduces the previous
+engine to 7.9e-15 relative. The optional multigrid wing interpolation agrees
+with direct evaluation to 1.0e-4 relative (points above 1e-6 of the maximum)
+across four windows, six species and four atmospheric states.
+
+Not yet done: the line-selection threshold sweep, fine-step convergence,
+correlated-k accuracy for DISORT/Monte Carlo, and re-baselining of window
+benchmarks. See the pending list in the linked document.
+
 ## Implemented corrections
 
 1. **Water local lines match the continuum convention.** Subtract the constant
@@ -151,9 +191,14 @@ and in `mwir_atmos/optics/AER_LICENSE.txt`, which is included in built wheels.
   available alongside the legacy parameterizations. See
   [aerosol validation](docs/lowtran_aerosols.md). Modern aerosol datasets and
   full phase tables remain future work.
-- Coarse-grid sampling, line-strength pruning and path discretization still
-  require convergence checks for each quantitative application. Gaussian
-  smoothing cannot recover spectral structure missed by the underlying grid.
+- Point sampling, line pruning and path discretization still require
+  convergence checks for each quantitative application. Gaussian smoothing
+  cannot recover spectral structure missed by the underlying grid; use
+  `spectral_sampling: resolved`, whose fine-step rule is itself pending the
+  convergence study in [docs/spectral_sampling.md](docs/spectral_sampling.md).
+- N2 collision-induced absorption (the 2000-2800 cm^-1 fundamental band) is
+  not modelled. It affects long paths near the 4 um window edge and needs a
+  published coefficient set (e.g. HITRAN CIA) with its own validation.
 - Optional DISORT multiple scattering is now available; see
   [its validation and geometry limits](docs/multiple_scattering.md). Refraction
   remains omitted. Component checks are not full LBLRTM/MODTRAN validation.

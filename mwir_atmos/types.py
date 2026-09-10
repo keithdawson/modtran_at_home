@@ -78,6 +78,29 @@ class RadianceSolver(str, Enum):
     SPHERICAL_MC = "spherical_mc"
 
 
+class SpectralSampling(str, Enum):
+    """How the monochromatic spectrum relates to the output grid.
+
+    ``POINT``: physics evaluated only at the output grid points (spacing
+    ``resolution_cm1``). Exact monochromatic values there, but a grid coarser
+    than the absorption lines samples line cores and gaps at random.
+    ``RESOLVED``: physics evaluated on an internal grid fine enough to resolve
+    the lines, then convolved with the instrument function onto the output
+    grid -- what a spectrometer of that resolution would measure.
+    """
+
+    POINT = "point"
+    RESOLVED = "resolved"
+
+
+class InstrumentFunction(str, Enum):
+    """Spectral response (slit function) used by ``SpectralSampling.RESOLVED``."""
+
+    BOX = "box"            # uniform over +/-FWHM/2: exact bin average
+    TRIANGLE = "triangle"  # FWHM = half the base width
+    GAUSSIAN = "gaussian"  # truncated at +/-2 FWHM
+
+
 #: Species whose column amounts every profile must supply.
 REQUIRED_SPECIES: tuple[Species, ...] = (
     Species.H2O,
@@ -114,6 +137,14 @@ class SpectralGrid:
 
     wavenumber_cm1: np.ndarray
     resolution_cm1: float
+    #: Optional position on a larger uniform lattice: point ``i`` lies at
+    #: ``lattice_origin_cm1 + resolution_cm1 * (lattice_index0 + i)``. Spectral
+    #: chunks of one calculation share a lattice so that line evaluation (in
+    #: particular the coarse wing mesh of :mod:`mwir_atmos.optics.lbl`) is
+    #: identical however the spectrum is split. ``None`` means the grid is its
+    #: own lattice, starting at its first point.
+    lattice_origin_cm1: Optional[float] = None
+    lattice_index0: int = 0
 
     @property
     def wavelength_um(self) -> np.ndarray:
@@ -328,6 +359,11 @@ class RadianceResult:
     lunar_multiple_scatter: Optional[np.ndarray] = None
     #: Monte Carlo one-standard-error arrays; not radiance components.
     sampling_standard_error: dict[str, np.ndarray] = field(default_factory=dict)
+    #: [spectral point, I/Q/U/V], in the documented physical propagation basis.
+    stokes: dict[str, np.ndarray] = field(default_factory=dict)
+    stokes_standard_error: dict[str, np.ndarray] = field(default_factory=dict)
+    sensor_signal: Optional[dict] = None
+
 
     def __post_init__(self):
         for name in ("solar_multiple_scatter", "lunar_multiple_scatter"):
@@ -448,18 +484,43 @@ class Scenario:
     spherical_photons: int = 4096
     spherical_seed: int = 0
     spherical_max_events: int = 256
+    refraction: bool = False
+    refraction_reference_um: float = 4.0
+    refractive_index_file: Optional[str] = None
+    polarization: bool = False
+    aerosol_polarization: str = "hg_depolarizing"
+    mie_radius_um: float = 0.1
+    mie_index_real: float = 1.5
+    mie_index_imag: float = 0.0
+    sensor_response_file: Optional[str] = None
+    surface_polarization: str = "lambertian"
+    surface_index_real: float = 1.5
+    surface_index_imag: float = 0.0
+
 
     # --- spectral ---------------------------------------------------------
     wavenumber_min_cm1: float = 1800.0
     wavenumber_max_cm1: float = 4300.0
     resolution_cm1: float = 1.0
-    #: Line-by-line accuracy controls. The defaults are tuned for full-band runs
-    #: at ~1 cm^-1. For high-resolution work over a narrow window, lower
-    #: ``line_strength_cutoff`` (1e-7, or 0.0 for every line) -- at 0.001 cm^-1
-    #: the default 1e-4 can shift individual line cores by a large fraction of
-    #: their depth, even though the band average is barely affected.
-    line_strength_cutoff: float = 1.0e-4
+    #: Line-by-line accuracy controls. ``line_optical_depth_cutoff`` drops a
+    #: line from a layer when its peak optical depth there is below the value
+    #: -- a criterion tied to the actual gas amount (see
+    #: :func:`mwir_atmos.optics.lbl.absorption_cross_section`).
+    #: ``line_strength_cutoff`` is the legacy rule relative to each species'
+    #: strongest line; it is off by default because at its former default
+    #: (1e-4) it discarded every water line in the 3.5-4.1 um window.
+    line_strength_cutoff: float = 0.0
+    line_optical_depth_cutoff: float = 1.0e-5
     line_wing_cutoff_cm1: float = 25.0
+    #: See :class:`SpectralSampling`. ``resolution_cm1`` is the output grid
+    #: spacing in both modes.
+    spectral_sampling: SpectralSampling = SpectralSampling.POINT
+    #: Internal line-resolving step for RESOLVED sampling, cm^-1. None chooses
+    #: it from the narrowest significant line widths along the path.
+    fine_step_cm1: Optional[float] = None
+    instrument_function: InstrumentFunction = InstrumentFunction.BOX
+    #: Instrument FWHM for RESOLVED sampling, cm^-1. None = resolution_cm1.
+    instrument_fwhm_cm1: Optional[float] = None
 
     # --- turbulence (stretch) --------------------------------------------
     turbulence: TurbulenceModel = TurbulenceModel.NONE
@@ -487,3 +548,22 @@ class ScenarioResult:
     sun: Optional[SkyPosition] = None
     moon: Optional[SkyPosition] = None
     turbulence: Optional[TurbulenceResult] = None
+    #: Internal monochromatic step used by RESOLVED sampling, cm^-1 (None for POINT).
+    fine_step_cm1: Optional[float] = None
+
+
+@dataclass
+class RayTrace:
+    """Batched trajectories; segment axis is padded with zero-length segments.
+
+    Distances/positions are km in north/east/up Earth-centered coordinates.
+    Each segment has a homogeneous optical layer, but its direction can curve.
+    """
+    lengths: np.ndarray
+    layer: np.ndarray
+    starts: np.ndarray
+    directions: np.ndarray
+    endpoint: np.ndarray
+    exit_direction: np.ndarray
+    hits_ground: np.ndarray
+    reaches_space: np.ndarray

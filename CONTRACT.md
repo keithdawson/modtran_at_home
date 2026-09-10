@@ -139,16 +139,28 @@ def partition_function(molecule_id: int, local_iso_id: int,
 def absorption_cross_section(linelist: LineList, grid: SpectralGrid,
                              pressure_mbar: float, temperature_k: float,
                              partial_pressure_mbar: float, *,
-                             wing_cutoff_cm1: float = 25.0) -> np.ndarray
+                             wing_cutoff_cm1: float = 25.0,
+                             min_strength_fraction: float = 0.0,
+                             subtract_pedestal: bool = False,
+                             method: str = "direct",          # | "multigrid" | "auto"
+                             strength_reference: float | None = None,
+                             column_cm2: float | None = None,
+                             min_peak_optical_depth: float = 0.0) -> np.ndarray
     """Voigt cross-section, cm^2/molecule, shape (grid.n,)."""
 
 def molecular_optical_depth(layers: Sequence[PathLayer], grid: SpectralGrid, *,
                             species: Sequence[Species] | None = None,
                             linelists: dict[Species, LineList] | None = None,
                             include_continuum: bool = True,
+                            wing_cutoff_cm1: float = 25.0,
+                            min_strength_fraction: float = 0.0,
+                            method: str = "auto",
+                            n_threads: int | None = None,
+                            strength_references: Mapping | None = None,
+                            min_peak_optical_depth: float = 1e-5,
                             ) -> tuple[np.ndarray, dict[Species, np.ndarray]]
     """THE headline function. Returns (tau_total, tau_by_species), each
-    shape (len(layers), grid.n)."""
+    shape (len(layers), grid.n). Results never depend on n_threads."""
 
 # mwir_atmos/optics/continuum.py
 def h2o_continuum_optical_depth(layers, grid) -> np.ndarray   # (n_layers, grid.n)
@@ -230,6 +242,25 @@ Physics requirements for dev-beta:
   scattering is weak and absorption dominates — but return both, correctly
   separated, because the radiance layer needs them apart.
 - Cite the source of every coefficient table in a docstring.
+
+---
+
+### September 2026 additions (backward compatible)
+
+- `SpectralGrid` gained `lattice_origin_cm1: float | None = None` and
+  `lattice_index0: int = 0`: a grid may declare its position on a larger
+  uniform lattice so spectral chunks of one calculation evaluate lines
+  identically. Grids from `make_grid` are their own lattice.
+- `Scenario` gained `spectral_sampling` (`SpectralSampling.POINT` |
+  `RESOLVED`), `fine_step_cm1`, `instrument_function`
+  (`InstrumentFunction`), `instrument_fwhm_cm1` and
+  `line_optical_depth_cutoff`. `line_strength_cutoff` now defaults to 0.0.
+- `ScenarioResult.fine_step_cm1` is set for resolved sampling (else None).
+- `run_scenario(..., n_threads=None)`; `mwir_atmos.resolved` implements the
+  instrument-function sampling. Radiance solvers receive whatever grid they
+  are given; with resolved sampling that may be a fine chunk grid or, for
+  DISORT/Monte Carlo, a pseudo grid whose wavenumbers repeat (one entry per
+  correlated-k interval). Solvers must not assume unique wavenumbers.
 
 ---
 

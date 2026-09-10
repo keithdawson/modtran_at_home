@@ -30,7 +30,14 @@ import yaml
 
 from mwir_atmos import cli
 from mwir_atmos.constants import BANDS_CM1
-from mwir_atmos.types import AerosolModel, ModelAtmosphere, Scenario, SurfaceType
+from mwir_atmos.types import (
+    AerosolModel,
+    InstrumentFunction,
+    ModelAtmosphere,
+    Scenario,
+    SpectralSampling,
+    SurfaceType,
+)
 
 #: Shared fast scenario: 10 cm^-1 window (6 points at 2 cm^-1 resolution),
 #: sea-level nadir path -- real physics, real HITRAN lines, but nowhere near
@@ -465,3 +472,35 @@ def test_format_bytes_and_duration():
     assert cli._format_duration(30) == "30.0 s"
     assert "min" in cli._format_duration(150)
     assert "h" in cli._format_duration(4000)
+
+
+def test_spectral_sampling_and_line_selection_flags_reach_the_scenario():
+    args = cli.build_parser().parse_args([
+        "--spectral-sampling", "resolved", "--fine-step-cm1", "0.01",
+        "--instrument-function", "triangle", "--instrument-fwhm-cm1", "2.0",
+        "--line-optical-depth-cutoff", "1e-6",
+    ])
+    scenario = cli._resolve_scenario(args)
+    assert scenario.spectral_sampling is SpectralSampling.RESOLVED
+    assert scenario.fine_step_cm1 == pytest.approx(0.01)
+    assert scenario.instrument_function is InstrumentFunction.TRIANGLE
+    assert scenario.instrument_fwhm_cm1 == pytest.approx(2.0)
+    assert scenario.line_optical_depth_cutoff == pytest.approx(1.0e-6)
+    # Defaults: point sampling, peak-optical-depth selection, legacy rule off.
+    default = cli._resolve_scenario(cli.build_parser().parse_args([]))
+    assert default.spectral_sampling is SpectralSampling.POINT
+    assert default.line_strength_cutoff == 0.0
+
+
+@pytest.mark.parametrize("value", ["0", "-2", "two"])
+def test_threads_flag_rejects_non_positive_integers(value, capsys):
+    assert _run(["--threads", value, *_FAST_ARGV]) == cli.EXIT_USAGE_ERROR
+    assert "positive integer" in capsys.readouterr().err
+
+
+def test_cost_estimate_counts_the_fine_grid_for_resolved_sampling():
+    point = Scenario(wavenumber_min_cm1=2300.0, wavenumber_max_cm1=2310.0, resolution_cm1=1.0)
+    fine = dataclasses.replace(point, spectral_sampling=SpectralSampling.RESOLVED, fine_step_cm1=0.01)
+    a, b = cli._estimate_run_cost(point), cli._estimate_run_cost(fine)
+    assert a.n_points == b.n_points == 11
+    assert b.est_seconds > a.est_seconds

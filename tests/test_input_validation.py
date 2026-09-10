@@ -16,6 +16,8 @@ from mwir_atmos.spectral import make_grid, convolve_gaussian
     ("surface_emissivity", 1.1), ("ground_rh_pct", -1),
     ("source_temp_k", -100), ("latitude_deg", 91),
     ("wavenumber_min_cm1", -1), ("line_strength_cutoff", 2),
+    ("fine_step_cm1", 0.0), ("instrument_fwhm_cm1", -1.0),
+    ("line_optical_depth_cutoff", -1.0e-6), ("fine_step_cm1", float("nan")),
 ])
 def test_invalid_config_and_python_inputs_fail_before_optics(field, value, monkeypatch):
     monkeypatch.setattr("mwir_atmos.api.compute_layer_optics",

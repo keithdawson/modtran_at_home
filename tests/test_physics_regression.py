@@ -49,6 +49,15 @@ def linelists():
     return ensure_linelists()
 
 
+#: Split-layer additivity and linearity in column hold exactly only when line
+#: selection does not depend on the column. The default peak-optical-depth
+#: criterion does (a thinner layer drops more weak lines), so these invariants
+#: use the column-independent relative rule. Its numbers are unchanged from
+#: before the September 2026 engine rewrite, which reproduces the old engine
+#: to 1e-14.
+_COLUMN_INDEPENDENT = dict(min_strength_fraction=1.0e-4, min_peak_optical_depth=0.0)
+
+
 def _homogeneous_layer(ds_km: float, p_mbar=1013.25, t_k=296.0, h2o_vmr=0.01) -> PathLayer:
     """One uniform slab, so analytic expectations are exact."""
     n_air = LOSCHMIDT_CM3 * (p_mbar / STD_PRESSURE_MBAR) * (STD_TEMP_K / t_k)
@@ -284,24 +293,24 @@ def test_southern_hemisphere_sun_is_north_at_noon():
 def test_optical_depth_is_additive_across_a_split_layer(linelists):
     """Splitting one slab into two halves must reproduce the same total tau."""
     grid = make_grid(2350.0, 2400.0, 25.0)
-    whole, _ = molecular_optical_depth([_homogeneous_layer(2.0)], grid, linelists=linelists)
+    whole, _ = molecular_optical_depth([_homogeneous_layer(2.0)], grid, linelists=linelists, **_COLUMN_INDEPENDENT)
     halves, _ = molecular_optical_depth(
-        [_homogeneous_layer(1.0), _homogeneous_layer(1.0)], grid, linelists=linelists
+        [_homogeneous_layer(1.0), _homogeneous_layer(1.0)], grid, linelists=linelists, **_COLUMN_INDEPENDENT
     )
     np.testing.assert_allclose(whole.sum(axis=0), halves.sum(axis=0), rtol=1e-12)
 
 
 def test_optical_depth_is_linear_in_path_length(linelists):
     grid = make_grid(2350.0, 2400.0, 25.0)
-    one, _ = molecular_optical_depth([_homogeneous_layer(1.0)], grid, linelists=linelists)
-    five, _ = molecular_optical_depth([_homogeneous_layer(5.0)], grid, linelists=linelists)
+    one, _ = molecular_optical_depth([_homogeneous_layer(1.0)], grid, linelists=linelists, **_COLUMN_INDEPENDENT)
+    five, _ = molecular_optical_depth([_homogeneous_layer(5.0)], grid, linelists=linelists, **_COLUMN_INDEPENDENT)
     np.testing.assert_allclose(five[0], 5.0 * one[0], rtol=1e-12)
 
 
 def test_transmittance_is_multiplicative_along_the_path(linelists):
     grid = make_grid(2350.0, 2400.0, 25.0)
     layers = [_homogeneous_layer(1.0), _homogeneous_layer(1.0), _homogeneous_layer(1.0)]
-    tau, _ = molecular_optical_depth(layers, grid, linelists=linelists)
+    tau, _ = molecular_optical_depth(layers, grid, linelists=linelists, **_COLUMN_INDEPENDENT)
     per_layer = np.exp(-tau)
     np.testing.assert_allclose(np.prod(per_layer, axis=0), np.exp(-tau.sum(axis=0)), rtol=1e-12)
 
@@ -309,7 +318,7 @@ def test_transmittance_is_multiplicative_along_the_path(linelists):
 def test_per_species_optical_depths_sum_to_the_total(linelists):
     grid = make_grid(2350.0, 2400.0, 25.0)
     tau, by_species = molecular_optical_depth(
-        [_homogeneous_layer(1.0)], grid, linelists=linelists, include_continuum=False
+        [_homogeneous_layer(1.0)], grid, linelists=linelists, **_COLUMN_INDEPENDENT, include_continuum=False
     )
     np.testing.assert_allclose(tau[0], sum(v[0] for v in by_species.values()), rtol=1e-12)
 
@@ -322,8 +331,8 @@ def _co2_doubling_ratio(vmr: float, linelists) -> float:
     base.column_cm2[Species.CO2] = base.air_column_cm2 * vmr
     doubled.column_cm2[Species.CO2] = doubled.air_column_cm2 * 2.0 * vmr
 
-    _, a = molecular_optical_depth([base], grid, linelists=linelists, include_continuum=False)
-    _, b = molecular_optical_depth([doubled], grid, linelists=linelists, include_continuum=False)
+    _, a = molecular_optical_depth([base], grid, linelists=linelists, **_COLUMN_INDEPENDENT, include_continuum=False)
+    _, b = molecular_optical_depth([doubled], grid, linelists=linelists, **_COLUMN_INDEPENDENT, include_continuum=False)
     return float(np.mean(b[Species.CO2][0] / a[Species.CO2][0]))
 
 
@@ -337,8 +346,8 @@ def test_doubling_co2_leaves_other_species_untouched(linelists):
     base = _homogeneous_layer(1.0)
     doubled = _homogeneous_layer(1.0)
     doubled.column_cm2[Species.CO2] *= 2.0
-    _, a = molecular_optical_depth([base], grid, linelists=linelists, include_continuum=False)
-    _, b = molecular_optical_depth([doubled], grid, linelists=linelists, include_continuum=False)
+    _, a = molecular_optical_depth([base], grid, linelists=linelists, **_COLUMN_INDEPENDENT, include_continuum=False)
+    _, b = molecular_optical_depth([doubled], grid, linelists=linelists, **_COLUMN_INDEPENDENT, include_continuum=False)
     np.testing.assert_allclose(b[Species.H2O][0], a[Species.H2O][0], rtol=1e-12)
     np.testing.assert_allclose(b[Species.CH4][0], a[Species.CH4][0], rtol=1e-12)
 
@@ -369,14 +378,14 @@ def test_zero_column_species_contributes_nothing(linelists):
     layer = _homogeneous_layer(1.0)
     layer.column_cm2[Species.CO2] = 0.0
     _, by_species = molecular_optical_depth(
-        [layer], grid, linelists=linelists, include_continuum=False
+        [layer], grid, linelists=linelists, **_COLUMN_INDEPENDENT, include_continuum=False
     )
     assert np.all(by_species[Species.CO2][0] == 0.0)
 
 
 def test_optical_depth_is_never_negative(linelists):
     grid = make_grid(2350.0, 2400.0, 25.0)
-    tau, by_species = molecular_optical_depth([_homogeneous_layer(2.0)], grid, linelists=linelists)
+    tau, by_species = molecular_optical_depth([_homogeneous_layer(2.0)], grid, linelists=linelists, **_COLUMN_INDEPENDENT)
     assert np.all(tau >= 0.0)
     for values in by_species.values():
         assert np.all(values >= 0.0)
