@@ -93,6 +93,9 @@ _REF_MASS_KG_MOL = 44.0e-3
 _CHUNK_ELEMENTS = 1 << 21
 #: Chunks never shrink below this many fine points (per-chunk overhead).
 _MIN_CHUNK_FINE_POINTS = 4096
+#: Parallel chunks never shrink below this many instrument supports of new
+#: fine points (so the overlap recomputed at chunk edges stays <= ~25%).
+_MIN_CHUNK_OVER_SUPPORT = 8
 
 #: Cumulative-weight edges of the correlated-k intervals used by
 #: :func:`binned_radiance`: finer toward the strongly absorbing tail, where
@@ -208,10 +211,20 @@ def plan_fine_grid(output: SpectralGrid, *, fine_step_cm1: float,
                         origin_cm1=float(output.wavenumber_cm1[0]))
 
 
-def chunks(plan: FineGridPlan, n_output: int, n_layers: int):
-    """Yield ``(first, stop, fine_grid)`` for consecutive output-point chunks."""
+def chunks(plan: FineGridPlan, n_output: int, n_layers: int, min_chunks: int = 1):
+    """Yield ``(first, stop, fine_grid)`` for consecutive output-point chunks.
+
+    ``min_chunks`` asks for at least that many chunks (for parallel workers),
+    as long as each chunk keeps at least ``_MIN_CHUNK_FINE_POINTS`` and
+    ``_MIN_CHUNK_OVER_SUPPORT`` times the instrument support of new fine
+    points, which bounds the overlap recomputed between neighbours.
+    """
     target = max(_MIN_CHUNK_FINE_POINTS, _CHUNK_ELEMENTS // max(n_layers, 1))
     per_chunk = max(1, (target - 2 * plan.support) // plan.ratio)
+    if min_chunks > 1:
+        floor = max(1, max(_MIN_CHUNK_FINE_POINTS, _MIN_CHUNK_OVER_SUPPORT * plan.support)
+                    // plan.ratio)
+        per_chunk = min(per_chunk, max(floor, -(-n_output // min_chunks)))
     for first in range(0, n_output, per_chunk):
         stop = min(first + per_chunk, n_output)
         index0 = first * plan.ratio - plan.support

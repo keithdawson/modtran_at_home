@@ -94,7 +94,7 @@ from ..types import PathLayer, REQUIRED_SPECIES, Species, SpectralGrid
 from .continuum import co2_continuum_optical_depth, h2o_continuum_optical_depth
 
 __all__ = ["absorption_cross_section", "evaluations_per_line", "line_strength_reference",
-           "molecular_optical_depth", "resolve_thread_count"]
+           "molecular_optical_depth", "prepare_linelists", "resolve_thread_count"]
 
 #: HITRAN reference temperature for tabulated line intensities and widths.
 _T_REF_K = 296.0
@@ -177,6 +177,12 @@ class _PreparedLines:
 
 _PREPARED: dict[int, _PreparedLines] = {}
 _PREPARED_LOCK = threading.Lock()
+
+
+def prepare_linelists(linelists: Mapping) -> None:
+    """Build the cached per-list constants now (e.g. before forking workers)."""
+    for linelist in linelists.values():
+        _prepare(linelist)
 
 
 def _isotopologue_mass_g_mol(linelist: LineList) -> np.ndarray:
