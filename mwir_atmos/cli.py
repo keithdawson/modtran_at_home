@@ -603,7 +603,7 @@ def build_parser() -> argparse.ArgumentParser:
         "point: physics evaluated only at the output grid points (fast; a grid coarser than "
         "the ~0.07 cm^-1 absorption lines samples line cores at random). resolved: evaluated "
         "on a line-resolving internal grid and convolved with --instrument-function onto the "
-        "output grid, i.e. what an instrument of that resolution measures (default: point).",
+        "output grid, i.e. what an instrument of that resolution measures (default: resolved).",
     )
     _add_float(
         spectral, "fine_step_cm1",

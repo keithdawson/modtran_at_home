@@ -24,6 +24,7 @@ from mwir_atmos.optics.transmittance import compute_layer_optics
 from mwir_atmos.radiometry.radiance import airmass, lunar_irradiance, solar_irradiance
 from mwir_atmos.radiometry.surface import surface_emissivity
 from mwir_atmos.spectral import band_average, band_integrate, make_grid, planck
+from mwir_atmos.types import SpectralSampling
 from mwir_atmos.types import AerosolModel, ModelAtmosphere, Scenario, SurfaceType
 
 CO2_BAND = (2273.0, 2381.0)      # 4.2-4.4 um, opaque at any useful path length
@@ -40,7 +41,7 @@ def _scenario(**kw) -> Scenario:
         local_datetime=None,
     )
     base.update(kw)
-    return Scenario(**base)
+    return Scenario(**{"spectral_sampling": SpectralSampling.POINT, **base})
 
 
 @pytest.fixture(scope="module")

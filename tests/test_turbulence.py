@@ -25,6 +25,7 @@ import pytest
 
 from mwir_atmos.atmosphere.profiles import get_profile
 from mwir_atmos.geometry.path import build_path
+from mwir_atmos.types import SpectralSampling
 from mwir_atmos.types import ModelAtmosphere, Scenario, TurbulenceModel
 from mwir_atmos.turbulence import cn2
 from mwir_atmos.turbulence.metrics import (
@@ -80,7 +81,7 @@ def test_compute_turbulence_matches_standalone_formulas(profile, vertical_path):
     cn2_arr = cn2.cn2_profile(TurbulenceModel.HV57, height_agl_m)
     expected_r0_cm = fried_parameter_r0_m(cn2_arr, ds_m, MWIR_REFERENCE_WAVELENGTH_UM) * 100.0
 
-    scenario = Scenario(turbulence=TurbulenceModel.HV57, sensor_zenith_deg=0.0)
+    scenario = Scenario(spectral_sampling=SpectralSampling.POINT, turbulence=TurbulenceModel.HV57, sensor_zenith_deg=0.0)
     result = compute_turbulence(scenario=scenario, path=vertical_path, profile=profile)
 
     assert result.reference_wavelength_um == pytest.approx(MWIR_REFERENCE_WAVELENGTH_UM)
@@ -300,7 +301,7 @@ def test_strehl_ratio_bounded_and_decreasing_with_aperture():
 
 
 def test_greenwood_frequency_positive_for_hv57(profile, vertical_path):
-    scenario = Scenario(turbulence=TurbulenceModel.HV57)
+    scenario = Scenario(spectral_sampling=SpectralSampling.POINT, turbulence=TurbulenceModel.HV57)
     result = compute_turbulence(scenario=scenario, path=vertical_path, profile=profile)
     assert result.greenwood_frequency_hz is not None
     assert result.greenwood_frequency_hz > 0.0
@@ -321,12 +322,12 @@ def test_run_scenario_populates_and_guards_turbulence():
 
     common = dict(wavenumber_min_cm1=2300.0, wavenumber_max_cm1=2400.0, resolution_cm1=8.0)
 
-    scenario_on = Scenario(turbulence=TurbulenceModel.HV57, **common)
+    scenario_on = Scenario(spectral_sampling=SpectralSampling.POINT, turbulence=TurbulenceModel.HV57, **common)
     result_on = run_scenario(scenario_on, include_radiance=False, include_turbulence=True)
     assert result_on.turbulence is not None
     assert np.isfinite(result_on.turbulence.fried_parameter_r0_cm)
 
-    scenario_off = Scenario(turbulence=TurbulenceModel.NONE, **common)
+    scenario_off = Scenario(spectral_sampling=SpectralSampling.POINT, turbulence=TurbulenceModel.NONE, **common)
     result_off = run_scenario(scenario_off, include_radiance=False, include_turbulence=True)
     assert result_off.turbulence is None
 
@@ -346,7 +347,7 @@ def test_run_scenario_populates_and_guards_turbulence():
     ],
 )
 def test_every_field_finite_and_physically_signed(profile, vertical_path, model, ground_cn2):
-    scenario = Scenario(turbulence=model, turbulence_cn2_ground=ground_cn2)
+    scenario = Scenario(spectral_sampling=SpectralSampling.POINT, turbulence=model, turbulence_cn2_ground=ground_cn2)
     result = compute_turbulence(scenario=scenario, path=vertical_path, profile=profile)
 
     assert np.isfinite(result.reference_wavelength_um) and result.reference_wavelength_um > 0.0

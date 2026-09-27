@@ -47,7 +47,7 @@ exact additivity use a column-independent rule
 
 ### 2. Point sampling misses line cores
 
-With `spectral_sampling = "point"` (the default) the physics runs only at the
+With `spectral_sampling = "point"` (the default until September 2026) the physics runs only at the
 output grid points. Pressure-broadened lines are ~0.07 cm^-1 wide at the
 surface and a few thousandths of a cm^-1 in the stratosphere, so on a 1 cm^-1
 grid each sample falls at a random place relative to the nearby lines. Every
@@ -64,14 +64,14 @@ for both runs; the sampling effect is separate from it.
 ## Line-resolved sampling
 
 ```yaml
-spectral_sampling: resolved      # default: point
+spectral_sampling: resolved      # default (alternative: point)
 resolution_cm1: 1.0              # output grid spacing, as before
 instrument_function: box         # box | triangle | gaussian
 instrument_fwhm_cm1: null        # null = resolution_cm1
 fine_step_cm1: null              # null = automatic
 ```
 
-CLI: `--spectral-sampling resolved --instrument-function triangle
+CLI: `--spectral-sampling resolved` (default) `--instrument-function triangle
 --instrument-fwhm-cm1 2 --fine-step-cm1 0.005`. GUI: *Spectral sampling* in
 the spectral sidebar section.
 
@@ -210,10 +210,15 @@ Queued until the development machine is free:
    radiance using the single-scattering solver (which supports both), to
    bound the binning error before relying on it for DISORT and Monte Carlo.
 4. **Performance** on an idle machine: thread scaling, full-band resolved
-   cost, and recalibration of the CLI/GUI cost estimate
+   cost (now the default; a ground-to-space 2000-2200 cm^-1 run took 115 s on
+   4 cloud cores at the automatic 0.001 cm^-1 step, so ~25 min for the full
+   default band), and recalibration of the CLI/GUI cost estimate
    (`cli._COST_RATE_ELEMENTS_PER_S`).
 5. **Re-baselining** of tests whose thresholds were set while the window
    water lines were missing: `test_climatological_soundings_polar_vs_tropical`
-   (subarctic 15 km > 0.90) and `test_us_standard_10km_horizontal_transmission_benchmarks`
-   (window bands). Change a threshold only with an independent reference, not
+   (subarctic 15 km > 0.90, now 0.84),
+   `test_lookdown_window_approaches_surface_emission` (window radiance ratio
+   > 0.93, now 0.92) and `test_us_standard_10km_horizontal_transmission_benchmarks`
+   (window bands). These tests pin `spectral_sampling: point`, like the other
+   physics tests written before resolved sampling became the default. Change a threshold only with an independent reference, not
    to match the new output.

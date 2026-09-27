@@ -23,6 +23,7 @@ from mwir_atmos.turbulence.metrics import (
     isoplanatic_angle_rad,
     scintillation_index,
 )
+from mwir_atmos.types import SpectralSampling
 from mwir_atmos.types import (
     AerosolModel,
     AtmosphereProfile,
@@ -93,7 +94,7 @@ def test_isothermal_cavity_radiates_exact_planck_blackbody():
         )
         trans = path_transmittance(optics)
 
-        scenario = Scenario(
+        scenario = Scenario(spectral_sampling=SpectralSampling.POINT, 
             atmosphere=ModelAtmosphere.US_STANDARD,
             surface_type=SurfaceType.BLACKBODY,
             ground_temp_k=t_iso,
@@ -144,7 +145,7 @@ def test_us_standard_10km_horizontal_transmission_benchmarks():
       - 3.6-4.0 um clean MWIR window: high transmission (0.50 - 0.85)
       - 4.6-4.8 um window: moderate transmission (0.35 - 0.70)
     """
-    sc = Scenario(
+    sc = Scenario(spectral_sampling=SpectralSampling.POINT, 
         atmosphere=ModelAtmosphere.US_STANDARD,
         sensor_alt_km=0.01,
         sensor_zenith_deg=90.0,
@@ -228,7 +229,7 @@ def test_climatological_soundings_polar_vs_tropical():
     Warm-humid tropical atmosphere should experience significantly stronger continuum + molecular
     attenuation than cold subarctic winter.
     """
-    sc_sub = Scenario(
+    sc_sub = Scenario(spectral_sampling=SpectralSampling.POINT, 
         atmosphere=ModelAtmosphere.SUBARCTIC_WINTER,
         sensor_alt_km=0.01,
         sensor_zenith_deg=90.0,
@@ -241,7 +242,7 @@ def test_climatological_soundings_polar_vs_tropical():
     res_sub = run_scenario(sc_sub)
     tau_subarctic = float(res_sub.transmittance.total.mean())
 
-    sc_trop = Scenario(
+    sc_trop = Scenario(spectral_sampling=SpectralSampling.POINT, 
         atmosphere=ModelAtmosphere.TROPICAL,
         sensor_alt_km=0.01,
         sensor_zenith_deg=90.0,

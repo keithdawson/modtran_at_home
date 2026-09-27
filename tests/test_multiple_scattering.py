@@ -6,6 +6,7 @@ import pytest
 
 from mwir_atmos._vendor.pythonic_disort import pydisort, subroutines
 from mwir_atmos.radiometry.multiple_scattering import solve_column, phase_moments, horizontal_source
+from mwir_atmos.types import SpectralSampling
 from mwir_atmos.types import Scenario, RadianceSolver, AerosolModel, SurfaceType
 from mwir_atmos.api import build_profile, run_scenario
 from mwir_atmos.geometry.plane_parallel import geometry
@@ -26,7 +27,7 @@ def toy_radiance(*, sensor=1., angle=180., distance=1., target=None, solar=True)
     optical = LayerOptics(np.full((1,2),.5),np.zeros((1,2)),np.zeros((1,2)),np.zeros((1,2)),grid,
                           aerosol_asymmetry=np.zeros((1,2)))
     sightopt = replace(optical,tau_molecular=optical.tau_molecular*distance)
-    scenario = Scenario(radiance_solver=RadianceSolver.DISORT, sensor_alt_km=sensor,
+    scenario = Scenario(spectral_sampling=SpectralSampling.POINT, radiance_solver=RadianceSolver.DISORT, sensor_alt_km=sensor,
                         sensor_zenith_deg=angle,sensor_azimuth_deg=90.,source_range_km=distance,
                         source_temp_k=target,surface_emissivity=.7, surface_skin_temp_k=300.,include_solar=solar,include_lunar=False)
     profile = AtmosphereProfile(np.array([0.,1.]),np.array([1013.,900.]),np.array([300.,300.]),{},ModelAtmosphere.US_STANDARD)
@@ -124,7 +125,7 @@ def test_formal_sightline_matches_disort_at_quadrature_angle():
 
 @pytest.mark.parametrize('angle,distance', [(0.,None),(60.,2.),(90.,3.),(150.,.05)])
 def test_plane_parallel_geometry_shares_column_and_preserves_columns(angle, distance):
-    s=Scenario(radiance_solver=RadianceSolver.DISORT, sensor_alt_km=.1,
+    s=Scenario(spectral_sampling=SpectralSampling.POINT, radiance_solver=RadianceSolver.DISORT, sensor_alt_km=.1,
                sensor_zenith_deg=angle, source_range_km=distance)
     column, path, indices, factors=geometry(s,build_profile(s))
     assert column.layers[0].z_bottom_km == pytest.approx(0.)
@@ -136,13 +137,13 @@ def test_plane_parallel_geometry_shares_column_and_preserves_columns(angle, dist
 
 
 def test_horizontal_requires_finite_range():
-    s=Scenario(radiance_solver=RadianceSolver.DISORT, sensor_zenith_deg=90.)
+    s=Scenario(spectral_sampling=SpectralSampling.POINT, radiance_solver=RadianceSolver.DISORT, sensor_zenith_deg=90.)
     with pytest.raises(ValueError, match='positive source_range'):
         geometry(s,build_profile(s))
 
 
 def test_disort_setup_and_real_scenario(tmp_path):
-    s=Scenario(radiance_solver=RadianceSolver.DISORT, aerosol=AerosolModel.LOWTRAN_MARITIME,
+    s=Scenario(spectral_sampling=SpectralSampling.POINT, radiance_solver=RadianceSolver.DISORT, aerosol=AerosolModel.LOWTRAN_MARITIME,
                sensor_alt_km=.1, sensor_zenith_deg=90., source_range_km=1.,
                wavenumber_min_cm1=2500., wavenumber_max_cm1=2502., resolution_cm1=1.,
                include_solar=False, include_lunar=False)

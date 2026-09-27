@@ -84,12 +84,12 @@ def test_scattered_thermal_and_ground_sources_match_disort_limit():
 
 
 def test_real_scenario_setup_finite_target_and_exports(tmp_path):
-    from mwir_atmos.types import Scenario,RadianceSolver,AerosolModel
+    from mwir_atmos.types import Scenario,RadianceSolver,AerosolModel,SpectralSampling
     from mwir_atmos.api import run_scenario
     from mwir_atmos.setups import save_setup,load_setup
     from mwir_atmos.cli import _write_json,_write_csv,_write_npz,RADIANCE_COMPONENTS
     from mwir_atmos.spectral import planck
-    sc=Scenario(radiance_solver=RadianceSolver.SPHERICAL_MC,spherical_photons=128,
+    sc=Scenario(spectral_sampling=SpectralSampling.POINT, radiance_solver=RadianceSolver.SPHERICAL_MC,spherical_photons=128,
                 sensor_alt_km=.1,sensor_zenith_deg=90.,source_range_km=1.,source_temp_k=400.,
                 include_solar=False,include_lunar=False,wavenumber_min_cm1=2500.,wavenumber_max_cm1=2504.,resolution_cm1=4.)
     setup=tmp_path/'sphere.yaml'; save_setup(sc,setup)

@@ -270,21 +270,22 @@ line in the 3.5–4.1 µm window and overstated window transmittance by up to
 
 ### Point or line-resolved sampling
 
-`spectral_sampling: point` (the default) evaluates the physics only at the
-output grid points. Those are exact monochromatic values, but absorption
-lines are ~0.07 cm⁻¹ wide, so a 1 cm⁻¹ grid samples line cores at random
-(errors of up to 3.8 percentage points per bin were measured on a 2 km
-surface path). `spectral_sampling: resolved` evaluates the physics on an
+`spectral_sampling: resolved` (the default) evaluates the physics on an
 internal grid that resolves the lines and averages it through an instrument
 function (`box`, `triangle` or `gaussian`, FWHM `instrument_fwhm_cm1`,
 default = `resolution_cm1`). That is what an instrument of that resolution
-measures. The output grid is the same in both modes. In resolved mode the
+measures. `spectral_sampling: point` evaluates the physics only at the
+output grid points. Those are exact monochromatic values, but absorption
+lines are ~0.07 cm⁻¹ wide, so a 1 cm⁻¹ grid samples line cores at random
+(errors of up to 3.8 percentage points per bin were measured on a 2 km
+surface path); use it for quick looks or when you want monochromatic
+values. The output grid is the same in both modes. In resolved mode the
 cost follows the bandwidth and the internal step (`fine_step_cm1`, chosen
 automatically from the line widths along the path), not the output
 resolution:
 
 ```bash
-mwir --spectral-sampling resolved --resolution-cm1 1 --instrument-function triangle \
+mwir --resolution-cm1 1 --instrument-function triangle \
      --wavenumber-min-cm1 2000 --wavenumber-max-cm1 2200 --format csv -o run.csv
 ```
 
@@ -367,10 +368,9 @@ physics modules' own docstrings:
   reference density and wavelength-dependent King factors. It agrees within
   0.22% with Tomasi et al.'s moist-air cross-sections over 0.5-4 micrometers;
   humidity and composition do not update refractivity or the King factor.
-- **Point sampling is the default.** At output spacings coarser than the
-  line widths it misrepresents band averages; use
-  `spectral_sampling: resolved` for quantities an instrument would measure.
-  The resolved mode's automatic fine step, and the correlated-k binning it
+- **Line-resolved sampling is the default** and costs far more than point
+  sampling over a wide band (the cost follows bandwidth / `fine_step_cm1`).
+  Pass `--spectral-sampling point` for fast monochromatic samples. The resolved mode's automatic fine step, and the correlated-k binning it
   uses for DISORT/Monte Carlo radiance, are still being validated (see
   [docs/spectral_sampling.md](docs/spectral_sampling.md#pending-validation)).
 - **The MT_CKD continuum** follows AER 4.3 native-grid scaling, radiation

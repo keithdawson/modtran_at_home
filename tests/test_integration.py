@@ -19,6 +19,7 @@ import pytest
 
 from mwir_atmos.api import run_scenario
 from mwir_atmos.spectral import band_average
+from mwir_atmos.types import SpectralSampling
 from mwir_atmos.types import (
     AerosolModel,
     ModelAtmosphere,
@@ -33,7 +34,7 @@ NARROW = dict(wavenumber_min_cm1=2350.0, wavenumber_max_cm1=2450.0, resolution_c
 def _sc(**kw) -> Scenario:
     base = dict(**NARROW, local_datetime=None)
     base.update(kw)
-    return Scenario(**base)
+    return Scenario(**{"spectral_sampling": SpectralSampling.POINT, **base})
 
 
 def _assert_physical(result) -> None:

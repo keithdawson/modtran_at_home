@@ -252,7 +252,7 @@ Physics requirements for dev-beta:
   uniform lattice so spectral chunks of one calculation evaluate lines
   identically. Grids from `make_grid` are their own lattice.
 - `Scenario` gained `spectral_sampling` (`SpectralSampling.POINT` |
-  `RESOLVED`), `fine_step_cm1`, `instrument_function`
+  `RESOLVED`, the default), `fine_step_cm1`, `instrument_function`
   (`InstrumentFunction`), `instrument_fwhm_cm1` and
   `line_optical_depth_cutoff`. `line_strength_cutoff` now defaults to 0.0.
 - `ScenarioResult.fine_step_cm1` is set for resolved sampling (else None).

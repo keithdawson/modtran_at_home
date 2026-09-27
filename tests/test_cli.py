@@ -439,7 +439,7 @@ def test_accuracy_flags_are_settable_and_documented_in_help(capsys):
 
 
 def test_estimate_run_cost_scales_with_resolution():
-    coarse = Scenario(wavenumber_min_cm1=2300.0, wavenumber_max_cm1=2310.0, resolution_cm1=2.0)
+    coarse = Scenario(spectral_sampling=SpectralSampling.POINT, wavenumber_min_cm1=2300.0, wavenumber_max_cm1=2310.0, resolution_cm1=2.0)
     fine = dataclasses.replace(coarse, resolution_cm1=0.5)
 
     coarse_cost = cli._estimate_run_cost(coarse)
@@ -456,7 +456,7 @@ def test_estimate_run_cost_reflects_wing_cutoff_at_fine_resolution():
     match a narrow window should visibly lower the estimate (this is the
     mechanism behind the "narrow + fine stays fast" epilog example)."""
     base = Scenario(
-        wavenumber_min_cm1=2171.5, wavenumber_max_cm1=2174.0, resolution_cm1=0.01,
+        spectral_sampling=SpectralSampling.POINT, wavenumber_min_cm1=2171.5, wavenumber_max_cm1=2174.0, resolution_cm1=0.01,
         line_wing_cutoff_cm1=25.0,
     )
     narrow_wing = dataclasses.replace(base, line_wing_cutoff_cm1=3.0)
@@ -486,9 +486,9 @@ def test_spectral_sampling_and_line_selection_flags_reach_the_scenario():
     assert scenario.instrument_function is InstrumentFunction.TRIANGLE
     assert scenario.instrument_fwhm_cm1 == pytest.approx(2.0)
     assert scenario.line_optical_depth_cutoff == pytest.approx(1.0e-6)
-    # Defaults: point sampling, peak-optical-depth selection, legacy rule off.
+    # Defaults: resolved sampling, peak-optical-depth selection, legacy rule off.
     default = cli._resolve_scenario(cli.build_parser().parse_args([]))
-    assert default.spectral_sampling is SpectralSampling.POINT
+    assert default.spectral_sampling is SpectralSampling.RESOLVED
     assert default.line_strength_cutoff == 0.0
 
 
@@ -499,7 +499,7 @@ def test_threads_flag_rejects_non_positive_integers(value, capsys):
 
 
 def test_cost_estimate_counts_the_fine_grid_for_resolved_sampling():
-    point = Scenario(wavenumber_min_cm1=2300.0, wavenumber_max_cm1=2310.0, resolution_cm1=1.0)
+    point = Scenario(spectral_sampling=SpectralSampling.POINT, wavenumber_min_cm1=2300.0, wavenumber_max_cm1=2310.0, resolution_cm1=1.0)
     fine = dataclasses.replace(point, spectral_sampling=SpectralSampling.RESOLVED, fine_step_cm1=0.01)
     a, b = cli._estimate_run_cost(point), cli._estimate_run_cost(fine)
     assert a.n_points == b.n_points == 11

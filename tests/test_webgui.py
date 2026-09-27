@@ -11,6 +11,15 @@ from streamlit.testing.v1 import AppTest
 APP = Path(__file__).resolve().parents[1] / "mwir_atmos/webgui/app.py"
 
 
+def _point_app():
+    """Load the app in point-sampling mode, so the default full-band run stays
+    under the cost gate and renders results immediately."""
+    from mwir_atmos.types import SpectralSampling
+    app = AppTest.from_file(str(APP), default_timeout=120)
+    app.session_state["spectral_sampling"] = SpectralSampling.POINT
+    return app.run()
+
+
 def test_gui_axis_units_controls_and_validation(monkeypatch):
     import streamlit as st
     from mwir_atmos import api
@@ -21,7 +30,7 @@ def test_gui_axis_units_controls_and_validation(monkeypatch):
         return original(*args, **kwargs)
     monkeypatch.setattr(api, "run_scenario", counted)
     st.cache_data.clear()
-    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    app = _point_app()
     assert not app.exception
     assert not app.error
     advanced = next(e for e in app.sidebar.expander if e.label == "Advanced atmosphere overrides")
@@ -57,7 +66,7 @@ def test_gui_sweep_runs_only_on_submit_and_keeps_results(monkeypatch):
         return original(*args, **kwargs)
     monkeypatch.setattr(api, 'run_scenario', counted)
     st.cache_data.clear()
-    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    app = _point_app()
     assert not app.exception
     assert any(e.label == 'Download setup (YAML)' for e in app.get('download_button'))
     previous = len(calls)
@@ -81,7 +90,7 @@ def test_gui_sweep_runs_only_on_submit_and_keeps_results(monkeypatch):
 
 def test_gui_lowtran_selection_and_visibility_bounds():
     from mwir_atmos.types import AerosolModel
-    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    app = _point_app()
     app.selectbox(key='aerosol').set_value(AerosolModel.LOWTRAN_MARITIME).run()
     assert not app.exception and not app.error
     assert any('LOWTRAN 7 optical tables' in c.value for c in app.sidebar.caption)

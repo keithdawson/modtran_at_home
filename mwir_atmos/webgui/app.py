@@ -337,7 +337,7 @@ def _spectral_and_accuracy_controls() -> dict:
              "see the cost estimate below before running a wide window at fine resolution.",
     )
 
-    sampling = _enum_select("Spectral sampling", _SAMPLING_LABELS, SpectralSampling.POINT,
+    sampling = _enum_select("Spectral sampling", _SAMPLING_LABELS, SpectralSampling.RESOLVED,
                                key="spectral_sampling")
     resolved_fields: dict = {}
     if sampling == SpectralSampling.RESOLVED:

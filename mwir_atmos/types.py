@@ -514,7 +514,7 @@ class Scenario:
     line_wing_cutoff_cm1: float = 25.0
     #: See :class:`SpectralSampling`. ``resolution_cm1`` is the output grid
     #: spacing in both modes.
-    spectral_sampling: SpectralSampling = SpectralSampling.POINT
+    spectral_sampling: SpectralSampling = SpectralSampling.RESOLVED
     #: Internal line-resolving step for RESOLVED sampling, cm^-1. None chooses
     #: it from the narrowest significant line widths along the path.
     fine_step_cm1: Optional[float] = None

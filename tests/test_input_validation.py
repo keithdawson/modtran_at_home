@@ -5,7 +5,7 @@ import pytest
 
 from mwir_atmos.api import run_scenario
 from mwir_atmos.cli import scenario_from_dict
-from mwir_atmos.types import Scenario
+from mwir_atmos.types import Scenario, SpectralSampling
 from mwir_atmos.spectral import make_grid, convolve_gaussian
 
 
@@ -76,6 +76,7 @@ def test_explicit_download_populates_cache(tmp_path, monkeypatch):
 def test_cost_estimate_does_not_allocate_an_enormous_grid(monkeypatch):
     from mwir_atmos import cli
     monkeypatch.setattr(cli, "make_grid", lambda *a, **k: pytest.fail("grid allocation in estimate"))
-    cost = cli._estimate_run_cost(Scenario(resolution_cm1=1e-8))
+    cost = cli._estimate_run_cost(Scenario(resolution_cm1=1e-8,
+                                             spectral_sampling=SpectralSampling.POINT))
     assert cost.n_points == 250_000_000_001
     assert cost.est_bytes > 1e12
