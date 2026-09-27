@@ -197,7 +197,7 @@ indicative only):
 
 ## Pending validation
 
-Queued until the development machine is free:
+Scripts and a runbook for every item: [validation/README.md](validation/README.md).
 
 1. **Line-selection threshold.** Sweep `line_optical_depth_cutoff` (1e-3 to
    1e-6) against keeping every line, over five geometries (humid horizontal,

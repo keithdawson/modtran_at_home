@@ -134,7 +134,11 @@ Every field of `mwir_atmos.types.Scenario` is settable as a flag, grouped in
 **accuracy**, **turbulence** (stretch goal, currently a no-op — see
 Limitations), **output**, and **performance** (`--threads N`; the
 `MWIR_THREADS` environment variable does the same for the API and GUI).
-Thread count never changes results.
+Large line-resolved runs are split into chunks evaluated by that many worker
+processes (`MWIR_PARALLEL=threads` keeps everything in one process); where
+workers are spawned (Windows), scripts calling `run_scenario` need an
+`if __name__ == "__main__":` guard. The worker count never changes results
+beyond rounding.
 
 - **`--config scenario.yaml`** loads a `Scenario`; any other flag on the
   command line overrides that field. **`--save-config out.yaml`** writes the

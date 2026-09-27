@@ -266,3 +266,23 @@ def test_resolved_disort_uses_binned_columns():
     assert np.all(np.isfinite(r.radiance.total)) and np.all(r.radiance.total > 0)
     parts = [getattr(r.radiance, k) for k in RADIANCE_COMPONENTS if k != "total"]
     np.testing.assert_allclose(r.radiance.total, sum(parts), rtol=1e-10)
+
+
+def test_worker_processes_reproduce_the_serial_result(monkeypatch):
+    """Chunks evaluated in worker processes match the serial run (to rounding:
+    parallel runs use smaller chunks, which changes summation order)."""
+    from mwir_atmos import api
+    scenario = dataclasses.replace(_RESOLVED, wavenumber_max_cm1=2150.0)
+    monkeypatch.setenv("MWIR_PARALLEL", "threads")
+    serial = run_scenario(scenario, n_threads=2)
+    monkeypatch.setenv("MWIR_PARALLEL", "processes")
+    monkeypatch.setattr(api, "_PROCESS_MIN_ELEMENTS", 0)
+    monkeypatch.setattr(resolved, "_MIN_CHUNK_FINE_POINTS", 1)
+    calls = []
+    original = api._run_chunks_in_processes
+    monkeypatch.setattr(api, "_run_chunks_in_processes",
+                        lambda *a: calls.append(len(a[1])) or original(*a))
+    parallel = run_scenario(scenario, n_threads=2)
+    assert calls and calls[0] > 1
+    np.testing.assert_allclose(parallel.transmittance.total, serial.transmittance.total, rtol=1e-13)
+    np.testing.assert_allclose(parallel.radiance.total, serial.radiance.total, rtol=1e-13)

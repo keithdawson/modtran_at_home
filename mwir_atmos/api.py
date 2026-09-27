@@ -273,7 +273,7 @@ def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
 
 #: Resolved runs smaller than this many (fine point x layer) elements stay in
 #: one process: worker start-up (~1 s) would cost more than it saves.
-_PROCESS_MIN_ELEMENTS = 1 << 24
+_PROCESS_MIN_ELEMENTS = 1 << 21
 #: Parallel resolved runs are split into at least this many chunks per
 #: worker, so uneven chunk costs (line density varies across the band) balance.
 _CHUNKS_PER_WORKER = 3
@@ -324,10 +324,11 @@ def _run_chunks_in_processes(spectral_pass: "_SpectralPass", jobs: list, workers
     """Evaluate chunks in worker processes; None if processes are unavailable.
 
     Every worker evaluates whole chunks single-threaded, so the whole
-    pipeline (not only the line-by-line step) runs in parallel and results
-    are identical to a serial run. Linux uses ``fork`` when this process has
-    no other threads (workers inherit the loaded line lists); otherwise
-    ``spawn``, which re-imports the calling script, so scripts need the usual
+    pipeline (not only the line-by-line step) runs in parallel; results match
+    a serial run to rounding (chunk sizes change summation order). Linux uses
+    ``fork`` when this process has no other threads (workers inherit the
+    loaded line lists); otherwise ``spawn``, which re-imports the calling
+    script, so scripts need the usual
     ``if __name__ == "__main__":`` guard (set ``MWIR_PARALLEL=threads`` to
     avoid processes entirely).
     """
