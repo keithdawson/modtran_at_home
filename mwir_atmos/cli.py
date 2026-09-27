@@ -626,6 +626,34 @@ def build_parser() -> argparse.ArgumentParser:
     accuracy.add_argument("--spherical-max-events", type=int, default=None, help="Safety limit: reaching this raises an error, never silently truncates.")
     accuracy.add_argument("--disort-streams", type=int, choices=[8,16,32,64], default=None,
                          help="Discrete-ordinate streams; increase and compare for angular convergence (default: 32).")
+    scat = parser.add_argument_group("refraction and polarization (spherical_mc only)")
+    scat.add_argument(
+        "--refraction", dest="refraction", action=argparse.BooleanOptionalAction, default=None,
+        help="Trace refracted (curved) rays through the spherical shells (default: off).",
+    )
+    _add_float(scat, "refraction_reference_um",
+               "Wavelength at which air refractivity is evaluated for ray bending, um (default: 4.0).")
+    scat.add_argument("--refractive-index-file", dest="refractive_index_file", default=None, metavar="PATH",
+                      help="Refractivity table overriding the built-in Mathar data (requires --refraction).")
+    scat.add_argument(
+        "--polarization", dest="polarization", action=argparse.BooleanOptionalAction, default=None,
+        help="Vector (Stokes) Monte Carlo radiance (default: off).",
+    )
+    scat.add_argument("--aerosol-polarization", dest="aerosol_polarization", default=None,
+                      choices=["hg_depolarizing", "mie_sphere"],
+                      help="Aerosol scattering matrix model (default: hg_depolarizing).")
+    _add_float(scat, "mie_radius_um", "Aerosol sphere radius for mie_sphere, um (default: 0.1).")
+    _add_float(scat, "mie_index_real", "Aerosol refractive index, real part (default: 1.5).")
+    _add_float(scat, "mie_index_imag", "Aerosol refractive index, imaginary part (default: 0.0).")
+    scat.add_argument("--surface-polarization", dest="surface_polarization", default=None,
+                      choices=["lambertian", "fresnel"],
+                      help="Surface reflection model (default: lambertian).")
+    _add_float(scat, "surface_index_real", "Fresnel surface refractive index, real part (default: 1.5).")
+    _add_float(scat, "surface_index_imag", "Fresnel surface refractive index, imaginary part (default: 0.0).")
+    scat.add_argument("--sensor-response-file", dest="sensor_response_file", default=None, metavar="PATH",
+                      help="Sensor polarization analyzer response (requires --polarization; "
+                           "not supported with resolved sampling).")
+
     _add_float(
         accuracy, "line_strength_cutoff",
         "Drop lines weaker than this fraction of the strongest line in each per-layer, "
