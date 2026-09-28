@@ -12,8 +12,9 @@ APP = Path(__file__).resolve().parents[1] / "mwir_atmos/webgui/app.py"
 
 
 def _point_app():
-    """Load the app in point-sampling mode, so the default full-band run stays
-    under the cost gate and renders results immediately."""
+    """Load the app in point-sampling mode: the first render runs the default
+    full band, which is fast with point sampling (a resolved full-band run
+    takes minutes on a small test machine)."""
     from mwir_atmos.types import SpectralSampling
     app = AppTest.from_file(str(APP), default_timeout=120)
     app.session_state["spectral_sampling"] = SpectralSampling.POINT
@@ -102,7 +103,7 @@ def test_gui_lowtran_selection_and_visibility_bounds():
 
 def test_gui_disort_solver_controls_and_result_label():
     from mwir_atmos.types import RadianceSolver
-    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    app = _point_app()
     app.number_input(key='wn_min').set_value(2500.)
     app.number_input(key='wn_max').set_value(2504.)
     app.selectbox(key='radiance_solver').set_value(RadianceSolver.DISORT).run()
@@ -114,7 +115,7 @@ def test_gui_disort_solver_controls_and_result_label():
 
 def test_gui_spherical_solver_and_sampling_uncertainty():
     from mwir_atmos.types import RadianceSolver
-    app = AppTest.from_file(str(APP), default_timeout=120).run()
+    app = _point_app()
     app.number_input(key='wn_min').set_value(2500.)
     app.number_input(key='wn_max').set_value(2504.)
     app.selectbox(key='radiance_solver').set_value(RadianceSolver.SPHERICAL_MC).run()
@@ -125,7 +126,7 @@ def test_gui_spherical_solver_and_sampling_uncertainty():
 
 def test_gui_line_resolved_sampling_controls_and_summary():
     from mwir_atmos.types import InstrumentFunction, SpectralSampling
-    app = AppTest.from_file(str(APP), default_timeout=180).run()
+    app = _point_app()
     app.number_input(key='wn_min').set_value(2500.)
     app.number_input(key='wn_max').set_value(2504.)
     app.selectbox(key='spectral_sampling').set_value(SpectralSampling.RESOLVED).run()

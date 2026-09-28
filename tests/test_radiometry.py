@@ -167,8 +167,11 @@ def test_lookdown_window_approaches_surface_emission():
     )
     observed = band_average(r.grid, r.radiance.total, WINDOW)
     expected = 0.98 * band_average(r.grid, planck(r.grid.wavenumber_cm1, 300.0), WINDOW)
-    # Slightly below eps*B because of path attenuation, plus a little path emission.
-    assert 0.93 < observed / expected < 1.02
+    # Below eps*B because of path attenuation, plus a little path emission. The
+    # independent HAPI reference for this path gives 0.88-0.99 over 10 cm^-1
+    # windows, 0.92 on average (tests/reference_data/hapi_window_reference.json);
+    # the earlier 0.93 bound dated from when the window water lines were dropped.
+    assert 0.88 < observed / expected < 1.02
     assert band_average(r.grid, r.radiance.surface_emitted, WINDOW) / observed > 0.9
 
 

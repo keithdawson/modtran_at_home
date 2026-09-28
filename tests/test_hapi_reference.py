@@ -26,13 +26,14 @@ if not _PATH.exists():
 REFERENCE = json.loads(_PATH.read_text())
 STEP = REFERENCE["fine_step_cm1"]
 
-#: Absolute window-mean transmittance tolerance. Engine-vs-HAPI line sums agree
-#: to ~1e-3 relative; the rest is the reference's coarser layering (< 1e-3 of
-#: the column) and the default line selection (peak optical depth >= 1e-5).
-T_TOL = 0.004
-#: Relative tolerance on look-down window radiance (the reference's simpler
-#: isothermal-layer source and reflected-sky approximation).
-L_TOL = 0.01
+#: Absolute window-mean transmittance tolerance; measured worst 0.0010.
+#: Engine-vs-HAPI line sums agree to ~1e-3 relative; the rest is the
+#: reference's coarser layering (< 1e-3 of the column) and the default line
+#: selection (peak optical depth >= 3e-6).
+T_TOL = 0.002
+#: Relative tolerance on look-down window radiance; measured worst 0.38% (the
+#: reference uses isothermal layers and approximates the reflected sky).
+L_TOL = 0.006
 
 
 def _run(spec: dict, lo: float, hi: float):

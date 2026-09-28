@@ -50,14 +50,39 @@ What each answers:
 5. **scaling**: per-core throughput at 1, 2, 4 ... N workers, process vs
    thread mode, used to recalibrate the CLI/GUI runtime estimate.
 
+## Round 2 (after the new defaults)
+
+Round 1 set the defaults: cutoff 3e-6, 10% fine-step rule, and the
+single-scatter correction of binned DISORT/Monte Carlo radiance (see
+[results](../spectral_sampling.md#validation-results)). Round 2 checks them.
+Round-1 files already exist, so the same command runs only round 2:
+
+```powershell
+git pull
+python scripts/validation/run_all.py
+git add docs/validation
+git commit -m "Validation results, round 2"
+git push
+```
+
+| Step | Output | What it checks | Rough time, 8 cores |
+|---|---|---|---|
+| `corrk2` | `correlated_k_accuracy_round2.json` | binned vs corrected vs exact DISORT, 5 paths x 4 windows, day/night | 30-40 min |
+| `finestep2` | `fine_step_convergence_round2.json` | automatic step under the 10% rule, plus fixed steps | 10 min |
+| `default` | `scaling_round2.json` | per-core rate at the new step (1-8 workers), and the full default band at 8 workers | 10 min |
+
 ## Work server (2 x 96 cores)
 
 Only the scaling benchmark needs the big machine: the full-band strong-scaling
-run at 16 ... 384 workers.
+run at 16 ... 384 workers (about 15 minutes).
 
 ```bash
 python scripts/validation/scaling_benchmark.py --out docs/validation/scaling_benchmark_server.json
 ```
+
+On the airgapped server, bring the repository over with its data as usual
+(OFFLINE_DEPLOYMENT.md); the benchmark needs nothing beyond the runtime
+dependencies.
 
 The other steps finish in minutes there: `run_all.py --force --jobs 190`.
 

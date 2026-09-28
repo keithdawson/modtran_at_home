@@ -192,6 +192,35 @@ def test_binned_radiance_reproduces_linear_functionals_exactly():
     assert np.all((g >= 0.2 - 1e-12) & (g <= 0.8 + 1e-12))
 
 
+
+def test_reference_correction_replaces_the_binning_error_of_the_reference_solver():
+    """binned(solve) + exact(ref) - binned(ref): with ref = solve the result is
+    exact, and a solver differing from ref by a linear term keeps only that
+    term's (exact) binning -- a nonlinear shared term cancels."""
+    output = _output_grid()
+    plan = resolved.plan_fine_grid(output, fine_step_cm1=0.1, function=TRIANGLE, fwhm_cm1=None)
+    n_fine = (output.n - 1) * plan.ratio + 2 * plan.support + 1
+    column = _random_column_optics(3, n_fine)
+
+    def reference(grid, optics):                     # nonlinear in optical depth
+        t = np.exp(-optics.tau_total.sum(axis=0))
+        return _stub_result(grid, total=t, path_thermal=1 - t, errors=np.zeros(grid.n))
+
+    def solver(grid, optics):                        # reference + a linear term
+        r = reference(grid, optics)
+        r.total = r.total + optics.tau_total.sum(axis=0)
+        return r
+
+    fine = SpectralGrid(wavenumber_cm1=np.arange(n_fine, dtype=float), resolution_cm1=plan.step_cm1)
+    exact = resolved.degrade_radiance(reference(fine, column), plan, output.n, output)
+    out = resolved.binned_radiance(column, plan, output.n, output.wavenumber_cm1, solver, output,
+                                   reference_solve=reference, reference_exact=exact)
+    linear = resolved.degrade(column.tau_total.sum(axis=0), plan, output.n)
+    np.testing.assert_allclose(out.total, exact.total + linear, rtol=1e-12)
+    np.testing.assert_allclose(out.path_thermal, exact.path_thermal, rtol=1e-12)
+    uncorrected = resolved.binned_radiance(column, plan, output.n, output.wavenumber_cm1, solver, output)
+    assert np.abs(uncorrected.total - exact.total - linear).max() > 1e-6
+
 # =========================================================================
 # run_scenario with resolved sampling
 # =========================================================================

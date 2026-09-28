@@ -79,8 +79,11 @@ _GAUSSIAN_SUPPORT_FWHM = 2.0
 _SAMPLES_PER_HWHM = 2.0
 #: Layers are ignored when choosing the fine step if, together with every
 #: layer of narrower lines, they hold less than this fraction of the path's
-#: absorber column (their lines are too few to matter; see automatic_fine_step).
-_NEGLIGIBLE_COLUMN_FRACTION = 0.01
+#: air column (see automatic_fine_step). 0.1 gives vertical paths the same
+#: worst-bin accuracy as horizontal ones (~0.03 pp transmittance, ~0.1%
+#: radiance; docs/validation/fine_step_convergence.json); 0.01 resolved the
+#: stratosphere ~100x more accurately than any window needed, at 4x the cost.
+_NEGLIGIBLE_COLUMN_FRACTION = 0.1
 #: Automatic fine steps are clamped to this range, cm^-1.
 _FINE_STEP_BOUNDS = (5.0e-4, 0.05)
 #: Reference line for automatic sizing: a CO2-like line at 296 K with an
@@ -155,10 +158,10 @@ def automatic_fine_step(layers: Sequence[PathLayer], wavenumber_min_cm1: float) 
     broadening and mass, evaluated at the band's *lowest* wavenumber, where
     Doppler widths are narrowest. Layers are ranked from narrowest to broadest
     lines; the narrowest are skipped while their cumulative share of the
-    path's air column stays below ``_NEGLIGIBLE_COLUMN_FRACTION`` (e.g. the
-    mesosphere on a ground-to-space path). The step is the remaining minimum
-    half-width divided by ``_SAMPLES_PER_HWHM``, clamped to
-    ``_FINE_STEP_BOUNDS``. This is a sizing rule, not an error bound; check
+    path's air column stays below ``_NEGLIGIBLE_COLUMN_FRACTION`` (on a
+    ground-to-space path, everything above ~16 km). The step is the
+    remaining minimum half-width divided by ``_SAMPLES_PER_HWHM``, clamped
+    to ``_FINE_STEP_BOUNDS``. This is a sizing rule, not an error bound; check
     convergence by setting ``fine_step_cm1`` explicitly.
     """
     if not layers:
@@ -303,6 +306,8 @@ def binned_radiance(
     output_wavenumbers: np.ndarray,
     solve: Callable[[SpectralGrid, LayerOptics], RadianceResult],
     grid: SpectralGrid,
+    reference_solve: Optional[Callable[[SpectralGrid, LayerOptics], RadianceResult]] = None,
+    reference_exact: Optional[RadianceResult] = None,
 ) -> RadianceResult:
     """Radiance for per-spectral-point solvers via correlated-k binning.
 
@@ -320,6 +325,18 @@ def binned_radiance(
     Assumptions (the usual correlated-k ones): spectral ordering by column
     optical depth is the same in every layer, and sources and surface
     properties are constant across one instrument function.
+
+    The first assumption fails on non-uniform paths (a nadir view sees
+    stratospheric line cores and tropospheric gaps at different fine points):
+    uncorrected, errors reached 2-4.5% of a 20 cm^-1 window's radiance on
+    nadir and limb paths (docs/validation/correlated_k_accuracy.json). With
+    ``reference_solve`` (a cheap solver, e.g. single scattering) and
+    ``reference_exact`` (its exact fine-grid result, already reduced to the
+    output grid), every radiance array becomes
+    ``binned(solve) + reference_exact - binned(reference_solve)``: the binning
+    error of the reference solver, which shares the solver's thermal
+    emission and direct transmission, is replaced by its exact value, and only
+    the difference between the two solvers (multiple scattering) is binned.
     """
     from scipy import sparse
 
@@ -369,7 +386,21 @@ def binned_radiance(
     # Combination operator: pseudo point -> output point, weight = interval width.
     combine = sparse.csr_matrix((group_weight[used], (np.arange(used.size), used // n_intervals)),
                                 shape=(used.size, n_output))
-    arrays = {name: np.asarray(combine.T @ getattr(result, name)) for name in _RADIANCE_ARRAYS}
+
+    def combined(r: RadianceResult, name: str) -> Optional[np.ndarray]:
+        value = getattr(r, name)
+        return None if value is None else np.asarray(combine.T @ value)
+
+    arrays = {name: combined(result, name) for name in _RADIANCE_ARRAYS}
+    if reference_solve is not None:
+        reference_binned = reference_solve(pseudo_grid, pseudo_optics)
+        for name in _RADIANCE_ARRAYS:
+            exact, approx = getattr(reference_exact, name), combined(reference_binned, name)
+            if exact is None and approx is None:
+                continue
+            base = arrays[name] if arrays[name] is not None else np.zeros(n_output)
+            arrays[name] = (base + (0.0 if exact is None else exact)
+                            - (0.0 if approx is None else approx))
     out = RadianceResult(grid=grid, **arrays)
     squared = combine.multiply(combine)
     out.sampling_standard_error = {

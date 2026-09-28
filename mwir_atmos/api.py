@@ -277,6 +277,10 @@ _PROCESS_MIN_ELEMENTS = 1 << 21
 #: Parallel resolved runs are split into at least this many chunks per
 #: worker, so uneven chunk costs (line density varies across the band) balance.
 _CHUNKS_PER_WORKER = 3
+#: Correct correlated-k binned DISORT / Monte Carlo radiance with the exact
+#: fine-grid single-scatter result (resolved.binned_radiance). Off only for
+#: validation of the uncorrected binning.
+_CK_SINGLE_SCATTER_CORRECTION = True
 _SINGLE_THREAD_ENV = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
@@ -301,9 +305,19 @@ def _resolved_chunk(spectral_pass: "_SpectralPass", plan, first: int, stop: int,
     if not spectral_pass.include_radiance:
         return t_out, None
     if binned:
+        reference = {}
+        if _CK_SINGLE_SCATTER_CORRECTION:
+            # Exact single-scatter radiance on the fine grid corrects the binning
+            # error shared by both solvers (see resolved.binned_radiance).
+            reference = dict(
+                reference_solve=lambda g, col: _binned_solve(spectral_pass, g, col,
+                                                             single_scatter=True),
+                reference_exact=resolved.degrade_radiance(
+                    _single_scatter(spectral_pass, fine, optics, transmittance),
+                    plan, n_out, out_grid))
         return t_out, resolved.binned_radiance(
             column_optics, plan, n_out, out_grid.wavenumber_cm1,
-            lambda g, col: _binned_solve(spectral_pass, g, col), out_grid)
+            lambda g, col: _binned_solve(spectral_pass, g, col), out_grid, **reference)
     return t_out, resolved.degrade_radiance(
         spectral_pass.radiance(fine, optics, column_optics, transmittance), plan, n_out, out_grid)
 
@@ -367,11 +381,25 @@ def _run_chunks_in_processes(spectral_pass: "_SpectralPass", jobs: list, workers
                 os.environ[k] = v
 
 
-def _binned_solve(spectral_pass: _SpectralPass, grid: SpectralGrid, column_optics: LayerOptics):
+def _binned_solve(spectral_pass: _SpectralPass, grid: SpectralGrid, column_optics: LayerOptics,
+                  single_scatter: bool = False):
     from .geometry.plane_parallel import sightline_optics
     optics = sightline_optics(column_optics, spectral_pass.path, spectral_pass.indices,
                               spectral_pass.factors)
-    return spectral_pass.radiance(grid, optics, column_optics, path_transmittance(optics))
+    transmittance = path_transmittance(optics)
+    if single_scatter:
+        return _single_scatter(spectral_pass, grid, optics, transmittance)
+    return spectral_pass.radiance(grid, optics, column_optics, transmittance)
+
+
+def _single_scatter(spectral_pass: _SpectralPass, grid: SpectralGrid, optics: LayerOptics,
+                    transmittance) -> RadianceResult:
+    """Single-scattering radiance along the scenario's sightline."""
+    from .radiometry.radiance import compute_radiance
+    return compute_radiance(scenario=spectral_pass.scenario, grid=grid,
+                            profile=spectral_pass.profile, path=spectral_pass.path,
+                            optics=optics, transmittance=transmittance,
+                            sun=spectral_pass.sun, moon=spectral_pass.moon)
 
 
 def _solve_radiance(scenario, grid, profile, path, optics, column, column_optics,

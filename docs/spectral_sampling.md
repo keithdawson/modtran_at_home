@@ -1,9 +1,9 @@
 # Line selection, spectral sampling and the fast line-by-line engine
 
-Status: **implemented, validation in progress** (September 2026). The
-measurements quoted here were made during development; the items under
-[Pending validation](#pending-validation) must be completed before the new
-defaults are treated as settled. See also [PHYSICS_VALIDATION.md](../PHYSICS_VALIDATION.md).
+Status: **implemented and validated** (September 2026). The defaults below
+were chosen from the studies in [Validation results](#validation-results);
+their scripts, raw results and runbook are in [validation/](validation/README.md).
+See also [PHYSICS_VALIDATION.md](../PHYSICS_VALIDATION.md).
 
 ## Two accuracy problems
 
@@ -32,7 +32,8 @@ band the H2O partial transmittance is 0.578 with all lines and 0.869 with the
 old rule, while every other species differs by at most 0.22 pp.
 
 **Now:** a line is evaluated in a layer when its *peak optical depth there*,
-`S(T) * N_layer * V(0)`, reaches `line_optical_depth_cutoff` (default 1e-5).
+`S(T) * N_layer * V(0)`, reaches `line_optical_depth_cutoff` (default 3e-6,
+chosen in [Validation results](#1-line-selection-threshold)).
 `V(0)` is the exact Voigt peak, `sqrt(ln2/pi)/alpha_D * erfcx(y)`. The rule
 follows LBLRTM's absolute line-rejection threshold. It depends on the actual
 amount of gas: a thick humid layer keeps the weak water lines, a thin
@@ -86,7 +87,9 @@ Method (`mwir_atmos/resolved.py`):
    (fine points x layers <= 2^21). For each chunk the full physics -- layer
    optics, transmittance, radiance -- runs on the fine grid, and every
    spectral array is reduced with normalised weights:
-   `out_j = sum_k w_k f(nu_j + k h)`.
+   `out_j = sum_k w_k f(nu_j + k h)`. Large runs split into at least three
+   chunks per worker, evaluated in parallel worker processes (see
+   [Parallelism](#parallelism)).
 4. Chunks share one lattice (`SpectralGrid.lattice_origin_cm1`), so line
    evaluation does not depend on where the spectrum is split
    (`test_resolved_results_do_not_depend_on_chunking`).
@@ -117,14 +120,16 @@ What changes in the output:
 a reference line (CO2-like: 0.07 cm^-1/atm air broadening, n = 0.75, mass
 44) at the band's lowest wavenumber, where Doppler widths are narrowest.
 Layers are ranked from narrowest to broadest lines, and the narrowest are
-skipped while their cumulative share of the path's air column stays below 1%
-(the mesosphere on a ground-to-space path). The step is the remaining
-minimum half-width divided by 2, clamped to 0.0005-0.05 cm^-1. A 2 km
-surface path gets 0.034 cm^-1; paths through the stratosphere get roughly
-0.001-0.002 cm^-1.
+skipped while their cumulative share of the path's air column stays below 10%
+(everything above ~16 km on a ground-to-space path). The step is the
+remaining minimum half-width divided by 2, clamped to 0.0005-0.05 cm^-1.
+Surface horizontal paths get 0.035-0.039 cm^-1; ground-to-space, nadir and
+limb paths get 0.005-0.007 cm^-1.
 
-This is a sizing rule, not an error bound. Check convergence by setting
-`fine_step_cm1` explicitly (see Pending validation).
+This is a sizing rule, not an error bound, but it was checked against a
+0.0005 cm^-1 reference on five paths: every 1 cm^-1 bin is within 0.045 pp
+of transmittance and 0.11% of radiance ([results](#2-fine-step)). Check
+other cases by setting `fine_step_cm1` explicitly.
 
 ### DISORT and spherical Monte Carlo
 
@@ -144,11 +149,22 @@ approximation within each instrument function:
    with Planck, solar and lunar sources evaluated at the output wavenumber.
 5. Output radiance is the interval-weighted sum. Monte Carlo standard errors
    combine in quadrature with the same weights.
+6. **Single-scatter correction.** The single-scattering solver also runs on
+   the same bins, and exactly on the fine grid (it is cheap there). Every
+   radiance array becomes `binned(solver) + exact(single) - binned(single)`,
+   so only the difference between the solvers -- multiple scattering -- is
+   binned; thermal emission and direct transmission are exact.
 
 Assumptions: the spectral ordering by column optical depth holds in every
 layer, and sources and surface properties are constant across one instrument
-function. For any quantity linear in the layer optical depths the
-combination is exact (`test_binned_radiance_reproduces_linear_functionals_exactly`).
+function. The first fails on non-uniform paths: a nadir or limb view sees
+stratospheric line cores and tropospheric gaps at different fine points.
+Without step 6 the binning erred by up to 47% in a 1 cm^-1 bin and 4.5% over a
+20 cm^-1 window there ([results](#3-correlated-k-binning)). For any quantity
+linear in the layer optical depths the combination is exact
+(`test_binned_radiance_reproduces_linear_functionals_exactly`), and the
+correction is exact for the reference solver itself
+(`test_reference_correction_replaces_the_binning_error_of_the_reference_solver`).
 Transmittance is always the exact fine-grid result, never binned.
 
 Not supported with resolved sampling: `sensor_response_file` (rejected by
@@ -179,12 +195,25 @@ at every fine point, which is correct but slow.
   so it is the same in every chunk. It is chosen automatically only when
   expected to be at least 2x cheaper than direct evaluation; coarse grids use
   direct evaluation.
-- **Threads** over `(layer, species)` pairs. NumPy and `wofz` release the
-  GIL; each pair writes only its own output row, so results are independent
-  of the thread count. Control: `n_threads=` (API), `--threads` (CLI), or the
-  `MWIR_THREADS` environment variable; default is every CPU. On the target
-  server (2 x 96 cores), set `MWIR_THREADS` explicitly when sharing the
-  machine.
+- **Threads** over `(layer, species)` pairs for point sampling. Each pair
+  writes only its own output row, so results are independent of the thread
+  count. Threads scale poorly (Python's global interpreter lock): see
+  [Parallelism](#parallelism) for what resolved runs do instead.
+
+### Parallelism
+
+Resolved runs of at least 2^21 fine-point x layer elements are split into at
+least three chunks per worker, and whole chunks -- line-by-line, continuum,
+transmittance, radiance, instrument reduction -- run in worker processes,
+each single-threaded. Linux forks when no other threads are alive (workers
+inherit the loaded line lists); otherwise workers are spawned, with BLAS and
+OpenMP limited to one thread each, and scripts calling `run_scenario` need an
+`if __name__ == "__main__":` guard. Results match a serial run to rounding.
+
+Control: `n_threads=` (API), `--threads` (CLI) or `MWIR_THREADS` sets the
+worker count (default: every logical CPU); `MWIR_PARALLEL=threads` keeps
+everything in one process. On the work server (2 x 96 cores), set
+`MWIR_THREADS` when sharing the machine.
 
 Measured during development (a shared 16-thread workstation; timings are
 indicative only):
@@ -195,30 +224,103 @@ indicative only):
 | Full default scenario LBL (76 layers, 2501 points), single thread, former line selection for a like-for-like comparison | 12.7 s -> ~5.4 s |
 | Multigrid vs direct (4 windows x 6 species x 4 states, h = 0.001-0.01) | <=1.0e-4 relative; 2-10x faster per call |
 
-## Pending validation
+## Validation results
 
-Scripts and a runbook for every item: [validation/README.md](validation/README.md).
+Raw results: `docs/validation/*.json`, logs in `docs/validation/logs/`; scripts
+and runbook in [validation/README.md](validation/README.md). Studies ran on an
+8-core desktop (September 2026) unless stated.
 
-1. **Line-selection threshold.** Sweep `line_optical_depth_cutoff` (1e-3 to
-   1e-6) against keeping every line, over five geometries (humid horizontal,
-   ground-to-space, nadir, limb, dry arctic). Choose the default that keeps
-   window errors below ~0.1 pp. The current default of 1e-5 is provisional.
-2. **Fine-step convergence.** Compare resolved sampling at automatic and
-   fixed steps (0.05-0.002) against a 0.001 cm^-1 reference over four windows
-   and five geometries; confirm or adjust the automatic rule.
-3. **Correlated-k accuracy.** Compare binned radiance with exact fine-grid
-   radiance using the single-scattering solver (which supports both), to
-   bound the binning error before relying on it for DISORT and Monte Carlo.
-4. **Performance** on an idle machine: thread scaling, full-band resolved
-   cost (now the default; a ground-to-space 2000-2200 cm^-1 run took 115 s on
-   4 cloud cores at the automatic 0.001 cm^-1 step, so ~25 min for the full
-   default band), and recalibration of the CLI/GUI cost estimate
-   (`cli._COST_RATE_ELEMENTS_PER_S`).
-5. **Re-baselining** of tests whose thresholds were set while the window
-   water lines were missing: `test_climatological_soundings_polar_vs_tropical`
-   (subarctic 15 km > 0.90, now 0.84),
-   `test_lookdown_window_approaches_surface_emission` (window radiance ratio
-   > 0.93, now 0.92) and `test_us_standard_10km_horizontal_transmission_benchmarks`
-   (window bands). These tests pin `spectral_sampling: point`, like the other
-   physics tests written before resolved sampling became the default. Change a threshold only with an independent reference, not
-   to match the new output.
+### 1. Line-selection threshold
+
+Resolved window transmittance (1 cm^-1 box, 0.01 cm^-1 fine step) at each
+`line_optical_depth_cutoff`, against 1e-8 (which agrees with keeping every
+line to 0.0005 pp). Five paths: tropical and subarctic-winter 10 km
+horizontal, mid-latitude summer ground-to-space, 20 km nadir, US-standard
+15 km limb; three windows (4.5-5.0, 3.5-4.1, 2.9-3.5 um). Worst case over all
+paths and windows:
+
+| Cutoff | Band-mean error | Worst 1 cm^-1 bin | Line cost vs 1e-8 |
+|---:|---:|---:|---:|
+| 1e-4 | 0.24 pp | 1.10 pp | 0.09x |
+| 3e-5 | 0.11 pp | 0.42 pp | 0.14x |
+| 1e-5 | 0.048 pp | 0.19 pp | 0.20x |
+| **3e-6** | **0.021 pp** | **0.078 pp** | **0.30x** |
+| 1e-6 | 0.009 pp | 0.030 pp | 0.40x |
+| 1e-7 | 0.0015 pp | 0.0045 pp | 0.67x |
+
+Dropped lines always make the window too transparent. **Default: 3e-6**, the
+largest cutoff keeping every bin under 0.1 pp (was 1e-5, provisional).
+
+### 2. Fine step
+
+Resolved transmittance and thermal radiance on four 20 cm^-1 windows (2050,
+2500, 2700, 3000 cm^-1) against a 0.0005 cm^-1 reference. Worst 1 cm^-1 bin
+per path:
+
+| Path | Old rule (1%): step, T, L | New rule (10%): step, T, L |
+|---|---|---|
+| Tropical 10 km horizontal | 0.035; 0.026 pp; 0.11% | unchanged |
+| Subarctic winter 10 km horizontal | 0.039; 0.045 pp; 0.11% | unchanged |
+| Ground-to-space | 0.0011-0.0015; 0.0002 pp; <0.001% | 0.0047; 0.022 pp; 0.011% |
+| 20 km nadir | 0.0031-0.0034; 0.0002 pp; 0.002% | 0.0071; 0.0018 pp; 0.005% |
+| 15 km limb | 0.0016-0.0020; 0.0003 pp; 0.002% | 0.0070; 0.012 pp; 0.093% |
+
+The 1% rule resolved the stratosphere about 100x more accurately than the
+horizontal paths, at 4-6x their cost. The 10% rule (checked in the cloud
+session with the new 3e-6 cutoff) gives every path the same worst-bin
+accuracy. Fixed steps for comparison, worst over all paths: 0.002 -> 0.0009
+pp; 0.005 -> 0.027 pp; 0.01 -> 0.12 pp; 0.02 -> 0.64 pp; 0.05 -> 0.88 pp.
+
+### 3. Correlated-k binning
+
+DISORT radiance from the binned path against DISORT run at every fine point
+(0.005 cm^-1) and instrument-averaged, same windows and paths, with and
+without the sun. Binning alone:
+
+| Paths | Worst 1 cm^-1 bin | Worst 20 cm^-1 window | Speedup |
+|---|---:|---:|---:|
+| Horizontal, ground-to-space | 1.3-2.9% | 0.43-0.58% | 16-24x |
+| 20 km nadir, 15 km limb | 40-47% | 2.1-4.5% | 16-24x |
+
+The worst bins sit in the opaque CH4 Q-branch near 3015 cm^-1 on the nadir
+path, where emission comes from different layers at different fine points.
+The binning error of the single-scattering solver on the same path was the
+same (47.4% vs 47.1%), which motivated the single-scatter correction (step 6
+above). With it, the worst nadir case (3010-3020 cm^-1, no sun, cloud session)
+fell from 47.1% to 0.055% in the worst bin and from -6.6% to -0.012% over the
+window, at unchanged cost. The full sweep with the correction is queued in
+[validation/README.md](validation/README.md) (round 2).
+
+### 4. Performance
+
+Default ground-to-space scenario, 2000-2200 cm^-1, resolved (old 1% step
+rule), 8-core desktop:
+
+| Workers | Processes | Threads |
+|---:|---:|---:|
+| 1 | 64.3 s | |
+| 2 | 34.4 s | |
+| 4 | 18.2 s | 41.6 s |
+| 8 | 11.9 s | 45.7 s |
+| 16 (SMT) | 9.6 s | 49.0 s |
+
+Processes scale 5.4x on 8 cores; threads get slower as they are added.
+With the new defaults (10% step rule: 0.0046 cm^-1, ~0.53M fine points x 76
+layers), the full default 1800-4300 cm^-1 run took 247 s on 4 cloud cores,
+against ~25 min at the old 0.001 cm^-1 step.
+The CLI/GUI runtime estimate for resolved runs now uses 0.15 M fine-point x
+layer elements per second per worker (0.23 M measured, rounded down for slower
+cores) and a speedup of `workers ** 0.7`.
+
+### 5. Window-band tests against an independent reference
+
+HITRAN's HAPI (Kochanov et al. 2016) evaluated every line of the same line
+list with its own Voigt profile and partition sums on 10 cm^-1 windows of the
+paths behind the window-band tests
+(`scripts/physics_reference/generate_hapi_reference.py`). The full model
+agrees in every window to 0.0010 in transmittance and 0.38% in look-down
+radiance (`tests/test_hapi_reference.py`). The reference also sets the
+re-baselined thresholds: subarctic-winter 15 km window transmittance > 0.80
+(HAPI 0.84-0.92, was > 0.90) and look-down window radiance > 0.88 of the
+surface's (HAPI 0.88-0.99, was > 0.93). Both earlier bounds dated from when
+the window water lines were being dropped.

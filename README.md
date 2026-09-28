@@ -22,7 +22,7 @@ own emission).
   isotopologue mass for the Doppler width. See
   `mwir_atmos/optics/lbl.py`. A line is evaluated in a layer when its
   peak optical depth there reaches `line_optical_depth_cutoff` (default
-  1e-5), so weak lines are kept exactly where the gas column makes them
+  3e-6), so weak lines are kept exactly where the gas column makes them
   matter. Fine grids use exact line cores with interpolated far wings, and
   layers are evaluated on all CPUs. See
   [line selection and spectral sampling](docs/spectral_sampling.md).
@@ -249,13 +249,13 @@ things:
    so a *narrow* window is cheap even at very fine resolution: a 2.5 cm⁻¹
    window around a single CO line (`scenarios/fine_resolution_co_line.yaml`)
    at 0.001 cm⁻¹ resolution (2501 points) measured **~20–30 s and ~14 MB**
-   on the development machine. The full default 1800–4300 cm⁻¹ band at the
-   same 0.001 cm⁻¹ resolution is the expensive case this package protects
-   against: **~2 hours and ~13 GB** of layer arrays (60 layers × 2.5M
-   points × 12 float64 arrays). Both figures predate the September 2026
-   engine rewrite, which is several times faster and processes resolved
-   runs in bounded-memory chunks; they are being re-measured, and the
-   estimator errs on the slow side until then.
+   on the development machine (before the September 2026 engine rewrite).
+   With line-resolved sampling (the default) the cost follows the bandwidth
+   and the internal fine step instead: the full default 1800–4300 cm⁻¹
+   ground-to-space run evaluates ~0.53M fine points × 76 layers and took
+   **~4 minutes on 4 cloud cores** (September 2026), split across worker
+   processes in bounded-memory chunks. The estimate is calibrated on an
+   8-core desktop (~70 s there) and scales with `--threads`.
 2. **The line-wing cutoff** (`line_wing_cutoff_cm1`, default 25 cm^-1) sets
    the local evaluation width for gases other than water. H2O with MT_CKD
    always uses +/-25 cm^-1 and subtracts the Lorentz pedestal already included
@@ -263,8 +263,10 @@ things:
    before allocation, so a narrow grid now limits the per-line working array.
    The runtime estimator retains its older, conservative wing-width calibration.
 
-**Line selection.** `line_optical_depth_cutoff` (default `1e-5`) skips a
+**Line selection.** `line_optical_depth_cutoff` (default `3e-6`) skips a
 line in a layer when its peak optical depth there is below the threshold.
+At the default, window transmittance is within 0.08 percentage points of
+keeping every line in every 1 cm⁻¹ bin of five test paths.
 Lower it (or set `0.0` to keep every line) for convergence checks. The
 legacy `line_strength_cutoff` (fraction of each species' strongest line) is
 **off by default**. At its former default of `1e-4` it discarded every water
@@ -374,9 +376,11 @@ physics modules' own docstrings:
   humidity and composition do not update refractivity or the King factor.
 - **Line-resolved sampling is the default** and costs far more than point
   sampling over a wide band (the cost follows bandwidth / `fine_step_cm1`).
-  Pass `--spectral-sampling point` for fast monochromatic samples. The resolved mode's automatic fine step, and the correlated-k binning it
-  uses for DISORT/Monte Carlo radiance, are still being validated (see
-  [docs/spectral_sampling.md](docs/spectral_sampling.md#pending-validation)).
+  Pass `--spectral-sampling point` for fast monochromatic samples. DISORT
+  and Monte Carlo radiance in resolved mode are binned (correlated-k) and
+  corrected with the exact single-scatter result; validation results for the
+  fine step, line selection and binning are in
+  [docs/spectral_sampling.md](docs/spectral_sampling.md#validation-results).
 - **The MT_CKD continuum** follows AER 4.3 native-grid scaling, radiation
   factors and cubic-Hermite interpolation. Numerical agreement with AER's
   Fortran kernel does not validate the complete radiative-transfer model.

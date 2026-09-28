@@ -195,13 +195,18 @@ _CONFIRM_SECONDS_THRESHOLD = 180.0
 #: populate the requested window, which is not knowable without loading the
 #: line data -- exactly the expensive step this estimate is trying to avoid
 #: paying for up front.
-#: RECALIBRATION PENDING: these constants predate the September 2026 engine
-#: rewrite (cached per-line constants, ragged batches, multigrid wings,
-#: threads), which is several times faster, and the line-selection change,
-#: which alters how many lines are evaluated. Until re-measured on an idle
-#: machine, estimates err on the slow side.
+#: These point-sampling constants predate the September 2026 engine rewrite
+#: and err on the slow side (the default point run takes ~10 s).
 _COST_FIXED_OVERHEAD_S = 4.0
 _COST_RATE_ELEMENTS_PER_S = 19_000.0
+#: Resolved sampling, per worker process: fine points x layers per second for
+#: the whole pipeline (line-by-line, continuum, transmittance, single-scatter
+#: radiance). Measured at 0.23e6 on an 8-core desktop
+#: (docs/validation/scaling_benchmark.json); rounded down for slower cores.
+_COST_RESOLVED_RATE_PER_WORKER = 150_000.0
+#: Parallel speedup ~ workers ** this (measured 5.4x at 8 workers, 6.7x at 16
+#: SMT threads on 8 cores); errs slow on machines that scale better.
+_COST_SPEEDUP_EXPONENT = 0.7
 #: float64 (n_layers[+1], grid.n) arrays materialised per run: tau_molecular,
 #: one tau_by_species per REQUIRED_SPECIES, tau_aerosol_abs, tau_aerosol_sca,
 #: tau_rayleigh, aerosol_asymmetry, and TransmittanceResult.cumulative.
@@ -209,7 +214,7 @@ _COST_N_LAYER_ARRAYS = 1 + len(REQUIRED_SPECIES) + 5
 _COST_BYTES_PER_ELEMENT = 8
 
 
-def _estimate_run_cost(scenario: Scenario) -> _CostEstimate:
+def _estimate_run_cost(scenario: Scenario, n_threads: Optional[int] = None) -> _CostEstimate:
     """Points x layers, estimated memory, and estimated runtime for ``scenario``.
 
     Counts grid points without allocating a spectral array, and builds the
@@ -258,16 +263,29 @@ def _estimate_run_cost(scenario: Scenario) -> _CostEstimate:
 
     elements = max(float(evaluated_points), wing_pts) * n_layers
     est_seconds = _COST_FIXED_OVERHEAD_S + elements / _COST_RATE_ELEMENTS_PER_S
+    speedup = 1.0
+    if scenario.spectral_sampling == SpectralSampling.RESOLVED:
+        from .api import _PROCESS_MIN_ELEMENTS, _parallel_mode
+        from .optics.lbl import resolve_thread_count
+        workers = resolve_thread_count(n_threads)
+        if workers > 1 and _parallel_mode() == "processes" and elements >= _PROCESS_MIN_ELEMENTS:
+            chunk = max(resolved._MIN_CHUNK_FINE_POINTS,
+                        resolved._MIN_CHUNK_OVER_SUPPORT * plan.support)
+            workers = max(1, min(workers, int(evaluated_points // chunk)))
+            speedup = workers ** _COST_SPEEDUP_EXPONENT
+            resident_points = min(resident_points, max(chunk, evaluated_points // (3 * workers)))
+            resident_points *= workers       # one chunk per worker in memory at once
+        est_seconds = _COST_FIXED_OVERHEAD_S + elements / (_COST_RESOLVED_RATE_PER_WORKER * speedup)
     est_bytes = int(resident_points * n_layers * _COST_BYTES_PER_ELEMENT * _COST_N_LAYER_ARRAYS)
     if scenario.radiance_solver == RadianceSolver.DISORT:
         # Additional full-column arrays and sequential angular solves. This is
         # a rough estimate; actual Fourier work depends on illumination.
         est_bytes *= 2
         sources = 2 + int(scenario.include_solar) + int(scenario.include_lunar)
-        est_seconds += solver_points * .005 * sources * (scenario.disort_streams / 16.)**4
+        est_seconds += solver_points * .005 * sources * (scenario.disort_streams / 16.)**4 / speedup
     if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
         est_bytes += min(scenario.spherical_photons,4096) * n_layers * 200
-        est_seconds += solver_points * (scenario.spherical_photons / 4096.) * 2.
+        est_seconds += solver_points * (scenario.spherical_photons / 4096.) * 2. / speedup
     return _CostEstimate(
         n_points=n_points,
         n_layers=n_layers,
@@ -664,7 +682,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_float(
         accuracy, "line_optical_depth_cutoff",
         "Drop a line from a layer when its peak optical depth in that layer is below this "
-        "(default: 1e-5). Tied to the actual gas amount, so thick humid layers keep the weak "
+        "(default: 3e-6). Tied to the actual gas amount, so thick humid layers keep the weak "
         "water lines that matter in the windows. 0.0 keeps every line.",
     )
     _add_float(
@@ -1242,7 +1260,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
 
     try:
-        cost = _estimate_run_cost(scenario)
+        cost = _estimate_run_cost(scenario, args.threads)
     except Exception as exc:  # noqa: BLE001 - same boundary run_scenario() uses below
         print(f"mwir: error resolving scenario geometry: {exc}", file=sys.stderr)
         if args.verbose:

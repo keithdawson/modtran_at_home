@@ -37,6 +37,17 @@ STEPS = {
              "4. independent HAPI line-by-line reference for window-band tests"),
     "scaling": ([HERE / "scaling_benchmark.py", "--sizes", "small"], RESULTS / "scaling_benchmark.json",
                 "5. parallel scaling / cost calibration (small problem, 1..N workers)"),
+    # Round 2: after the defaults changed (cutoff 3e-6, 10% fine-step rule,
+    # single-scatter correction of binned radiance).
+    "corrk2": ([HERE / "correlated_k_accuracy.py", "--out", RESULTS / "correlated_k_accuracy_round2.json"],
+               RESULTS / "correlated_k_accuracy_round2.json",
+               "R2-1. correlated-k: binned and corrected DISORT vs exact"),
+    "finestep2": ([HERE / "fine_step_convergence.py", "--out", RESULTS / "fine_step_convergence_round2.json"],
+                  RESULTS / "fine_step_convergence_round2.json",
+                  "R2-2. fine-step convergence under the 10% rule"),
+    "default": ([HERE / "scaling_benchmark.py", "--sizes", "small", "full", "--no-threads",
+                 "--out", RESULTS / "scaling_round2.json"], RESULTS / "scaling_round2.json",
+                "R2-3. scaling at the new step + full default-band run time"),
 }
 
 
@@ -60,7 +71,8 @@ def main() -> int:
             status[name] = "missing hitran-api"
             continue
         args = [sys.executable, str(command[0]), *map(str, command[1:])]
-        args += ["--max-workers", str(a.jobs)] if name == "scaling" else ["--jobs", str(a.jobs)]
+        benchmark = Path(command[0]).name == "scaling_benchmark.py"
+        args += ["--max-workers" if benchmark else "--jobs", str(a.jobs)]
         log = LOGS / f"{name}.log"
         print(f"== {text}\n   log: {log.relative_to(ROOT)}", flush=True)
         t0 = time.perf_counter()

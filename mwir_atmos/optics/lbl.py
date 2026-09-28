@@ -112,7 +112,7 @@ _BATCH_ELEMENTS = 1 << 14
 
 #: Default per-layer peak optical depth below which a line is not evaluated
 #: (``Scenario.line_optical_depth_cutoff`` has the same default).
-DEFAULT_LINE_OPTICAL_DEPTH_CUTOFF = 1.0e-5
+DEFAULT_LINE_OPTICAL_DEPTH_CUTOFF = 3.0e-6
 
 _LN2 = np.log(2.0)
 _SQRT_LN2 = np.sqrt(_LN2)

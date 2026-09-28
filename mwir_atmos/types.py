@@ -510,7 +510,7 @@ class Scenario:
     #: strongest line; it is off by default because at its former default
     #: (1e-4) it discarded every water line in the 3.5-4.1 um window.
     line_strength_cutoff: float = 0.0
-    line_optical_depth_cutoff: float = 1.0e-5
+    line_optical_depth_cutoff: float = 3.0e-6
     line_wing_cutoff_cm1: float = 25.0
     #: See :class:`SpectralSampling`. ``resolution_cm1`` is the output grid
     #: spacing in both modes.

@@ -115,10 +115,10 @@ _AEROSOL_LABELS.update({a: "LOWTRAN table: " + a.value.removeprefix("lowtran_").
 _SPECTRAL_PRESETS: dict[str, dict[str, float]] = {
     "Full band (default)": dict(
         wn_min=constants.MWIR_GRID_MIN_CM1, wn_max=constants.MWIR_GRID_MAX_CM1,
-        resolution=4.0, wing=25.0, strength=0.0, tau=1.0e-5,
+        resolution=4.0, wing=25.0, strength=0.0, tau=3.0e-6,
     ),
     "MWIR core, 3-5 um": dict(wn_min=2000.0, wn_max=3333.33, resolution=2.0, wing=25.0,
-                              strength=0.0, tau=1.0e-5),
+                              strength=0.0, tau=3.0e-6),
     "Narrow + fine (CO line demo)": dict(wn_min=2171.5, wn_max=2174.0, resolution=0.01, wing=3.0,
                                          strength=0.0, tau=1.0e-7),
 }
@@ -311,7 +311,7 @@ def _spectral_and_accuracy_controls() -> dict:
     for k, v in dict(
         wn_min=constants.MWIR_GRID_MIN_CM1, wn_max=constants.MWIR_GRID_MAX_CM1,
         resolution_cm1=4.0,  # coarser than the CLI/Scenario default (1.0) -- keeps the GUI interactive
-        line_wing_cutoff_cm1=25.0, line_strength_cutoff=0.0, line_optical_depth_cutoff=1.0e-5,
+        line_wing_cutoff_cm1=25.0, line_strength_cutoff=0.0, line_optical_depth_cutoff=3.0e-6,
     ).items():
         st.session_state.setdefault(k, v)
     st.session_state.setdefault("_last_spectral_preset", None)

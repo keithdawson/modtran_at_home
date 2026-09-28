@@ -162,7 +162,9 @@ def test_us_standard_10km_horizontal_transmission_benchmarks():
     tau_co2 = band_average(res.grid, res.transmittance.total, (2300.0, 2350.0))
     assert tau_co2 < 1e-6, f"CO2 band must be opaque, got {tau_co2}"
 
-    # 2. 3.6 - 4.0 um clean atmospheric window (2500 - 2777 cm^-1)
+    # 2. 3.6 - 4.0 um clean atmospheric window (2500 - 2777 cm^-1). The HAPI
+    # reference (tests/reference_data/hapi_window_reference.json) gives 0.66
+    # over 10 cm^-1 windows in 2550-2750, and 0.40 in 2100-2170 below.
     tau_win_3um = band_average(res.grid, res.transmittance.total, (2550.0, 2750.0))
     assert 0.50 <= tau_win_3um <= 0.85, f"3.7 um window expected ~0.50-0.85, got {tau_win_3um}"
 
@@ -255,8 +257,12 @@ def test_climatological_soundings_polar_vs_tropical():
     res_trop = run_scenario(sc_trop)
     tau_tropical = float(res_trop.transmittance.total.mean())
 
-    # Cold subarctic winter has very little water vapor -> high transmission
-    assert tau_subarctic > 0.90, f"Subarctic winter should be very transparent, got {tau_subarctic}"
+    # Cold subarctic winter has little water vapor -> high transmission. The
+    # bound comes from the independent HAPI line-by-line reference for this
+    # path (tests/reference_data/hapi_window_reference.json: 0.84-0.92 over
+    # 10 cm^-1 windows, mean 0.86), not from this model. The earlier > 0.90
+    # expectation dated from when the window water lines were being dropped.
+    assert tau_subarctic > 0.80, f"Subarctic winter should be very transparent, got {tau_subarctic}"
     # Tropical has strong water vapor absorption and continuum attenuation
     assert tau_tropical < tau_subarctic - 0.15, (
         f"Tropical ({tau_tropical}) must be significantly lower than subarctic ({tau_subarctic})"

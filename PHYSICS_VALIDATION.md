@@ -23,8 +23,12 @@ overstated by:
 | Mid-latitude summer, ground to space | +9.62 pp | +9.79 pp | +5.04 pp |
 | 20 km nadir to ground | +9.87 pp | +9.81 pp | +5.04 pp |
 
-The default is now a per-layer peak-optical-depth threshold (1e-5,
-provisional), following LBLRTM's absolute line rejection. `tests/test_lbl_engine.py`
+The default is now a per-layer peak-optical-depth threshold (3e-6, chosen
+from a sweep over five paths: every 1 cm^-1 window bin within 0.08 pp of
+keeping every line; see docs/spectral_sampling.md#validation-results),
+following LBLRTM's absolute line rejection. An independent HAPI line-by-line
+reference agrees with the full model to 0.001 in window transmittance
+(`tests/test_hapi_reference.py`). `tests/test_lbl_engine.py`
 checks that it is an exact threshold and that the window water lines are kept.
 The earlier end-to-end table below was computed with the old selection;
 window values change substantially under the new default.

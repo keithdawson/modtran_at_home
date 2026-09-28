@@ -21,7 +21,7 @@
 # (Timings above predate the September 2026 engine rewrite.)
 #
 # Note the accuracy controls (mwir_atmos/types.py Scenario):
-#   line_optical_depth_cutoff: 1e-5 -> 1e-7 (keep lines down to a peak
+#   line_optical_depth_cutoff: 3e-6 -> 1e-7 (keep lines down to a peak
 #     optical depth of 1e-7 per layer, so weak neighbours of the CO line are
 #     represented at this resolution; line_strength_cutoff stays off)
 #   line_wing_cutoff_cm1: 25.0 -> 3.0 (the per-line evaluation window is

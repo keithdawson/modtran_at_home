@@ -5,7 +5,8 @@ at increasing worker counts, in process mode (the default) and, for
 comparison, thread mode. Two problem sizes:
 
 * ``small``: 2000-2200 cm^-1 -- per-core throughput at 1..16 workers;
-* ``full``:  the default 1800-4300 cm^-1 band -- strong scaling at >= 16 workers.
+* ``full``:  the default 1800-4300 cm^-1 band -- strong scaling at >= 16
+  workers (or at every CPU, on smaller machines).
 
 Writes elapsed time and throughput (fine points x layers per second) per run,
 plus machine details, to docs/validation/scaling_benchmark.json.
@@ -81,7 +82,8 @@ def main() -> None:
         if not a.no_threads:
             plan += [("small", w, "threads") for w in _workers(a.max_workers, 4, 16)]
     if "full" in a.sizes:
-        plan += [("full", w, "processes") for w in _workers(a.max_workers, 16, 1 << 20)]
+        plan += [("full", w, "processes")
+                 for w in _workers(a.max_workers, min(16, a.max_workers), 1 << 20)]
         if not a.no_threads:
             plan += [("full", a.max_workers, "threads")]
 

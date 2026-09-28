@@ -157,7 +157,7 @@ def molecular_optical_depth(layers: Sequence[PathLayer], grid: SpectralGrid, *,
                             method: str = "auto",
                             n_threads: int | None = None,
                             strength_references: Mapping | None = None,
-                            min_peak_optical_depth: float = 1e-5,
+                            min_peak_optical_depth: float = 3e-6,
                             ) -> tuple[np.ndarray, dict[Species, np.ndarray]]
     """THE headline function. Returns (tau_total, tau_by_species), each
     shape (len(layers), grid.n). Results never depend on n_threads."""
