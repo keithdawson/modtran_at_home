@@ -726,6 +726,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Line-by-line worker threads (default: MWIR_THREADS or every CPU). "
              "Results do not depend on this.",
     )
+    perf.add_argument(
+        "--backend", choices=["cpu", "cuda"], default=None,
+        help="Line-by-line engine: cpu, or cuda (NVIDIA GPU via CuPy: pip install "
+             "cupy-cuda12x). Default: MWIR_BACKEND or cpu. Results agree to ~1e-6.",
+    )
 
     return parser
 
@@ -1310,6 +1315,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             include_radiance=not args.no_radiance,
             include_turbulence=not args.no_turbulence,
             n_threads=args.threads,
+            backend=args.backend,
         )
     except Exception as exc:  # noqa: BLE001 - CLI boundary: report, don't crash
         print(f"mwir: error running scenario: {exc}", file=sys.stderr)

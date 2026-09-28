@@ -200,6 +200,24 @@ at every fine point, which is correct but slow.
   count. Threads scale poorly (Python's global interpreter lock): see
   [Parallelism](#parallelism) for what resolved runs do instead.
 
+### GPU backend (experimental)
+
+`backend="cuda"` (`--backend cuda`, `MWIR_BACKEND=cuda`) evaluates the line
+sums on an NVIDIA GPU through CuPy (`pip install .[cuda]`). Line-by-line work
+is ~98% of a resolved run (a 100 cm^-1 ground-to-space run spent 77 of 78 s
+in it), and every (line, grid point) pair is independent. The CPU still
+selects lines (in threads); `mwir_atmos/optics/lbl_cuda.py` then evaluates
+every (layer, species) pair of a chunk in one kernel launch, by direct
+summation. Consumer and workstation GPUs run float64 at 1/64 speed, so the
+far wings (~99.7% of pairs) use a float32 continued fraction and the line
+cores a float64 Weideman expansion (`optics/voigt_gpu.py`); offsets and sums
+are float64. The profile is within 4.7e-7 of `scipy.special.wofz`, and a
+NumPy twin of the kernel matches the CPU engine's exact sums to 2e-6 on
+surface-to-stratosphere layers (`tests/test_lbl_cuda.py`). GPU timings and
+the on-device tests are pending ([runbook](validation/README.md)). Resolved
+runs on the GPU use large chunks in one process; DISORT and Monte Carlo stay
+on the CPU.
+
 ### Parallelism
 
 Resolved runs of at least 2^21 fine-point x layer elements are split into at

@@ -94,7 +94,8 @@ from ..types import PathLayer, REQUIRED_SPECIES, Species, SpectralGrid
 from .continuum import co2_continuum_optical_depth, h2o_continuum_optical_depth
 
 __all__ = ["absorption_cross_section", "evaluations_per_line", "line_strength_reference",
-           "molecular_optical_depth", "prepare_linelists", "resolve_thread_count"]
+           "molecular_optical_depth", "prepare_linelists", "resolve_backend",
+           "resolve_thread_count"]
 
 #: HITRAN reference temperature for tabulated line intensities and widths.
 _T_REF_K = 296.0
@@ -118,6 +119,27 @@ _LN2 = np.log(2.0)
 _SQRT_LN2 = np.sqrt(_LN2)
 _SQRT_LN2_OVER_PI = np.sqrt(_LN2 / np.pi)
 _METHODS = ("auto", "direct", "multigrid")
+
+
+_BACKENDS = ("cpu", "cuda")
+
+
+def resolve_backend(backend: Optional[str] = None) -> str:
+    """Line-by-line backend: explicit value, else ``MWIR_BACKEND``, else ``"cpu"``.
+
+    ``"cuda"`` raises if CuPy or a CUDA device is missing, rather than
+    silently running on the CPU.
+    """
+    if backend is None:
+        backend = os.environ.get("MWIR_BACKEND", "").strip().lower() or "cpu"
+    if backend not in _BACKENDS:
+        raise ValueError(f"backend must be one of {_BACKENDS}, got {backend!r}")
+    if backend == "cuda":
+        from . import lbl_cuda
+        if not lbl_cuda.available():
+            raise RuntimeError("backend 'cuda' requested, but CuPy or a CUDA device is not "
+                               "available (pip install cupy-cuda12x)")
+    return backend
 
 
 def resolve_thread_count(n_threads: Optional[int] = None) -> int:
@@ -690,6 +712,7 @@ def molecular_optical_depth(
     n_threads: Optional[int] = None,
     strength_references: Optional[Mapping[tuple[int, Species], float]] = None,
     min_peak_optical_depth: float = DEFAULT_LINE_OPTICAL_DEPTH_CUTOFF,
+    backend: Optional[str] = None,
 ) -> tuple[np.ndarray, dict[Species, np.ndarray]]:
     """THE headline function. Returns ``(tau_total, tau_by_species)``, each
     shape ``(len(layers), grid.n)``.
@@ -723,6 +746,12 @@ def molecular_optical_depth(
     layers and linear in path length only to within the dropped lines' peak
     optical depths. Pass ``min_peak_optical_depth=0.0`` (and the default
     ``min_strength_fraction=0.0``) for the exact, unpruned model.
+
+    ``backend`` is ``"cpu"`` or ``"cuda"`` (default: :func:`resolve_backend`).
+    With ``"cuda"`` the CPU selects lines exactly as above and a GPU evaluates
+    every (layer, species) pair of the grid in one kernel launch, always by
+    direct summation (:mod:`mwir_atmos.optics.lbl_cuda`); ``method`` then
+    does not apply, and ``n_threads`` sets the line-selection threads.
     """
     if species is None:
         species = REQUIRED_SPECIES
@@ -742,33 +771,59 @@ def molecular_optical_depth(
             if column > 0.0 and linelist is not None:
                 tasks.append((row, sp, column, linelist))
 
-    def evaluate(task) -> None:
+    def arguments(task) -> dict:
         row, sp, column, linelist = task
         layer = layers[row]
         p_eff = layer.p_eff_mbar.get(sp, layer.p_mbar)
-        t_eff = layer.t_eff_k.get(sp, layer.t_k)
         vmr = column / layer.air_column_cm2 if layer.air_column_cm2 > 0 else 0.0
-        p_self = p_eff * vmr
         water_convention = sp == Species.H2O and include_continuum
-        xsec = absorption_cross_section(
-            linelist,
-            grid,
-            p_eff,
-            t_eff,
-            p_self,
+        return dict(
+            pressure_mbar=p_eff,
+            temperature_k=layer.t_eff_k.get(sp, layer.t_k),
+            partial_pressure_mbar=p_eff * vmr,
             wing_cutoff_cm1=_MT_CKD_CUTOFF_CM1 if water_convention else wing_cutoff_cm1,
             subtract_pedestal=water_convention,
             min_strength_fraction=min_strength_fraction,
-            method=method,
             strength_reference=(None if strength_references is None
                                 else strength_references.get((row, sp))),
             column_cm2=column,
             min_peak_optical_depth=min_peak_optical_depth,
         )
+
+    def evaluate(task) -> None:
+        row, sp, column, linelist = task
+        xsec = absorption_cross_section(linelist, grid, method=method, **arguments(task))
         tau_by_species[sp][row] = xsec * column
 
+    if resolve_backend(backend) == "cuda":
+        from . import lbl_cuda
+        tasks = [task for task in tasks if len(task[3])]
+
+        def select(task):
+            a = arguments(task)
+            lines = _select_lines(
+                _prepare(task[3]), grid, a["pressure_mbar"], a["temperature_k"],
+                a["partial_pressure_mbar"], a["wing_cutoff_cm1"], a["subtract_pedestal"],
+                a["min_strength_fraction"], a["strength_reference"], a["column_cm2"],
+                a["min_peak_optical_depth"])
+            return lines, a["wing_cutoff_cm1"], task[2]
+
+        # Line selection stays on the CPU (large NumPy operations, so threads help).
+        workers = min(resolve_thread_count(n_threads), max(len(tasks), 1))
+        if workers > 1:
+            with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mwir-select") as pool:
+                gpu_tasks = list(pool.map(select, tasks))
+        else:
+            gpu_tasks = [select(task) for task in tasks]
+        tau = lbl_cuda.evaluate(grid.wavenumber_cm1, lbl_cuda.pack(gpu_tasks))
+        for (row, sp, _, _), values in zip(tasks, tau):
+            tau_by_species[sp][row] = values
+        tasks = []
+
     workers = min(resolve_thread_count(n_threads), len(tasks))
-    if workers > 1:
+    if not tasks:
+        pass
+    elif workers > 1:
         # Largest line lists first, so no long task starts last.
         tasks.sort(key=lambda task: -len(task[3]))
         with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mwir-lbl") as pool:

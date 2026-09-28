@@ -138,7 +138,9 @@ Large line-resolved runs are split into chunks evaluated by that many worker
 processes (`MWIR_PARALLEL=threads` keeps everything in one process); where
 workers are spawned (Windows), scripts calling `run_scenario` need an
 `if __name__ == "__main__":` guard. The worker count never changes results
-beyond rounding.
+beyond rounding. `--backend cuda` (or `MWIR_BACKEND=cuda`) runs the
+line-by-line sums on an NVIDIA GPU (experimental; `pip install ".[cuda]"`,
+see [docs/spectral_sampling.md](docs/spectral_sampling.md#gpu-backend-experimental)).
 
 - **`--config scenario.yaml`** loads a `Scenario`; any other flag on the
   command line overrides that field. **`--save-config out.yaml`** writes the

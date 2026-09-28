@@ -51,6 +51,7 @@ def compute_layer_optics(
     min_peak_optical_depth: float = DEFAULT_LINE_OPTICAL_DEPTH_CUTOFF,
     n_threads: int | None = None,
     strength_references: dict | None = None,
+    backend: str | None = None,
 ) -> LayerOptics:
     """Compute every optical-depth contribution for each layer of ``path``.
 
@@ -59,8 +60,8 @@ def compute_layer_optics(
 
     ``min_strength_fraction``, ``min_peak_optical_depth`` and
     ``wing_cutoff_cm1`` control line-by-line accuracy versus cost; see
-    :func:`mwir_atmos.optics.lbl.absorption_cross_section`. ``n_threads`` and
-    ``strength_references`` are passed to
+    :func:`mwir_atmos.optics.lbl.absorption_cross_section`. ``n_threads``,
+    ``strength_references`` and ``backend`` are passed to
     :func:`~mwir_atmos.optics.lbl.molecular_optical_depth`.
     """
     layers = path.layers
@@ -78,6 +79,7 @@ def compute_layer_optics(
         min_peak_optical_depth=min_peak_optical_depth,
         n_threads=n_threads,
         strength_references=strength_references,
+        backend=backend,
     )
 
     if include_co2_continuum:

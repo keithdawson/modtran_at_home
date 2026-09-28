@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -48,6 +49,9 @@ STEPS = {
     "default": ([HERE / "scaling_benchmark.py", "--sizes", "small", "full", "--no-threads",
                  "--out", RESULTS / "scaling_round2.json"], RESULTS / "scaling_round2.json",
                 "R2-3. scaling at the new step + full default-band run time"),
+    # GPU backend (needs CuPy and an NVIDIA GPU; skipped otherwise).
+    "cuda": ([HERE / "cuda_check.py"], RESULTS / f"cuda_check_{socket.gethostname()}.json",
+             "GPU. CUDA backend: tests, then CPU vs GPU timing and agreement"),
 }
 
 
@@ -66,20 +70,31 @@ def main() -> int:
             print(f"== {text}: {result.relative_to(ROOT)} exists, skipped (--force to redo)")
             status[name] = "skipped"
             continue
+        if name == "cuda" and importlib.util.find_spec("cupy") is None:
+            print(f"== {text}: needs CuPy (pip install \"cupy-cuda12x[ctk]\"); skipped")
+            status[name] = "missing cupy"
+            continue
         if name == "hapi" and importlib.util.find_spec("hapi") is None:
             print(f"== {text}: needs `pip install hitran-api==1.3.0.0`; skipped")
             status[name] = "missing hitran-api"
             continue
         args = [sys.executable, str(command[0]), *map(str, command[1:])]
-        benchmark = Path(command[0]).name == "scaling_benchmark.py"
-        args += ["--max-workers" if benchmark else "--jobs", str(a.jobs)]
+        script = Path(command[0]).name
+        if script == "scaling_benchmark.py":
+            args += ["--max-workers", str(a.jobs)]
+        elif script != "cuda_check.py":
+            args += ["--jobs", str(a.jobs)]
         log = LOGS / f"{name}.log"
         print(f"== {text}\n   log: {log.relative_to(ROOT)}", flush=True)
         t0 = time.perf_counter()
         with log.open("w") as fh:
             code = subprocess.call(args, stdout=fh, stderr=subprocess.STDOUT, cwd=str(HERE))
         minutes = (time.perf_counter() - t0) / 60
-        status[name] = f"{'ok' if code == 0 else f'FAILED (exit {code})'} in {minutes:.1f} min"
+        if name == "cuda" and code == 3:                # cuda_check.NO_DEVICE
+            status[name] = "skipped (no CUDA device)"
+            log.unlink()
+        else:
+            status[name] = f"{'ok' if code == 0 else f'FAILED (exit {code})'} in {minutes:.1f} min"
         print(f"   {status[name]}", flush=True)
 
     print("\nSummary:")

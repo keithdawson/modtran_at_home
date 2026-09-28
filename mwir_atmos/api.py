@@ -19,7 +19,7 @@ import numpy as np
 from .atmosphere.humidity import apply_surface_conditions
 from .atmosphere.profiles import get_profile
 from .geometry.path import build_path
-from .optics.lbl import resolve_thread_count
+from .optics.lbl import resolve_backend, resolve_thread_count
 from .optics.transmittance import compute_layer_optics, path_transmittance
 from .spectral import make_grid
 from .validation import validate_scenario
@@ -83,6 +83,7 @@ def run_scenario(
     include_turbulence: bool = True,
     grid: Optional[SpectralGrid] = None,
     n_threads: Optional[int] = None,
+    backend: Optional[str] = None,
 ) -> ScenarioResult:
     """Run a full scenario.
 
@@ -93,11 +94,15 @@ def run_scenario(
 
     ``grid`` overrides the output grid (uniform spacing). ``n_threads`` sets
     the line-by-line worker threads (default: ``MWIR_THREADS`` or every CPU);
-    results do not depend on it. With ``spectral_sampling="resolved"`` the
-    physics runs on a fine internal grid and is convolved with the instrument
-    function onto the output grid -- see :mod:`mwir_atmos.resolved`.
+    results do not depend on it. ``backend`` selects the line-by-line engine,
+    ``"cpu"`` or ``"cuda"`` (default: ``MWIR_BACKEND``, else ``"cpu"``; see
+    :func:`mwir_atmos.optics.lbl.resolve_backend`). With
+    ``spectral_sampling="resolved"`` the physics runs on a fine internal grid
+    and is convolved with the instrument function onto the output grid -- see
+    :mod:`mwir_atmos.resolved`.
     """
     validate_scenario(scenario)
+    backend = resolve_backend(backend)
     if grid is None:
         grid = make_grid(
             scenario.wavenumber_min_cm1,
@@ -125,7 +130,7 @@ def run_scenario(
             sun, moon = sky
 
     spectral_pass = _SpectralPass(scenario, profile, path, column, indices, factors, sun, moon,
-                                  include_radiance, n_threads)
+                                  include_radiance, n_threads, backend=backend)
     fine_step = None
     if scenario.spectral_sampling == SpectralSampling.RESOLVED:
         transmittance, radiance, fine_step = _run_resolved(spectral_pass, grid)
@@ -169,7 +174,7 @@ class _SpectralPass:
     """
 
     def __init__(self, scenario, profile, path, column, indices, factors, sun, moon,
-                 include_radiance, n_threads, strength_references=None):
+                 include_radiance, n_threads, strength_references=None, backend="cpu"):
         self.scenario = scenario
         self.profile = profile
         self.path = path
@@ -181,6 +186,7 @@ class _SpectralPass:
         self.include_radiance = include_radiance
         self.n_threads = n_threads
         self.strength_references = strength_references
+        self.backend = backend
 
     @property
     def optics_layers(self):
@@ -201,6 +207,7 @@ class _SpectralPass:
             min_peak_optical_depth=scenario.line_optical_depth_cutoff,
             n_threads=self.n_threads,
             strength_references=self.strength_references,
+            backend=self.backend,
         )
         if scenario.aerosol_polarization == "mie_sphere":
             from .radiometry.spherical_scattering import apply_mie_optics
@@ -255,10 +262,12 @@ def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
               and scenario.radiance_solver != RadianceSolver.SINGLE_SCATTER)
     workers = resolve_thread_count(spectral_pass.n_threads)
     n_fine = (grid.n - 1) * plan.ratio + 2 * plan.support + 1
-    parallel = (workers > 1 and _parallel_mode() == "processes"
+    gpu = spectral_pass.backend == "cuda"
+    parallel = (not gpu and workers > 1 and _parallel_mode() == "processes"
                 and n_fine * len(layers) >= _PROCESS_MIN_ELEMENTS)
     pieces = list(resolved.chunks(plan, grid.n, len(layers),
-                                  min_chunks=_CHUNKS_PER_WORKER * workers if parallel else 1))
+                                  min_chunks=_CHUNKS_PER_WORKER * workers if parallel else 1,
+                                  max_elements=_CUDA_CHUNK_ELEMENTS if gpu else None))
     jobs = [(plan, first, stop, fine, grid.wavenumber_cm1[first:stop], grid.resolution_cm1, binned)
             for first, stop, fine in pieces]
     parts = _run_chunks_in_processes(spectral_pass, jobs, workers) if parallel and len(jobs) > 1 else None
@@ -271,6 +280,10 @@ def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
     return transmittance, radiance, plan.step_cm1
 
 
+#: Fine point x layer elements per resolved chunk on the CUDA backend: the GPU
+#: evaluates a whole chunk in one launch, so chunks are large (the CPU side of
+#: a chunk holds ~13 float64 arrays of this size, ~1.7 GB).
+_CUDA_CHUNK_ELEMENTS = 1 << 24
 #: Resolved runs smaller than this many (fine point x layer) elements stay in
 #: one process: worker start-up (~1 s) would cost more than it saves.
 _PROCESS_MIN_ELEMENTS = 1 << 21

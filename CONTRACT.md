@@ -158,6 +158,7 @@ def molecular_optical_depth(layers: Sequence[PathLayer], grid: SpectralGrid, *,
                             n_threads: int | None = None,
                             strength_references: Mapping | None = None,
                             min_peak_optical_depth: float = 3e-6,
+                            backend: str | None = None,       # "cpu" | "cuda"
                             ) -> tuple[np.ndarray, dict[Species, np.ndarray]]
     """THE headline function. Returns (tau_total, tau_by_species), each
     shape (len(layers), grid.n). Results never depend on n_threads."""
@@ -256,7 +257,8 @@ Physics requirements for dev-beta:
   (`InstrumentFunction`), `instrument_fwhm_cm1` and
   `line_optical_depth_cutoff`. `line_strength_cutoff` now defaults to 0.0.
 - `ScenarioResult.fine_step_cm1` is set for resolved sampling (else None).
-- `run_scenario(..., n_threads=None)`; `mwir_atmos.resolved` implements the
+- `run_scenario(..., n_threads=None, backend=None)` (`backend`: `"cpu"` or
+  `"cuda"`, default `MWIR_BACKEND` or `"cpu"`); `mwir_atmos.resolved` implements the
   instrument-function sampling. Radiance solvers receive whatever grid they
   are given; with resolved sampling that may be a fine chunk grid or, for
   DISORT/Monte Carlo, a pseudo grid whose wavenumbers repeat (one entry per

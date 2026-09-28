@@ -71,6 +71,31 @@ git push
 | `finestep2` | `fine_step_convergence_round2.json` | automatic step under the 10% rule, plus fixed steps | 10 min |
 | `default` | `scaling_round2.json` | per-core rate at the new step (1-8 workers), and the full default band at 8 workers | 10 min |
 
+## GPU backend (home 4090, then the work server)
+
+The CUDA line-by-line backend is new and off by default. Install CuPy with
+its CUDA libraries, then run the check (it is also the `cuda` step of
+`run_all.py`, skipped where there is no GPU):
+
+```powershell
+pip install "cupy-cuda12x[ctk]"      # CUDA 12 driver; use cupy-cuda13x[ctk] for CUDA 13
+python scripts/validation/cuda_check.py
+git add docs/validation
+git commit -m "CUDA check"
+git push
+```
+
+It runs `tests/test_lbl_cuda.py` on the GPU (kernel vs its NumPy twin and vs
+the CPU engine), then times a 200 cm^-1 slice and the full default band on
+CPU and GPU and records how far they differ. Output:
+`cuda_check_<hostname>.json` (a few minutes; `--skip-cpu-full` skips the
+slowest CPU run). If CuPy cannot compile the kernel, push the traceback --
+it is usually a driver/toolkit mismatch (Blackwell needs CUDA 12.8+).
+
+Use it anywhere with `--backend cuda` (CLI), `backend="cuda"`
+(`run_scenario`) or `MWIR_BACKEND=cuda` (API, GUI, scripts).
+`MWIR_CUDA_DEVICE=N` picks the GPU.
+
 ## Work server (2 x 96 cores)
 
 Only the scaling benchmark needs the big machine: the full-band strong-scaling

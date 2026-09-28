@@ -214,15 +214,18 @@ def plan_fine_grid(output: SpectralGrid, *, fine_step_cm1: float,
                         origin_cm1=float(output.wavenumber_cm1[0]))
 
 
-def chunks(plan: FineGridPlan, n_output: int, n_layers: int, min_chunks: int = 1):
+def chunks(plan: FineGridPlan, n_output: int, n_layers: int, min_chunks: int = 1,
+           max_elements: Optional[int] = None):
     """Yield ``(first, stop, fine_grid)`` for consecutive output-point chunks.
 
     ``min_chunks`` asks for at least that many chunks (for parallel workers),
     as long as each chunk keeps at least ``_MIN_CHUNK_FINE_POINTS`` and
     ``_MIN_CHUNK_OVER_SUPPORT`` times the instrument support of new fine
     points, which bounds the overlap recomputed between neighbours.
+    ``max_elements`` overrides the memory bound (fine points x layers).
     """
-    target = max(_MIN_CHUNK_FINE_POINTS, _CHUNK_ELEMENTS // max(n_layers, 1))
+    elements = _CHUNK_ELEMENTS if max_elements is None else max_elements
+    target = max(_MIN_CHUNK_FINE_POINTS, elements // max(n_layers, 1))
     per_chunk = max(1, (target - 2 * plan.support) // plan.ratio)
     if min_chunks > 1:
         floor = max(1, max(_MIN_CHUNK_FINE_POINTS, _MIN_CHUNK_OVER_SUPPORT * plan.support)
