@@ -1,0 +1,228 @@
+[1/120]      67 s  ('tropical_10km_horizontal', '4.5-5.0um', 1e-07, 0.01)
+[2/120]      78 s  ('saw_10km_horizontal', '4.5-5.0um', 1e-08, 0.01)
+[3/120]      82 s  ('saw_10km_horizontal', '3.5-4.1um', 1e-08, 0.01)
+[4/120]     110 s  ('tropical_10km_horizontal', '3.5-4.1um', 1e-08, 0.01)
+[5/120]     118 s  ('tropical_10km_horizontal', '4.5-5.0um', 1e-08, 0.01)
+[6/120]     131 s  ('saw_10km_horizontal', '2.9-3.5um', 1e-08, 0.01)
+[7/120]     134 s  ('mls_20km_nadir', '3.5-4.1um', 1e-08, 0.01)
+[8/120]     136 s  ('tropical_10km_horizontal', '3.5-4.1um', 1e-07, 0.01)
+[9/120]     151 s  ('mls_20km_nadir', '4.5-5.0um', 1e-08, 0.01)
+[10/120]     162 s  ('tropical_10km_horizontal', '2.9-3.5um', 1e-08, 0.01)
+[11/120]     176 s  ('mls_ground_to_space', '3.5-4.1um', 1e-08, 0.01)
+[12/120]     182 s  ('tropical_10km_horizontal', '2.9-3.5um', 1e-07, 0.01)
+[13/120]     204 s  ('mls_20km_nadir', '2.9-3.5um', 1e-08, 0.01)
+[14/120]     214 s  ('mls_20km_nadir', '3.5-4.1um', 1e-07, 0.01)
+[15/120]     215 s  ('mls_ground_to_space', '3.5-4.1um', 1e-07, 0.01)
+[16/120]     218 s  ('mls_20km_nadir', '4.5-5.0um', 1e-07, 0.01)
+[17/120]     222 s  ('mls_ground_to_space', '4.5-5.0um', 1e-08, 0.01)
+[18/120]     223 s  ('saw_10km_horizontal', '4.5-5.0um', 1e-07, 0.01)
+[19/120]     226 s  ('mls_ground_to_space', '4.5-5.0um', 1e-07, 0.01)
+[20/120]     248 s  ('tropical_10km_horizontal', '4.5-5.0um', 1e-06, 0.01)
+[21/120]     252 s  ('saw_10km_horizontal', '3.5-4.1um', 1e-07, 0.01)
+[22/120]     257 s  ('tropical_10km_horizontal', '3.5-4.1um', 1e-06, 0.01)
+[23/120]     261 s  ('mls_20km_nadir', '2.9-3.5um', 1e-07, 0.01)
+[24/120]     270 s  ('mls_ground_to_space', '2.9-3.5um', 1e-08, 0.01)
+[25/120]     276 s  ('us_std_limb_15km', '3.5-4.1um', 1e-08, 0.01)
+[26/120]     286 s  ('mls_ground_to_space', '3.5-4.1um', 1e-06, 0.01)
+[27/120]     289 s  ('tropical_10km_horizontal', '2.9-3.5um', 1e-06, 0.01)
+[28/120]     290 s  ('saw_10km_horizontal', '2.9-3.5um', 1e-07, 0.01)
+[29/120]     294 s  ('mls_20km_nadir', '4.5-5.0um', 1e-06, 0.01)
+[30/120]     298 s  ('mls_20km_nadir', '3.5-4.1um', 1e-06, 0.01)
+[31/120]     299 s  ('mls_ground_to_space', '4.5-5.0um', 1e-06, 0.01)
+[32/120]     302 s  ('mls_ground_to_space', '2.9-3.5um', 1e-07, 0.01)
+[33/120]     308 s  ('saw_10km_horizontal', '4.5-5.0um', 1e-06, 0.01)
+[34/120]     310 s  ('us_std_limb_15km', '4.5-5.0um', 1e-08, 0.01)
+[35/120]     317 s  ('saw_10km_horizontal', '3.5-4.1um', 1e-06, 0.01)
+[36/120]     320 s  ('tropical_10km_horizontal', '4.5-5.0um', 3e-06, 0.01)
+[37/120]     325 s  ('tropical_10km_horizontal', '3.5-4.1um', 3e-06, 0.01)
+[38/120]     335 s  ('mls_20km_nadir', '2.9-3.5um', 1e-06, 0.01)
+[39/120]     343 s  ('saw_10km_horizontal', '2.9-3.5um', 1e-06, 0.01)
+[40/120]     349 s  ('mls_20km_nadir', '4.5-5.0um', 3e-06, 0.01)
+[41/120]     351 s  ('mls_ground_to_space', '2.9-3.5um', 1e-06, 0.01)
+[42/120]     351 s  ('mls_ground_to_space', '3.5-4.1um', 3e-06, 0.01)
+[43/120]     353 s  ('mls_20km_nadir', '3.5-4.1um', 3e-06, 0.01)
+[44/120]     357 s  ('tropical_10km_horizontal', '2.9-3.5um', 3e-06, 0.01)
+[45/120]     361 s  ('us_std_limb_15km', '3.5-4.1um', 1e-07, 0.01)
+[46/120]     366 s  ('mls_ground_to_space', '4.5-5.0um', 3e-06, 0.01)
+[47/120]     366 s  ('saw_10km_horizontal', '4.5-5.0um', 3e-06, 0.01)
+[48/120]     370 s  ('saw_10km_horizontal', '3.5-4.1um', 3e-06, 0.01)
+[49/120]     375 s  ('tropical_10km_horizontal', '4.5-5.0um', 1e-05, 0.01)
+[50/120]     384 s  ('tropical_10km_horizontal', '3.5-4.1um', 1e-05, 0.01)
+[51/120]     389 s  ('mls_20km_nadir', '2.9-3.5um', 3e-06, 0.01)
+[52/120]     390 s  ('saw_10km_horizontal', '2.9-3.5um', 3e-06, 0.01)
+[53/120]     392 s  ('mls_ground_to_space', '2.9-3.5um', 3e-06, 0.01)
+[54/120]     396 s  ('us_std_limb_15km', '4.5-5.0um', 1e-07, 0.01)
+[55/120]     400 s  ('mls_ground_to_space', '3.5-4.1um', 1e-05, 0.01)
+[56/120]     404 s  ('tropical_10km_horizontal', '2.9-3.5um', 1e-05, 0.01)
+[57/120]     405 s  ('us_std_limb_15km', '3.5-4.1um', 1e-06, 0.01)
+[58/120]     406 s  ('mls_ground_to_space', '4.5-5.0um', 1e-05, 0.01)
+[59/120]     408 s  ('mls_20km_nadir', '3.5-4.1um', 1e-05, 0.01)
+[60/120]     408 s  ('mls_20km_nadir', '4.5-5.0um', 1e-05, 0.01)
+[61/120]     413 s  ('us_std_limb_15km', '2.9-3.5um', 1e-08, 0.01)
+[62/120]     414 s  ('saw_10km_horizontal', '4.5-5.0um', 1e-05, 0.01)
+[63/120]     419 s  ('tropical_10km_horizontal', '4.5-5.0um', 3e-05, 0.01)
+[64/120]     419 s  ('saw_10km_horizontal', '3.5-4.1um', 1e-05, 0.01)
+[65/120]     426 s  ('tropical_10km_horizontal', '3.5-4.1um', 3e-05, 0.01)
+[66/120]     428 s  ('mls_20km_nadir', '2.9-3.5um', 1e-05, 0.01)
+[67/120]     430 s  ('mls_ground_to_space', '2.9-3.5um', 1e-05, 0.01)
+[68/120]     431 s  ('saw_10km_horizontal', '2.9-3.5um', 1e-05, 0.01)
+[69/120]     435 s  ('mls_ground_to_space', '3.5-4.1um', 3e-05, 0.01)
+[70/120]     440 s  ('tropical_10km_horizontal', '2.9-3.5um', 3e-05, 0.01)
+[71/120]     441 s  ('mls_20km_nadir', '4.5-5.0um', 3e-05, 0.01)
+[72/120]     443 s  ('mls_ground_to_space', '4.5-5.0um', 3e-05, 0.01)
+[73/120]     443 s  ('us_std_limb_15km', '4.5-5.0um', 1e-06, 0.01)
+[74/120]     443 s  ('mls_20km_nadir', '3.5-4.1um', 3e-05, 0.01)
+[75/120]     449 s  ('us_std_limb_15km', '3.5-4.1um', 3e-06, 0.01)
+[76/120]     449 s  ('saw_10km_horizontal', '4.5-5.0um', 3e-05, 0.01)
+[77/120]     451 s  ('saw_10km_horizontal', '3.5-4.1um', 3e-05, 0.01)
+[78/120]     456 s  ('tropical_10km_horizontal', '4.5-5.0um', 0.0001, 0.01)
+[79/120]     457 s  ('mls_20km_nadir', '2.9-3.5um', 3e-05, 0.01)
+[80/120]     457 s  ('tropical_10km_horizontal', '3.5-4.1um', 0.0001, 0.01)
+[81/120]     459 s  ('mls_ground_to_space', '2.9-3.5um', 3e-05, 0.01)
+[82/120]     460 s  ('saw_10km_horizontal', '2.9-3.5um', 3e-05, 0.01)
+[83/120]     467 s  ('us_std_limb_15km', '3.5-4.1um', 1e-05, 0.01)
+[84/120]     468 s  ('mls_ground_to_space', '3.5-4.1um', 0.0001, 0.01)
+[85/120]     468 s  ('mls_20km_nadir', '4.5-5.0um', 0.0001, 0.01)
+[86/120]     468 s  ('mls_20km_nadir', '3.5-4.1um', 0.0001, 0.01)
+[87/120]     469 s  ('tropical_10km_horizontal', '2.9-3.5um', 0.0001, 0.01)
+[88/120]     471 s  ('mls_ground_to_space', '4.5-5.0um', 0.0001, 0.01)
+[89/120]     475 s  ('saw_10km_horizontal', '4.5-5.0um', 0.0001, 0.01)
+[90/120]     475 s  ('us_std_limb_15km', '4.5-5.0um', 3e-06, 0.01)
+[91/120]     477 s  ('saw_10km_horizontal', '3.5-4.1um', 0.0001, 0.01)
+[92/120]     479 s  ('mls_ground_to_space', '2.9-3.5um', 0.0001, 0.01)
+[93/120]     479 s  ('tropical_10km_horizontal', '4.5-5.0um', 0.001, 0.01)
+[94/120]     480 s  ('tropical_10km_horizontal', '3.5-4.1um', 0.001, 0.01)
+[95/120]     481 s  ('us_std_limb_15km', '2.9-3.5um', 1e-07, 0.01)
+[96/120]     482 s  ('mls_20km_nadir', '2.9-3.5um', 0.0001, 0.01)
+[97/120]     484 s  ('mls_ground_to_space', '3.5-4.1um', 0.001, 0.01)
+[98/120]     485 s  ('us_std_limb_15km', '2.9-3.5um', 1e-06, 0.01)
+[99/120]     485 s  ('mls_ground_to_space', '4.5-5.0um', 0.001, 0.01)
+[100/120]     486 s  ('mls_20km_nadir', '4.5-5.0um', 0.001, 0.01)
+[101/120]     487 s  ('saw_10km_horizontal', '2.9-3.5um', 0.0001, 0.01)
+[102/120]     488 s  ('mls_20km_nadir', '3.5-4.1um', 0.001, 0.01)
+[103/120]     488 s  ('tropical_10km_horizontal', '2.9-3.5um', 0.001, 0.01)
+[104/120]     489 s  ('us_std_limb_15km', '4.5-5.0um', 1e-05, 0.01)
+[105/120]     490 s  ('saw_10km_horizontal', '3.5-4.1um', 0.001, 0.01)
+[106/120]     491 s  ('saw_10km_horizontal', '4.5-5.0um', 0.001, 0.01)
+[107/120]     491 s  ('mls_ground_to_space', '2.9-3.5um', 0.001, 0.01)
+[108/120]     492 s  ('us_std_limb_15km', '3.5-4.1um', 3e-05, 0.01)
+[109/120]     493 s  ('mls_20km_nadir', '2.9-3.5um', 0.001, 0.01)
+[110/120]     494 s  ('saw_10km_horizontal', '2.9-3.5um', 0.001, 0.01)
+[111/120]     499 s  ('us_std_limb_15km', '3.5-4.1um', 0.001, 0.01)
+[112/120]     499 s  ('us_std_limb_15km', '4.5-5.0um', 3e-05, 0.01)
+[113/120]     499 s  ('us_std_limb_15km', '3.5-4.1um', 0.0001, 0.01)
+[114/120]     503 s  ('us_std_limb_15km', '4.5-5.0um', 0.001, 0.01)
+[115/120]     508 s  ('us_std_limb_15km', '2.9-3.5um', 0.001, 0.01)
+[116/120]     509 s  ('us_std_limb_15km', '4.5-5.0um', 0.0001, 0.01)
+[117/120]     512 s  ('us_std_limb_15km', '2.9-3.5um', 3e-06, 0.01)
+[118/120]     517 s  ('us_std_limb_15km', '2.9-3.5um', 1e-05, 0.01)
+[119/120]     517 s  ('us_std_limb_15km', '2.9-3.5um', 3e-05, 0.01)
+[120/120]     519 s  ('us_std_limb_15km', '2.9-3.5um', 0.0001, 0.01)
+
+geometry                   band        cutoff   mean pp   max pp    time
+tropical_10km_horizontal   4.5-5.0um    1e-03    0.1863   1.3097   0.03x
+tropical_10km_horizontal   4.5-5.0um    1e-04    0.0479   0.4360   0.06x
+tropical_10km_horizontal   4.5-5.0um    3e-05    0.0189   0.1589   0.09x
+tropical_10km_horizontal   4.5-5.0um    1e-05    0.0095   0.0643   0.12x
+tropical_10km_horizontal   4.5-5.0um    3e-06    0.0036   0.0331   0.18x
+tropical_10km_horizontal   4.5-5.0um    1e-06    0.0016   0.0160   0.28x
+tropical_10km_horizontal   4.5-5.0um    1e-07    0.0002   0.0015   0.56x
+tropical_10km_horizontal   3.5-4.1um    1e-03    1.0186   5.6508   0.03x
+tropical_10km_horizontal   3.5-4.1um    1e-04    0.2026   0.8273   0.07x
+tropical_10km_horizontal   3.5-4.1um    3e-05    0.0846   0.2969   0.12x
+tropical_10km_horizontal   3.5-4.1um    1e-05    0.0369   0.1411   0.17x
+tropical_10km_horizontal   3.5-4.1um    3e-06    0.0145   0.0479   0.24x
+tropical_10km_horizontal   3.5-4.1um    1e-06    0.0053   0.0176   0.36x
+tropical_10km_horizontal   3.5-4.1um    1e-07    0.0008   0.0027   0.64x
+tropical_10km_horizontal   2.9-3.5um    1e-03    0.1317   2.0882   0.06x
+tropical_10km_horizontal   2.9-3.5um    1e-04    0.0267   0.4256   0.12x
+tropical_10km_horizontal   2.9-3.5um    3e-05    0.0109   0.1649   0.16x
+tropical_10km_horizontal   2.9-3.5um    1e-05    0.0044   0.0624   0.24x
+tropical_10km_horizontal   2.9-3.5um    3e-06    0.0014   0.0191   0.34x
+tropical_10km_horizontal   2.9-3.5um    1e-06    0.0005   0.0065   0.42x
+tropical_10km_horizontal   2.9-3.5um    1e-07    0.0001   0.0015   0.64x
+mls_ground_to_space        4.5-5.0um    1e-03    0.7415   2.2600   0.03x
+mls_ground_to_space        4.5-5.0um    1e-04    0.1726   0.5610   0.07x
+mls_ground_to_space        4.5-5.0um    3e-05    0.0770   0.2409   0.11x
+mls_ground_to_space        4.5-5.0um    1e-05    0.0366   0.1122   0.17x
+mls_ground_to_space        4.5-5.0um    3e-06    0.0150   0.0456   0.26x
+mls_ground_to_space        4.5-5.0um    1e-06    0.0066   0.0196   0.34x
+mls_ground_to_space        4.5-5.0um    1e-07    0.0010   0.0024   0.65x
+mls_ground_to_space        3.5-4.1um    1e-03    0.8572   2.6381   0.02x
+mls_ground_to_space        3.5-4.1um    1e-04    0.1906   0.7391   0.06x
+mls_ground_to_space        3.5-4.1um    3e-05    0.0822   0.2443   0.10x
+mls_ground_to_space        3.5-4.1um    1e-05    0.0368   0.1094   0.14x
+mls_ground_to_space        3.5-4.1um    3e-06    0.0148   0.0419   0.24x
+mls_ground_to_space        3.5-4.1um    1e-06    0.0061   0.0160   0.34x
+mls_ground_to_space        3.5-4.1um    1e-07    0.0008   0.0023   0.60x
+mls_ground_to_space        2.9-3.5um    1e-03    0.3076   2.1768   0.04x
+mls_ground_to_space        2.9-3.5um    1e-04    0.0628   0.6487   0.08x
+mls_ground_to_space        2.9-3.5um    3e-05    0.0273   0.2550   0.12x
+mls_ground_to_space        2.9-3.5um    1e-05    0.0124   0.1041   0.17x
+mls_ground_to_space        2.9-3.5um    3e-06    0.0047   0.0330   0.28x
+mls_ground_to_space        2.9-3.5um    1e-06    0.0018   0.0111   0.39x
+mls_ground_to_space        2.9-3.5um    1e-07    0.0002   0.0012   0.69x
+mls_20km_nadir             4.5-5.0um    1e-03    0.8368   2.9346   0.03x
+mls_20km_nadir             4.5-5.0um    1e-04    0.1922   0.6931   0.06x
+mls_20km_nadir             4.5-5.0um    3e-05    0.0857   0.2790   0.09x
+mls_20km_nadir             4.5-5.0um    1e-05    0.0411   0.1273   0.13x
+mls_20km_nadir             4.5-5.0um    3e-06    0.0170   0.0520   0.20x
+mls_20km_nadir             4.5-5.0um    1e-06    0.0075   0.0211   0.28x
+mls_20km_nadir             4.5-5.0um    1e-07    0.0011   0.0028   0.58x
+mls_20km_nadir             3.5-4.1um    1e-03    0.9373   3.4283   0.03x
+mls_20km_nadir             3.5-4.1um    1e-04    0.2034   0.9611   0.06x
+mls_20km_nadir             3.5-4.1um    3e-05    0.0891   0.2766   0.10x
+mls_20km_nadir             3.5-4.1um    1e-05    0.0396   0.1227   0.14x
+mls_20km_nadir             3.5-4.1um    3e-06    0.0161   0.0479   0.21x
+mls_20km_nadir             3.5-4.1um    1e-06    0.0066   0.0176   0.31x
+mls_20km_nadir             3.5-4.1um    1e-07    0.0009   0.0027   0.60x
+mls_20km_nadir             2.9-3.5um    1e-03    0.3310   2.2161   0.04x
+mls_20km_nadir             2.9-3.5um    1e-04    0.0668   0.7209   0.08x
+mls_20km_nadir             2.9-3.5um    3e-05    0.0290   0.2789   0.12x
+mls_20km_nadir             2.9-3.5um    1e-05    0.0132   0.1099   0.17x
+mls_20km_nadir             2.9-3.5um    3e-06    0.0051   0.0365   0.26x
+mls_20km_nadir             2.9-3.5um    1e-06    0.0020   0.0125   0.37x
+mls_20km_nadir             2.9-3.5um    1e-07    0.0003   0.0014   0.62x
+us_std_limb_15km           4.5-5.0um    1e-03    0.3382   2.3190   0.06x
+us_std_limb_15km           4.5-5.0um    1e-04    0.0724   0.4981   0.13x
+us_std_limb_15km           4.5-5.0um    3e-05    0.0316   0.2310   0.21x
+us_std_limb_15km           4.5-5.0um    1e-05    0.0144   0.1020   0.30x
+us_std_limb_15km           4.5-5.0um    3e-06    0.0056   0.0369   0.43x
+us_std_limb_15km           4.5-5.0um    1e-06    0.0021   0.0130   0.56x
+us_std_limb_15km           4.5-5.0um    1e-07    0.0002   0.0010   0.79x
+us_std_limb_15km           3.5-4.1um    1e-03    0.7815   2.9936   0.05x
+us_std_limb_15km           3.5-4.1um    1e-04    0.1521   0.5591   0.11x
+us_std_limb_15km           3.5-4.1um    3e-05    0.0623   0.2422   0.19x
+us_std_limb_15km           3.5-4.1um    1e-05    0.0265   0.1052   0.24x
+us_std_limb_15km           3.5-4.1um    3e-06    0.0099   0.0410   0.36x
+us_std_limb_15km           3.5-4.1um    1e-06    0.0037   0.0150   0.47x
+us_std_limb_15km           3.5-4.1um    1e-07    0.0003   0.0012   0.72x
+us_std_limb_15km           2.9-3.5um    1e-03    0.1835   1.8340   0.05x
+us_std_limb_15km           2.9-3.5um    1e-04    0.0368   0.3082   0.12x
+us_std_limb_15km           2.9-3.5um    3e-05    0.0143   0.1073   0.18x
+us_std_limb_15km           2.9-3.5um    1e-05    0.0060   0.0447   0.27x
+us_std_limb_15km           2.9-3.5um    3e-06    0.0022   0.0203   0.39x
+us_std_limb_15km           2.9-3.5um    1e-06    0.0008   0.0090   0.48x
+us_std_limb_15km           2.9-3.5um    1e-07    0.0001   0.0006   0.74x
+saw_10km_horizontal        4.5-5.0um    1e-03    0.9130   3.5567   0.03x
+saw_10km_horizontal        4.5-5.0um    1e-04    0.2374   1.0988   0.07x
+saw_10km_horizontal        4.5-5.0um    3e-05    0.0937   0.4018   0.09x
+saw_10km_horizontal        4.5-5.0um    1e-05    0.0472   0.1861   0.12x
+saw_10km_horizontal        4.5-5.0um    3e-06    0.0212   0.0612   0.19x
+saw_10km_horizontal        4.5-5.0um    1e-06    0.0094   0.0295   0.24x
+saw_10km_horizontal        4.5-5.0um    1e-07    0.0015   0.0045   0.53x
+saw_10km_horizontal        3.5-4.1um    1e-03    1.2236   5.4028   0.03x
+saw_10km_horizontal        3.5-4.1um    1e-04    0.2327   1.0726   0.07x
+saw_10km_horizontal        3.5-4.1um    3e-05    0.1063   0.2788   0.10x
+saw_10km_horizontal        3.5-4.1um    1e-05    0.0484   0.1474   0.15x
+saw_10km_horizontal        3.5-4.1um    3e-06    0.0196   0.0775   0.21x
+saw_10km_horizontal        3.5-4.1um    1e-06    0.0077   0.0262   0.33x
+saw_10km_horizontal        3.5-4.1um    1e-07    0.0011   0.0035   0.59x
+saw_10km_horizontal        2.9-3.5um    1e-03    0.5097   3.1688   0.04x
+saw_10km_horizontal        2.9-3.5um    1e-04    0.0948   1.0202   0.09x
+saw_10km_horizontal        2.9-3.5um    3e-05    0.0410   0.4191   0.13x
+saw_10km_horizontal        2.9-3.5um    1e-05    0.0188   0.1336   0.18x
+saw_10km_horizontal        2.9-3.5um    3e-06    0.0076   0.0567   0.25x
+saw_10km_horizontal        2.9-3.5um    1e-06    0.0028   0.0156   0.38x
+saw_10km_horizontal        2.9-3.5um    1e-07    0.0004   0.0020   0.59x
+wrote D:\AI-projects\modtran_at_home\docs\validation\line_cutoff_sweep.json

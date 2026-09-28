@@ -1,0 +1,90 @@
+{
+ "machine": {
+  "cpu_count": 16,
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python": "3.11.6 (tags/v3.11.6:8b6ee5b, Oct  2 2023, 14:57:12) [MSC v.1935 64 bit (AMD64)]",
+  "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD"
+ },
+ "rows": [
+  {
+   "seconds": 64.28857179998886,
+   "fine_points": 194201,
+   "layers": 76,
+   "fine_step_cm1": 0.0010298661174047373,
+   "size": "small",
+   "workers": 1,
+   "mode": "processes",
+   "elements_per_s": 229578.53296101
+  },
+  {
+   "seconds": 34.440096000005724,
+   "fine_points": 194201,
+   "layers": 76,
+   "fine_step_cm1": 0.0010298661174047373,
+   "size": "small",
+   "workers": 2,
+   "mode": "processes",
+   "elements_per_s": 428549.2119417306
+  },
+  {
+   "seconds": 18.207535099994857,
+   "fine_points": 194201,
+   "layers": 76,
+   "fine_step_cm1": 0.0010298661174047373,
+   "size": "small",
+   "workers": 4,
+   "mode": "processes",
+   "elements_per_s": 810613.6233676226
+  },
+  {
+   "seconds": 11.907561800006079,
+   "fine_points": 194201,
+   "layers": 76,
+   "fine_step_cm1": 0.0010298661174047373,
+   "size": "small",
+   "workers": 8,
+   "mode": "processes",
+   "elements_per_s": 1239487.6674074843
+  },
+  {
+   "seconds": 9.636927599989576,
+   "fine_points": 194201,
+   "layers": 76,
+   "fine_step_cm1": 0.0010298661174047373,
+   "size": "small",
+   "workers": 16,
+   "mode": "processes",
+   "elements_per_s": 1531533.3488669111
+  },
+  {
+   "seconds": 41.63195010001073,
+   "fine_points": 194201,
+   "layers": 76,
+   "fine_step_cm1": 0.0010298661174047373,
+   "size": "small",
+   "workers": 4,
+   "mode": "threads",
+   "elements_per_s": 354518.0075529586
+  },
+  {
+   "seconds": 45.69622959999833,
+   "fine_points": 194201,
+   "layers": 76,
+   "fine_step_cm1": 0.0010298661174047373,
+   "size": "small",
+   "workers": 8,
+   "mode": "threads",
+   "elements_per_s": 322986.73499313253
+  },
+  {
+   "seconds": 48.952530100010335,
+   "fine_points": 194201,
+   "layers": 76,
+   "fine_step_cm1": 0.0010298661174047373,
+   "size": "small",
+   "workers": 16,
+   "mode": "threads",
+   "elements_per_s": 301501.8012316565
+  }
+ ]
+}

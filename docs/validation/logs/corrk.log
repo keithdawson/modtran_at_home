@@ -1,0 +1,243 @@
+[1/160]     153 s  ('tropical_10km_horizontal', '2500', 'disort', False, False, 0.005)
+[2/160]     157 s  ('tropical_10km_horizontal', '3000', 'disort', False, False, 0.005)
+[3/160]     160 s  ('tropical_10km_horizontal', '2700', 'disort', False, False, 0.005)
+[4/160]     161 s  ('tropical_10km_horizontal', '2050', 'disort', False, False, 0.005)
+[5/160]     291 s  ('mls_ground_to_space', '2500', 'disort', False, False, 0.005)
+[6/160]     298 s  ('mls_ground_to_space', '2700', 'disort', False, False, 0.005)
+[7/160]     306 s  ('mls_ground_to_space', '2050', 'disort', False, False, 0.005)
+[8/160]     306 s  ('mls_ground_to_space', '3000', 'disort', False, False, 0.005)
+[9/160]     407 s  ('mls_20km_nadir', '2050', 'disort', False, False, 0.005)
+[10/160]     408 s  ('mls_20km_nadir', '2500', 'disort', False, False, 0.005)
+[11/160]     562 s  ('mls_20km_nadir', '2700', 'disort', False, False, 0.005)
+[12/160]     581 s  ('mls_20km_nadir', '3000', 'disort', False, False, 0.005)
+[13/160]     664 s  ('us_std_limb_15km', '2050', 'disort', False, False, 0.005)
+[14/160]     777 s  ('us_std_limb_15km', '2500', 'disort', False, False, 0.005)
+[15/160]     885 s  ('us_std_limb_15km', '2700', 'disort', False, False, 0.005)
+[16/160]    1130 s  ('us_std_limb_15km', '3000', 'disort', False, False, 0.005)
+[17/160]    1729 s  ('tropical_10km_horizontal', '2050', 'disort', True, False, 0.005)
+[18/160]    1794 s  ('tropical_10km_horizontal', '3000', 'disort', True, False, 0.005)
+[19/160]    1874 s  ('tropical_10km_horizontal', '2500', 'disort', True, False, 0.005)
+[20/160]    1889 s  ('tropical_10km_horizontal', '2700', 'disort', True, False, 0.005)
+[21/160]    1890 s  ('saw_10km_horizontal', '2050', 'disort', False, False, 0.005)
+[22/160]    2034 s  ('saw_10km_horizontal', '2500', 'disort', False, False, 0.005)
+[23/160]    2050 s  ('saw_10km_horizontal', '2700', 'disort', False, False, 0.005)
+[24/160]    2213 s  ('saw_10km_horizontal', '3000', 'disort', False, False, 0.005)
+[25/160]    3399 s  ('mls_20km_nadir', '2050', 'disort', True, False, 0.005)
+[26/160]    3414 s  ('tropical_10km_horizontal', '2050', 'disort', False, True, 0.005)
+[27/160]    3483 s  ('mls_20km_nadir', '2500', 'disort', True, False, 0.005)
+[28/160]    3492 s  ('tropical_10km_horizontal', '2500', 'disort', False, True, 0.005)
+[29/160]    3493 s  ('tropical_10km_horizontal', '2050', 'disort', True, True, 0.005)
+[30/160]    3503 s  ('tropical_10km_horizontal', '2700', 'disort', False, True, 0.005)
+[31/160]    3573 s  ('tropical_10km_horizontal', '2500', 'disort', True, True, 0.005)
+[32/160]    3586 s  ('tropical_10km_horizontal', '2700', 'disort', True, True, 0.005)
+[33/160]    3588 s  ('tropical_10km_horizontal', '3000', 'disort', False, True, 0.005)
+[34/160]    3610 s  ('mls_20km_nadir', '2700', 'disort', True, False, 0.005)
+[35/160]    3612 s  ('mls_ground_to_space', '2050', 'disort', False, True, 0.005)
+[36/160]    3623 s  ('saw_10km_horizontal', '2050', 'disort', True, False, 0.005)
+[37/160]    3627 s  ('mls_ground_to_space', '2500', 'disort', False, True, 0.005)
+[38/160]    3641 s  ('mls_ground_to_space', '2700', 'disort', False, True, 0.005)
+[39/160]    3680 s  ('tropical_10km_horizontal', '3000', 'disort', True, True, 0.005)
+[40/160]    3699 s  ('mls_ground_to_space', '3000', 'disort', False, True, 0.005)
+[41/160]    3741 s  ('us_std_limb_15km', '2500', 'disort', True, False, 0.005)
+[42/160]    3754 s  ('us_std_limb_15km', '2050', 'disort', True, False, 0.005)
+[43/160]    3759 s  ('mls_20km_nadir', '2050', 'disort', False, True, 0.005)
+[44/160]    3770 s  ('mls_20km_nadir', '2500', 'disort', False, True, 0.005)
+[45/160]    3783 s  ('mls_ground_to_space', '2050', 'disort', True, True, 0.005)
+[46/160]    3794 s  ('mls_ground_to_space', '2500', 'disort', True, True, 0.005)
+[47/160]    3795 s  ('mls_20km_nadir', '2700', 'disort', False, True, 0.005)
+[48/160]    3806 s  ('mls_20km_nadir', '3000', 'disort', True, False, 0.005)
+[49/160]    3809 s  ('mls_ground_to_space', '2700', 'disort', True, True, 0.005)
+[50/160]    3814 s  ('mls_20km_nadir', '3000', 'disort', False, True, 0.005)
+[51/160]    3826 s  ('us_std_limb_15km', '2050', 'disort', False, True, 0.005)
+[52/160]    3837 s  ('us_std_limb_15km', '2500', 'disort', False, True, 0.005)
+[53/160]    3868 s  ('mls_ground_to_space', '3000', 'disort', True, True, 0.005)
+[54/160]    3872 s  ('saw_10km_horizontal', '2500', 'disort', True, False, 0.005)
+[55/160]    3878 s  ('us_std_limb_15km', '2700', 'disort', False, True, 0.005)
+[56/160]    3890 s  ('mls_20km_nadir', '2050', 'disort', True, True, 0.005)
+[57/160]    3894 s  ('us_std_limb_15km', '3000', 'disort', False, True, 0.005)
+[58/160]    3898 s  ('mls_20km_nadir', '2500', 'disort', True, True, 0.005)
+[59/160]    3908 s  ('saw_10km_horizontal', '2050', 'disort', False, True, 0.005)
+[60/160]    3916 s  ('saw_10km_horizontal', '2500', 'disort', False, True, 0.005)
+[61/160]    3922 s  ('mls_20km_nadir', '2700', 'disort', True, True, 0.005)
+[62/160]    3930 s  ('saw_10km_horizontal', '2700', 'disort', False, True, 0.005)
+[63/160]    3942 s  ('mls_ground_to_space', '2050', 'disort', True, False, 0.005)
+[64/160]    3949 s  ('mls_20km_nadir', '3000', 'disort', True, True, 0.005)
+[65/160]    3953 s  ('us_std_limb_15km', '2050', 'disort', True, True, 0.005)
+[66/160]    3954 s  ('saw_10km_horizontal', '3000', 'disort', False, True, 0.005)
+[67/160]    3955 s  ('tropical_10km_horizontal', '2050', 'single_scatter', False, False, 0.005)
+[68/160]    3956 s  ('tropical_10km_horizontal', '2050', 'single_scatter', True, False, 0.005)
+[69/160]    3957 s  ('tropical_10km_horizontal', '2500', 'single_scatter', False, False, 0.005)
+[70/160]    3957 s  ('us_std_limb_15km', '2500', 'disort', True, True, 0.005)
+[71/160]    3957 s  ('tropical_10km_horizontal', '2500', 'single_scatter', True, False, 0.005)
+[72/160]    3958 s  ('tropical_10km_horizontal', '2700', 'single_scatter', False, False, 0.005)
+[73/160]    3959 s  ('tropical_10km_horizontal', '2700', 'single_scatter', True, False, 0.005)
+[74/160]    3963 s  ('tropical_10km_horizontal', '3000', 'single_scatter', False, False, 0.005)
+[75/160]    3963 s  ('tropical_10km_horizontal', '3000', 'single_scatter', True, False, 0.005)
+[76/160]    3965 s  ('mls_ground_to_space', '2500', 'single_scatter', False, False, 0.005)
+[77/160]    3966 s  ('mls_ground_to_space', '2500', 'single_scatter', True, False, 0.005)
+[78/160]    3966 s  ('mls_ground_to_space', '2050', 'single_scatter', False, False, 0.005)
+[79/160]    3968 s  ('mls_ground_to_space', '2700', 'single_scatter', False, False, 0.005)
+[80/160]    3969 s  ('mls_ground_to_space', '2700', 'single_scatter', True, False, 0.005)
+[81/160]    3971 s  ('mls_ground_to_space', '2050', 'single_scatter', True, False, 0.005)
+[82/160]    3974 s  ('mls_20km_nadir', '2050', 'single_scatter', False, False, 0.005)
+[83/160]    3975 s  ('saw_10km_horizontal', '2050', 'disort', True, True, 0.005)
+[84/160]    3976 s  ('mls_20km_nadir', '2500', 'single_scatter', False, False, 0.005)
+[85/160]    3976 s  ('mls_ground_to_space', '3000', 'single_scatter', True, False, 0.005)
+[86/160]    3977 s  ('mls_ground_to_space', '3000', 'single_scatter', False, False, 0.005)
+[87/160]    3977 s  ('mls_20km_nadir', '2050', 'single_scatter', True, False, 0.005)
+[88/160]    3978 s  ('mls_20km_nadir', '2700', 'single_scatter', False, False, 0.005)
+[89/160]    3978 s  ('mls_20km_nadir', '2500', 'single_scatter', True, False, 0.005)
+[90/160]    3978 s  ('mls_20km_nadir', '2700', 'single_scatter', True, False, 0.005)
+[91/160]    3983 s  ('mls_20km_nadir', '3000', 'single_scatter', False, False, 0.005)
+[92/160]    3983 s  ('mls_20km_nadir', '3000', 'single_scatter', True, False, 0.005)
+[93/160]    3984 s  ('saw_10km_horizontal', '2500', 'disort', True, True, 0.005)
+[94/160]    3986 s  ('us_std_limb_15km', '2500', 'single_scatter', False, False, 0.005)
+[95/160]    3987 s  ('us_std_limb_15km', '2500', 'single_scatter', True, False, 0.005)
+[96/160]    3991 s  ('us_std_limb_15km', '2700', 'single_scatter', False, False, 0.005)
+[97/160]    3993 s  ('us_std_limb_15km', '2700', 'disort', True, True, 0.005)
+[98/160]    3993 s  ('us_std_limb_15km', '2700', 'single_scatter', True, False, 0.005)
+[99/160]    3995 s  ('saw_10km_horizontal', '2050', 'single_scatter', True, False, 0.005)
+[100/160]    3995 s  ('saw_10km_horizontal', '2050', 'single_scatter', False, False, 0.005)
+[101/160]    3996 s  ('saw_10km_horizontal', '2500', 'single_scatter', False, False, 0.005)
+[102/160]    3996 s  ('saw_10km_horizontal', '2500', 'single_scatter', True, False, 0.005)
+[103/160]    3996 s  ('us_std_limb_15km', '2700', 'disort', True, False, 0.005)
+[104/160]    3997 s  ('saw_10km_horizontal', '2700', 'single_scatter', True, False, 0.005)
+[105/160]    3997 s  ('saw_10km_horizontal', '2700', 'single_scatter', False, False, 0.005)
+[106/160]    3997 s  ('us_std_limb_15km', '2050', 'single_scatter', False, False, 0.005)
+[107/160]    3998 s  ('saw_10km_horizontal', '2700', 'disort', True, True, 0.005)
+[108/160]    3999 s  ('us_std_limb_15km', '2050', 'single_scatter', True, False, 0.005)
+[109/160]    3999 s  ('tropical_10km_horizontal', '2500', 'single_scatter', False, True, 0.005)
+[110/160]    3999 s  ('tropical_10km_horizontal', '2050', 'single_scatter', True, True, 0.005)
+[111/160]    3999 s  ('tropical_10km_horizontal', '2050', 'single_scatter', False, True, 0.005)
+[112/160]    4000 s  ('tropical_10km_horizontal', '2500', 'single_scatter', True, True, 0.005)
+[113/160]    4000 s  ('saw_10km_horizontal', '3000', 'single_scatter', False, False, 0.005)
+[114/160]    4000 s  ('saw_10km_horizontal', '3000', 'single_scatter', True, False, 0.005)
+[115/160]    4000 s  ('tropical_10km_horizontal', '2700', 'single_scatter', False, True, 0.005)
+[116/160]    4001 s  ('tropical_10km_horizontal', '2700', 'single_scatter', True, True, 0.005)
+[117/160]    4002 s  ('mls_ground_to_space', '2500', 'single_scatter', False, True, 0.005)
+[118/160]    4002 s  ('mls_ground_to_space', '2500', 'single_scatter', True, True, 0.005)
+[119/160]    4003 s  ('us_std_limb_15km', '3000', 'single_scatter', False, False, 0.005)
+[120/160]    4004 s  ('tropical_10km_horizontal', '3000', 'single_scatter', True, True, 0.005)
+[121/160]    4005 s  ('mls_ground_to_space', '2700', 'single_scatter', False, True, 0.005)
+[122/160]    4005 s  ('mls_ground_to_space', '2700', 'single_scatter', True, True, 0.005)
+[123/160]    4005 s  ('tropical_10km_horizontal', '3000', 'single_scatter', False, True, 0.005)
+[124/160]    4006 s  ('mls_20km_nadir', '2500', 'single_scatter', False, True, 0.005)
+[125/160]    4007 s  ('mls_ground_to_space', '2050', 'single_scatter', True, True, 0.005)
+[126/160]    4007 s  ('mls_20km_nadir', '2500', 'single_scatter', True, True, 0.005)
+[127/160]    4008 s  ('mls_ground_to_space', '2050', 'single_scatter', False, True, 0.005)
+[128/160]    4008 s  ('mls_20km_nadir', '2050', 'single_scatter', False, True, 0.005)
+[129/160]    4008 s  ('mls_20km_nadir', '2050', 'single_scatter', True, True, 0.005)
+[130/160]    4008 s  ('mls_20km_nadir', '2700', 'single_scatter', False, True, 0.005)
+[131/160]    4009 s  ('mls_20km_nadir', '2700', 'single_scatter', True, True, 0.005)
+[132/160]    4009 s  ('us_std_limb_15km', '3000', 'single_scatter', True, False, 0.005)
+[133/160]    4010 s  ('mls_ground_to_space', '3000', 'single_scatter', False, True, 0.005)
+[134/160]    4012 s  ('mls_ground_to_space', '3000', 'single_scatter', True, True, 0.005)
+[135/160]    4012 s  ('us_std_limb_15km', '2500', 'single_scatter', False, True, 0.005)
+[136/160]    4013 s  ('saw_10km_horizontal', '3000', 'disort', True, True, 0.005)
+[137/160]    4013 s  ('us_std_limb_15km', '2500', 'single_scatter', True, True, 0.005)
+[138/160]    4013 s  ('mls_20km_nadir', '3000', 'single_scatter', True, True, 0.005)
+[139/160]    4014 s  ('mls_20km_nadir', '3000', 'single_scatter', False, True, 0.005)
+[140/160]    4014 s  ('saw_10km_horizontal', '2050', 'single_scatter', False, True, 0.005)
+[141/160]    4014 s  ('saw_10km_horizontal', '2050', 'single_scatter', True, True, 0.005)
+[142/160]    4014 s  ('saw_10km_horizontal', '2500', 'single_scatter', False, True, 0.005)
+[143/160]    4015 s  ('saw_10km_horizontal', '2500', 'single_scatter', True, True, 0.005)
+[144/160]    4015 s  ('saw_10km_horizontal', '2700', 'single_scatter', False, True, 0.005)
+[145/160]    4016 s  ('saw_10km_horizontal', '2700', 'single_scatter', True, True, 0.005)
+[146/160]    4017 s  ('us_std_limb_15km', '2700', 'single_scatter', False, True, 0.005)
+[147/160]    4018 s  ('us_std_limb_15km', '2700', 'single_scatter', True, True, 0.005)
+[148/160]    4019 s  ('saw_10km_horizontal', '3000', 'single_scatter', False, True, 0.005)
+[149/160]    4019 s  ('saw_10km_horizontal', '3000', 'single_scatter', True, True, 0.005)
+[150/160]    4022 s  ('us_std_limb_15km', '3000', 'disort', True, True, 0.005)
+[151/160]    4026 s  ('us_std_limb_15km', '2050', 'single_scatter', True, True, 0.005)
+[152/160]    4027 s  ('saw_10km_horizontal', '2700', 'disort', True, False, 0.005)
+[153/160]    4028 s  ('us_std_limb_15km', '2050', 'single_scatter', False, True, 0.005)
+[154/160]    4028 s  ('us_std_limb_15km', '3000', 'single_scatter', False, True, 0.005)
+[155/160]    4028 s  ('us_std_limb_15km', '3000', 'single_scatter', True, True, 0.005)
+[156/160]    4039 s  ('mls_ground_to_space', '2500', 'disort', True, False, 0.005)
+[157/160]    4044 s  ('mls_ground_to_space', '2700', 'disort', True, False, 0.005)
+[158/160]    4057 s  ('mls_ground_to_space', '3000', 'disort', True, False, 0.005)
+[159/160]    4074 s  ('saw_10km_horizontal', '3000', 'disort', True, False, 0.005)
+[160/160]    4227 s  ('us_std_limb_15km', '3000', 'disort', True, False, 0.005)
+
+geometry                   win   solver          sun    max %  band %  speedup
+tropical_10km_horizontal   2050  single_scatter  no     0.056   0.014     1.0x
+tropical_10km_horizontal   2050  single_scatter  yes    0.056   0.014     0.9x
+tropical_10km_horizontal   2050  disort          no     0.194   0.035    11.2x
+tropical_10km_horizontal   2050  disort          yes    0.194   0.035    21.7x
+tropical_10km_horizontal   2500  single_scatter  no     0.250   0.027     1.0x
+tropical_10km_horizontal   2500  single_scatter  yes    0.242   0.025     1.4x
+tropical_10km_horizontal   2500  disort          no     0.705   0.124    16.1x
+tropical_10km_horizontal   2500  disort          yes    0.680   0.118    23.2x
+tropical_10km_horizontal   2700  single_scatter  no     0.492   0.232     0.9x
+tropical_10km_horizontal   2700  single_scatter  yes    0.476   0.221     1.3x
+tropical_10km_horizontal   2700  disort          no     2.884   0.433    16.5x
+tropical_10km_horizontal   2700  disort          yes    2.770   0.411    22.7x
+tropical_10km_horizontal   3000  single_scatter  no     0.062   0.007     0.9x
+tropical_10km_horizontal   3000  single_scatter  yes    0.052   0.001     1.0x
+tropical_10km_horizontal   3000  disort          no     0.072   0.009    10.3x
+tropical_10km_horizontal   3000  disort          yes    0.057   0.005    19.2x
+mls_ground_to_space        2050  single_scatter  no     1.820   0.487     1.0x
+mls_ground_to_space        2050  single_scatter  yes    1.817   0.485     1.2x
+mls_ground_to_space        2050  disort          no     1.816   0.486    12.9x
+mls_ground_to_space        2050  disort          yes    1.813   0.484    22.8x
+mls_ground_to_space        2500  single_scatter  no     0.094   0.022     0.9x
+mls_ground_to_space        2500  single_scatter  yes    0.047   0.008     1.0x
+mls_ground_to_space        2500  disort          no     0.093   0.022    19.5x
+mls_ground_to_space        2500  disort          yes    0.047   0.008    23.6x
+mls_ground_to_space        2700  single_scatter  no     0.842   0.365     0.9x
+mls_ground_to_space        2700  single_scatter  yes    0.637   0.183     1.0x
+mls_ground_to_space        2700  disort          no     0.842   0.365    20.6x
+mls_ground_to_space        2700  disort          yes    0.635   0.182    24.0x
+mls_ground_to_space        3000  single_scatter  no     0.924   0.348     1.1x
+mls_ground_to_space        3000  single_scatter  yes    0.903   0.230     1.0x
+mls_ground_to_space        3000  disort          no     0.921   0.346    15.9x
+mls_ground_to_space        3000  disort          yes    0.894   0.230    24.0x
+mls_20km_nadir             2050  single_scatter  no    18.505  -1.673     1.1x
+mls_20km_nadir             2050  single_scatter  yes   18.522  -1.669     0.9x
+mls_20km_nadir             2050  disort          no    18.887  -1.706    14.0x
+mls_20km_nadir             2050  disort          yes   18.889  -1.703    23.8x
+mls_20km_nadir             2500  single_scatter  no     0.005  -0.001     1.2x
+mls_20km_nadir             2500  single_scatter  yes    0.005  -0.001     1.5x
+mls_20km_nadir             2500  disort          no     0.003  -0.000    22.6x
+mls_20km_nadir             2500  disort          yes    0.004  -0.001    25.9x
+mls_20km_nadir             2700  single_scatter  no     0.249  -0.029     1.1x
+mls_20km_nadir             2700  single_scatter  yes    0.774  -0.087     1.2x
+mls_20km_nadir             2700  disort          no     0.242  -0.025    21.6x
+mls_20km_nadir             2700  disort          yes    0.766  -0.084    25.9x
+mls_20km_nadir             3000  single_scatter  no    47.411  -2.102     0.9x
+mls_20km_nadir             3000  single_scatter  yes   47.380  -1.719     1.1x
+mls_20km_nadir             3000  disort          no    47.104  -2.062    14.6x
+mls_20km_nadir             3000  disort          yes   47.097  -1.698    24.5x
+us_std_limb_15km           2050  single_scatter  no     9.193  -1.435     1.0x
+us_std_limb_15km           2050  single_scatter  yes    9.194  -1.435     1.1x
+us_std_limb_15km           2050  disort          no    40.038  -4.498    15.1x
+us_std_limb_15km           2050  disort          yes   40.040  -4.499    24.1x
+us_std_limb_15km           2500  single_scatter  no     1.301   0.491     1.1x
+us_std_limb_15km           2500  single_scatter  yes    1.226   0.437     1.0x
+us_std_limb_15km           2500  disort          no     0.315  -0.053    20.4x
+us_std_limb_15km           2500  disort          yes    0.356  -0.059    26.4x
+us_std_limb_15km           2700  single_scatter  no     3.429   0.909     1.0x
+us_std_limb_15km           2700  single_scatter  yes    2.671   0.749     1.1x
+us_std_limb_15km           2700  disort          no     4.876  -0.579    21.1x
+us_std_limb_15km           2700  disort          yes    5.937  -0.687    26.6x
+us_std_limb_15km           3000  single_scatter  no     9.372  -2.258     1.0x
+us_std_limb_15km           3000  single_scatter  yes   10.427  -2.345     1.2x
+us_std_limb_15km           3000  disort          no    40.429  -4.376    15.4x
+us_std_limb_15km           3000  disort          yes   39.843  -4.187    23.4x
+saw_10km_horizontal        2050  single_scatter  no     0.972   0.469     1.1x
+saw_10km_horizontal        2050  single_scatter  yes    0.957   0.463     1.1x
+saw_10km_horizontal        2050  disort          no     1.065   0.580    12.0x
+saw_10km_horizontal        2050  disort          yes    1.042   0.571    23.8x
+saw_10km_horizontal        2500  single_scatter  no     0.009   0.001     1.1x
+saw_10km_horizontal        2500  single_scatter  yes    0.006   0.001     0.9x
+saw_10km_horizontal        2500  disort          no     0.037   0.007    19.2x
+saw_10km_horizontal        2500  disort          yes    0.019   0.004    29.2x
+saw_10km_horizontal        2700  single_scatter  no     0.387   0.080     1.1x
+saw_10km_horizontal        2700  single_scatter  yes    0.223   0.031     0.8x
+saw_10km_horizontal        2700  disort          no     0.438   0.114    18.7x
+saw_10km_horizontal        2700  disort          yes    0.183   0.029    29.6x
+saw_10km_horizontal        3000  single_scatter  no     0.519   0.118     1.1x
+saw_10km_horizontal        3000  single_scatter  yes    0.703  -0.140     0.9x
+saw_10km_horizontal        3000  disort          no     1.333   0.244    13.7x
+saw_10km_horizontal        3000  disort          yes    0.842  -0.145    29.2x
+wrote D:\AI-projects\modtran_at_home\docs\validation\correlated_k_accuracy.json

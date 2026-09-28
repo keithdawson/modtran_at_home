@@ -1,0 +1,805 @@
+{
+ "fine_step_cm1": 0.005,
+ "rows": [
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.05576566266727015,
+   "band_pct": 0.014338580447504022,
+   "exact_seconds": 2.4407248999923468,
+   "binned_seconds": 2.498258600011468
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.055628657315188026,
+   "band_pct": 0.014265191009108023,
+   "exact_seconds": 1.942966200003866,
+   "binned_seconds": 2.0626677999971434
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2050",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.194182874222677,
+   "band_pct": 0.035098781206662794,
+   "exact_seconds": 160.729138900002,
+   "binned_seconds": 14.359494299977086
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2050",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.1937863256951102,
+   "band_pct": 0.03498748555803611,
+   "exact_seconds": 1728.5811393999902,
+   "binned_seconds": 79.55946220000624
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.2502802270775132,
+   "band_pct": 0.02653622886849325,
+   "exact_seconds": 1.1476223999925423,
+   "binned_seconds": 1.1485104000021238
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.24175327820121156,
+   "band_pct": 0.025430814097017813,
+   "exact_seconds": 1.501068400015356,
+   "binned_seconds": 1.0357944999996107
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2500",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.7052648367514853,
+   "band_pct": 0.12404189411004629,
+   "exact_seconds": 152.4695236000116,
+   "binned_seconds": 9.449910099996487
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2500",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.6797705375462071,
+   "band_pct": 0.11792343930837779,
+   "exact_seconds": 1873.3640601000225,
+   "binned_seconds": 80.82170689999475
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.49200622573935987,
+   "band_pct": 0.23238283554410985,
+   "exact_seconds": 1.501434000005247,
+   "binned_seconds": 1.5897304999816697
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.4759305586464197,
+   "band_pct": 0.2213941169229119,
+   "exact_seconds": 2.186341699998593,
+   "binned_seconds": 1.6316379999916535
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2700",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 2.8840110077102734,
+   "band_pct": 0.43315171584376155,
+   "exact_seconds": 159.07970800000476,
+   "binned_seconds": 9.627805900003295
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "2700",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 2.7695551586215625,
+   "band_pct": 0.4106470399427468,
+   "exact_seconds": 1887.9078455000126,
+   "binned_seconds": 83.05226550000953
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.061627008626057155,
+   "band_pct": 0.006533160605704663,
+   "exact_seconds": 5.5363325999933295,
+   "binned_seconds": 6.075552199996309
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.05198236900790926,
+   "band_pct": 0.0010233733098166443,
+   "exact_seconds": 4.969321899989154,
+   "binned_seconds": 4.744104899989907
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "3000",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.07167404483453214,
+   "band_pct": 0.00878443513906352,
+   "exact_seconds": 156.67046279998613,
+   "binned_seconds": 15.256786399986595
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "window": "3000",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.056934807638003564,
+   "band_pct": 0.005407883552505839,
+   "exact_seconds": 1793.2050163999957,
+   "binned_seconds": 93.60650880000321
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 1.819853082440818,
+   "band_pct": 0.4866217350947468,
+   "exact_seconds": 7.3074183000135235,
+   "binned_seconds": 7.475139799993485
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 1.8165885777926474,
+   "band_pct": 0.4846877093369931,
+   "exact_seconds": 7.735491400002502,
+   "binned_seconds": 6.647224599990295
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2050",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 1.8160742312349865,
+   "band_pct": 0.48569117652225385,
+   "exact_seconds": 305.44961650000187,
+   "binned_seconds": 23.625426400016295
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2050",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 1.812868432064256,
+   "band_pct": 0.48378285799125753,
+   "exact_seconds": 3941.303283299989,
+   "binned_seconds": 172.68526679999195
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.09362287968891302,
+   "band_pct": 0.021855135541474165,
+   "exact_seconds": 1.499641700007487,
+   "binned_seconds": 1.6797388000122737
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.04678141354271279,
+   "band_pct": 0.007860871599342874,
+   "exact_seconds": 1.5774646000063512,
+   "binned_seconds": 1.6493704999738839
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2500",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.09332233695559718,
+   "band_pct": 0.02172327424454294,
+   "exact_seconds": 290.4091438000032,
+   "binned_seconds": 14.87639200000558
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2500",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.04678315412324935,
+   "band_pct": 0.00786746598192748,
+   "exact_seconds": 4037.919289799989,
+   "binned_seconds": 170.9867258000013
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.8416977037336536,
+   "band_pct": 0.3653524089977267,
+   "exact_seconds": 2.1871184000046924,
+   "binned_seconds": 2.5084996000223327
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.6372727813709422,
+   "band_pct": 0.18290056925473477,
+   "exact_seconds": 2.279709800001001,
+   "binned_seconds": 2.307789699989371
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2700",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.841716342232101,
+   "band_pct": 0.3647655504821076,
+   "exact_seconds": 297.0854810999881,
+   "binned_seconds": 14.407519800006412
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "2700",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.6354132316269493,
+   "band_pct": 0.18201497189173219,
+   "exact_seconds": 4042.818475499982,
+   "binned_seconds": 168.3247797000222
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.9239682444677825,
+   "band_pct": 0.348021525104128,
+   "exact_seconds": 8.164260599995032,
+   "binned_seconds": 7.565538900002139
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.9031562920582622,
+   "band_pct": 0.22969303441204164,
+   "exact_seconds": 7.453061299980618,
+   "binned_seconds": 7.5086030999955256
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "3000",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.9212078737523036,
+   "band_pct": 0.3456545287752652,
+   "exact_seconds": 305.7739087000082,
+   "binned_seconds": 19.223563899984583
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "window": "3000",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.8940916837546682,
+   "band_pct": 0.22970669308777128,
+   "exact_seconds": 4056.5604296000092,
+   "binned_seconds": 169.00284640002064
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 18.504562754817503,
+   "band_pct": -1.6731448655644157,
+   "exact_seconds": 3.3854930000088643,
+   "binned_seconds": 3.0827885000035167
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 18.522365953132788,
+   "band_pct": -1.669482547920642,
+   "exact_seconds": 3.2745161000057124,
+   "binned_seconds": 3.4540721000230405
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2050",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 18.88739594374462,
+   "band_pct": -1.7064289992982902,
+   "exact_seconds": 253.98546599998372,
+   "binned_seconds": 18.154368999996223
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2050",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 18.88882523205669,
+   "band_pct": -1.7027919453398024,
+   "exact_seconds": 3242.098817400023,
+   "binned_seconds": 136.27081179997185
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.004546058901240032,
+   "band_pct": -0.0005551833415433676,
+   "exact_seconds": 1.2724535999877844,
+   "binned_seconds": 1.0984025000070687
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.00462508456697008,
+   "band_pct": -0.0008724438857193155,
+   "exact_seconds": 1.6699745999940205,
+   "binned_seconds": 1.1298275000008289
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2500",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.003124277970709517,
+   "band_pct": -0.000322956143324201,
+   "exact_seconds": 248.06310959998518,
+   "binned_seconds": 10.996833100012736
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2500",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.0035752004032971315,
+   "band_pct": -0.0007204718915710976,
+   "exact_seconds": 3321.273289600009,
+   "binned_seconds": 128.10738760000095
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.2488703683358354,
+   "band_pct": -0.029169565823886447,
+   "exact_seconds": 1.524589400010882,
+   "binned_seconds": 1.433338399976492
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.7738023303353109,
+   "band_pct": -0.08655909021075071,
+   "exact_seconds": 1.6574871999910101,
+   "binned_seconds": 1.4053256000042893
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2700",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.24233536463748262,
+   "band_pct": -0.02511011589188847,
+   "exact_seconds": 270.4846164000046,
+   "binned_seconds": 12.54615089998697
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "2700",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.7663072125299997,
+   "band_pct": -0.08362352514187037,
+   "exact_seconds": 3312.332206299994,
+   "binned_seconds": 127.90724210001645
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 47.41140404273231,
+   "band_pct": -2.1023606054502473,
+   "exact_seconds": 5.3606285999994725,
+   "binned_seconds": 6.016643799986923
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 47.3804835033511,
+   "band_pct": -1.7190570854037768,
+   "exact_seconds": 5.565454099996714,
+   "binned_seconds": 5.232978100015316
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "3000",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 47.10430311648332,
+   "band_pct": -2.06191120430012,
+   "exact_seconds": 274.48713439999847,
+   "binned_seconds": 18.83916530001443
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "window": "3000",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 47.097022850615794,
+   "band_pct": -1.697809466215008,
+   "exact_seconds": 3499.5867977000016,
+   "binned_seconds": 142.78303530000267
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 9.19316599236264,
+   "band_pct": -1.4348077509882045,
+   "exact_seconds": 19.34469860000536,
+   "binned_seconds": 19.623053599993
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 9.194268776976507,
+   "band_pct": -1.4352433913436355,
+   "exact_seconds": 20.386774799990235,
+   "binned_seconds": 18.118423499981873
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2050",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 40.03795124480854,
+   "band_pct": -4.497546432854853,
+   "exact_seconds": 257.0163231000188,
+   "binned_seconds": 17.040858099993784
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2050",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 40.0397130210947,
+   "band_pct": -4.498881158468765,
+   "exact_seconds": 3346.129862300004,
+   "binned_seconds": 138.83370180000202
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 1.3008547610636634,
+   "band_pct": 0.4913765445451792,
+   "exact_seconds": 3.6982706999988295,
+   "binned_seconds": 3.350188199983677
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 1.2258174762695024,
+   "band_pct": 0.43743697455942165,
+   "exact_seconds": 3.5901390000071842,
+   "binned_seconds": 3.7143150999909267
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2500",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.31493548121203246,
+   "band_pct": -0.052701341157807814,
+   "exact_seconds": 215.2402996000019,
+   "binned_seconds": 10.528703599993605
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2500",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.35594323711576575,
+   "band_pct": -0.05925284389265319,
+   "exact_seconds": 3159.9350233000005,
+   "binned_seconds": 119.9087091999827
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 3.4286390066619163,
+   "band_pct": 0.9094520983194543,
+   "exact_seconds": 6.882984800002305,
+   "binned_seconds": 6.900995600008173
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 2.670510656297761,
+   "band_pct": 0.7489224749339745,
+   "exact_seconds": 6.932573500002036,
+   "binned_seconds": 6.563526799989631
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2700",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 4.875788580849143,
+   "band_pct": -0.5789047927093767,
+   "exact_seconds": 220.9311844999902,
+   "binned_seconds": 10.460997099988163
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "2700",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 5.937211189727565,
+   "band_pct": -0.687281404675337,
+   "exact_seconds": 3219.2826503000106,
+   "binned_seconds": 121.17012269998668
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 9.371801313464651,
+   "band_pct": -2.2584582346218895,
+   "exact_seconds": 16.060178100015037,
+   "binned_seconds": 15.63182229999802
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 10.427279182198959,
+   "band_pct": -2.3447826530370475,
+   "exact_seconds": 18.326294400001643,
+   "binned_seconds": 15.595172700006515
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "3000",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 40.42916003693176,
+   "band_pct": -4.376325595785072,
+   "exact_seconds": 245.13582310001948,
+   "binned_seconds": 15.919455399998697
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "window": "3000",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 39.84326606047877,
+   "band_pct": -4.187000898469074,
+   "exact_seconds": 3096.774852600007,
+   "binned_seconds": 132.26867000001948
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.9721567295565426,
+   "band_pct": 0.4693473082465534,
+   "exact_seconds": 1.4724459999997634,
+   "binned_seconds": 1.3662846000224818
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2050",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.956881842344931,
+   "band_pct": 0.462821535836631,
+   "exact_seconds": 1.3853561999858357,
+   "binned_seconds": 1.3015354000090156
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2050",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 1.0654304452594103,
+   "band_pct": 0.5803239901670313,
+   "exact_seconds": 160.88183639998897,
+   "binned_seconds": 13.414886000013212
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2050",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 1.041805501634804,
+   "band_pct": 0.5706102405948509,
+   "exact_seconds": 1829.0005170000077,
+   "binned_seconds": 76.89737099999911
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.00914353833980679,
+   "band_pct": 0.0011521690730600092,
+   "exact_seconds": 0.8902671000105329,
+   "binned_seconds": 0.8406176999851596
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2500",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.005528935410675498,
+   "band_pct": 0.0006464003960258398,
+   "exact_seconds": 0.889751199982129,
+   "binned_seconds": 0.955396400007885
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2500",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.037348298043340895,
+   "band_pct": 0.007199452538627865,
+   "exact_seconds": 159.7297186999931,
+   "binned_seconds": 8.311850300000515
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2500",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.018610716001466836,
+   "band_pct": 0.0035610137478054365,
+   "exact_seconds": 1983.5176689000218,
+   "binned_seconds": 67.83622840000317
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.38676725504255016,
+   "band_pct": 0.07999028612621907,
+   "exact_seconds": 1.108266299997922,
+   "binned_seconds": 0.9981791999889538
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2700",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.2230355024816504,
+   "band_pct": 0.03135174932665538,
+   "exact_seconds": 1.0634030000073835,
+   "binned_seconds": 1.3246713999833446
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2700",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 0.43768190390198564,
+   "band_pct": 0.11356045416789541,
+   "exact_seconds": 159.760457700002,
+   "binned_seconds": 8.560021599987522
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "2700",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.18305451195527941,
+   "band_pct": 0.02932599984856984,
+   "exact_seconds": 1992.90687050001,
+   "binned_seconds": 67.43760209999164
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": false,
+   "max_pct": 0.5193927008917631,
+   "band_pct": 0.1179840231339676,
+   "exact_seconds": 4.025112399976933,
+   "binned_seconds": 3.8328185000282247
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "3000",
+   "solver": "single_scatter",
+   "sun": true,
+   "max_pct": 0.7025535957794705,
+   "band_pct": -0.13954483589456426,
+   "exact_seconds": 3.5008578000124544,
+   "binned_seconds": 3.819553699984681
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "3000",
+   "solver": "disort",
+   "sun": false,
+   "max_pct": 1.3328619497736938,
+   "band_pct": 0.24402191421924355,
+   "exact_seconds": 163.04744100000244,
+   "binned_seconds": 11.90466609998839
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "window": "3000",
+   "solver": "disort",
+   "sun": true,
+   "max_pct": 0.8418207180356417,
+   "band_pct": -0.14541353950338404,
+   "exact_seconds": 1860.897395900014,
+   "binned_seconds": 63.66956700000446
+  }
+ ]
+}

@@ -1,0 +1,1056 @@
+{
+ "reference": 1e-08,
+ "fine_step_cm1": 0.01,
+ "rows": [
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 0.001,
+   "mean_pp": 0.18628348363943875,
+   "max_abs_pp": 1.3097235278609343,
+   "seconds": 3.2778189000091515,
+   "reference_seconds": 117.2024020999961,
+   "band_transmittance": 0.04701958401518661
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.047906703984874746,
+   "max_abs_pp": 0.435955962185286,
+   "seconds": 6.595657600002596,
+   "reference_seconds": 117.2024020999961,
+   "band_transmittance": 0.04701958401518661
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.018910953826417314,
+   "max_abs_pp": 0.15888228395262716,
+   "seconds": 10.348081100004492,
+   "reference_seconds": 117.2024020999961,
+   "band_transmittance": 0.04701958401518661
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.009495636629067045,
+   "max_abs_pp": 0.06426548325935699,
+   "seconds": 14.288379900011932,
+   "reference_seconds": 117.2024020999961,
+   "band_transmittance": 0.04701958401518661
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.0036052643398822894,
+   "max_abs_pp": 0.033089535101443746,
+   "seconds": 21.651439100009156,
+   "reference_seconds": 117.2024020999961,
+   "band_transmittance": 0.04701958401518661
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.0015661639562967074,
+   "max_abs_pp": 0.015974959820425072,
+   "seconds": 32.69812279997859,
+   "reference_seconds": 117.2024020999961,
+   "band_transmittance": 0.04701958401518661
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.00021058715180119185,
+   "max_abs_pp": 0.001511538011078617,
+   "seconds": 65.96622790000401,
+   "reference_seconds": 117.2024020999961,
+   "band_transmittance": 0.04701958401518661
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 0.001,
+   "mean_pp": 1.0185980644871122,
+   "max_abs_pp": 5.650794422134242,
+   "seconds": 3.280444300005911,
+   "reference_seconds": 108.59956499998225,
+   "band_transmittance": 0.4612489588400532
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.20259104063364144,
+   "max_abs_pp": 0.8273491766272012,
+   "seconds": 7.7374131999968085,
+   "reference_seconds": 108.59956499998225,
+   "band_transmittance": 0.4612489588400532
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.08459212101062068,
+   "max_abs_pp": 0.2968709687635629,
+   "seconds": 12.800619199988432,
+   "reference_seconds": 108.59956499998225,
+   "band_transmittance": 0.4612489588400532
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.036918531062925086,
+   "max_abs_pp": 0.1411354665052711,
+   "seconds": 18.12961720000021,
+   "reference_seconds": 108.59956499998225,
+   "band_transmittance": 0.4612489588400532
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.014536069931705982,
+   "max_abs_pp": 0.047908093114057415,
+   "seconds": 26.4457054999948,
+   "reference_seconds": 108.59956499998225,
+   "band_transmittance": 0.4612489588400532
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.005293714215502912,
+   "max_abs_pp": 0.017555430576488007,
+   "seconds": 38.63854879999417,
+   "reference_seconds": 108.59956499998225,
+   "band_transmittance": 0.4612489588400532
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.000808427626039718,
+   "max_abs_pp": 0.00272424333926935,
+   "seconds": 69.02274010001565,
+   "reference_seconds": 108.59956499998225,
+   "band_transmittance": 0.4612489588400532
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 0.001,
+   "mean_pp": 0.13170797298462303,
+   "max_abs_pp": 2.0881855352970993,
+   "seconds": 9.486424100003205,
+   "reference_seconds": 160.81416039998294,
+   "band_transmittance": 0.047408861023853846
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.026668428022755097,
+   "max_abs_pp": 0.4256160764186112,
+   "seconds": 18.57235890001175,
+   "reference_seconds": 160.81416039998294,
+   "band_transmittance": 0.047408861023853846
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.010921111047487476,
+   "max_abs_pp": 0.16493061801265974,
+   "seconds": 26.033168199996,
+   "reference_seconds": 160.81416039998294,
+   "band_transmittance": 0.047408861023853846
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.004436760833620171,
+   "max_abs_pp": 0.06241313426196271,
+   "seconds": 38.22698770000716,
+   "reference_seconds": 160.81416039998294,
+   "band_transmittance": 0.047408861023853846
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.0013669506107090784,
+   "max_abs_pp": 0.019098558300867374,
+   "seconds": 54.87365890000365,
+   "reference_seconds": 160.81416039998294,
+   "band_transmittance": 0.047408861023853846
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.00045982372861180505,
+   "max_abs_pp": 0.006525178405936138,
+   "seconds": 66.86595779997879,
+   "reference_seconds": 160.81416039998294,
+   "band_transmittance": 0.047408861023853846
+  },
+  {
+   "geometry": "tropical_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-07,
+   "mean_pp": 8.376890452372705e-05,
+   "max_abs_pp": 0.0015246026123516554,
+   "seconds": 103.34604370000307,
+   "reference_seconds": 160.81416039998294,
+   "band_transmittance": 0.047408861023853846
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "4.5-5.0um",
+   "cutoff": 0.001,
+   "mean_pp": 0.7415287563689731,
+   "max_abs_pp": 2.26000774963121,
+   "seconds": 6.636248900002101,
+   "reference_seconds": 221.1083823000081,
+   "band_transmittance": 0.35694929574110407
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "4.5-5.0um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.17261630284165114,
+   "max_abs_pp": 0.5609909900353038,
+   "seconds": 15.76420700000017,
+   "reference_seconds": 221.1083823000081,
+   "band_transmittance": 0.35694929574110407
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.07704793057531614,
+   "max_abs_pp": 0.24091195422797362,
+   "seconds": 23.92324999999255,
+   "reference_seconds": 221.1083823000081,
+   "band_transmittance": 0.35694929574110407
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.03655110770813828,
+   "max_abs_pp": 0.1122065183100096,
+   "seconds": 36.84790990001056,
+   "reference_seconds": 221.1083823000081,
+   "band_transmittance": 0.35694929574110407
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.014973457896767598,
+   "max_abs_pp": 0.04564177570692829,
+   "seconds": 57.77897740001208,
+   "reference_seconds": 221.1083823000081,
+   "band_transmittance": 0.35694929574110407
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.006579927481512511,
+   "max_abs_pp": 0.01964068207075398,
+   "seconds": 76.05164499999955,
+   "reference_seconds": 221.1083823000081,
+   "band_transmittance": 0.35694929574110407
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.0009666207940152982,
+   "max_abs_pp": 0.0024153749903721433,
+   "seconds": 143.16944779999903,
+   "reference_seconds": 221.1083823000081,
+   "band_transmittance": 0.35694929574110407
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "3.5-4.1um",
+   "cutoff": 0.001,
+   "mean_pp": 0.8571853478719696,
+   "max_abs_pp": 2.6380926523586923,
+   "seconds": 4.258728799992241,
+   "reference_seconds": 174.69908479999867,
+   "band_transmittance": 0.8251416179652042
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "3.5-4.1um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.19056875742509694,
+   "max_abs_pp": 0.7391086627305032,
+   "seconds": 11.104351899994072,
+   "reference_seconds": 174.69908479999867,
+   "band_transmittance": 0.8251416179652042
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.08217643106837769,
+   "max_abs_pp": 0.24430912714813457,
+   "seconds": 16.601414000004297,
+   "reference_seconds": 174.69908479999867,
+   "band_transmittance": 0.8251416179652042
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.036802074913561016,
+   "max_abs_pp": 0.1093553972095207,
+   "seconds": 25.12532929997542,
+   "reference_seconds": 174.69908479999867,
+   "band_transmittance": 0.8251416179652042
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.014817050948952004,
+   "max_abs_pp": 0.04193817155093704,
+   "seconds": 41.148635199991986,
+   "reference_seconds": 174.69908479999867,
+   "band_transmittance": 0.8251416179652042
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.006077143944782145,
+   "max_abs_pp": 0.01598100431118299,
+   "seconds": 60.070446300000185,
+   "reference_seconds": 174.69908479999867,
+   "band_transmittance": 0.8251416179652042
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.0008397440619422231,
+   "max_abs_pp": 0.002282629661587432,
+   "seconds": 105.14124480000464,
+   "reference_seconds": 174.69908479999867,
+   "band_transmittance": 0.8251416179652042
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "2.9-3.5um",
+   "cutoff": 0.001,
+   "mean_pp": 0.3076288795903609,
+   "max_abs_pp": 2.17675012649724,
+   "seconds": 9.97975649998989,
+   "reference_seconds": 268.3788169999898,
+   "band_transmittance": 0.2316979979417937
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "2.9-3.5um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.06278418786444255,
+   "max_abs_pp": 0.648663814939443,
+   "seconds": 21.78616729998612,
+   "reference_seconds": 268.3788169999898,
+   "band_transmittance": 0.2316979979417937
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.027337024680118463,
+   "max_abs_pp": 0.2549781415030927,
+   "seconds": 33.16978849997395,
+   "reference_seconds": 268.3788169999898,
+   "band_transmittance": 0.2316979979417937
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.01240175132523515,
+   "max_abs_pp": 0.10414374349849709,
+   "seconds": 46.32554450002499,
+   "reference_seconds": 268.3788169999898,
+   "band_transmittance": 0.2316979979417937
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.004694613827758429,
+   "max_abs_pp": 0.03298204846630126,
+   "seconds": 74.785988299991,
+   "reference_seconds": 268.3788169999898,
+   "band_transmittance": 0.2316979979417937
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.0018277482556938193,
+   "max_abs_pp": 0.011133995321876977,
+   "seconds": 103.67106110000168,
+   "reference_seconds": 268.3788169999898,
+   "band_transmittance": 0.2316979979417937
+  },
+  {
+   "geometry": "mls_ground_to_space",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.00023975284152035197,
+   "max_abs_pp": 0.0012391021248503442,
+   "seconds": 183.97431510000024,
+   "reference_seconds": 268.3788169999898,
+   "band_transmittance": 0.2316979979417937
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "4.5-5.0um",
+   "cutoff": 0.001,
+   "mean_pp": 0.8368350545745294,
+   "max_abs_pp": 2.934559236422596,
+   "seconds": 3.813801999989664,
+   "reference_seconds": 150.08314880001126,
+   "band_transmittance": 0.3689763823718605
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "4.5-5.0um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.19219008666960755,
+   "max_abs_pp": 0.693076834766293,
+   "seconds": 8.401029100001324,
+   "reference_seconds": 150.08314880001126,
+   "band_transmittance": 0.3689763823718605
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.0856767577742161,
+   "max_abs_pp": 0.27899792794350287,
+   "seconds": 13.122723599983146,
+   "reference_seconds": 150.08314880001126,
+   "band_transmittance": 0.3689763823718605
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.041063698684802835,
+   "max_abs_pp": 0.12727728830771445,
+   "seconds": 19.238650799990864,
+   "reference_seconds": 150.08314880001126,
+   "band_transmittance": 0.3689763823718605
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.016963986437050976,
+   "max_abs_pp": 0.051996375546981,
+   "seconds": 29.59008399999584,
+   "reference_seconds": 150.08314880001126,
+   "band_transmittance": 0.3689763823718605
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.0075076172052827884,
+   "max_abs_pp": 0.021074906602647214,
+   "seconds": 42.41219989999081,
+   "reference_seconds": 150.08314880001126,
+   "band_transmittance": 0.3689763823718605
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.001138613961793224,
+   "max_abs_pp": 0.0028359723145410243,
+   "seconds": 87.16742450001766,
+   "reference_seconds": 150.08314880001126,
+   "band_transmittance": 0.3689763823718605
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "3.5-4.1um",
+   "cutoff": 0.001,
+   "mean_pp": 0.9372945134821289,
+   "max_abs_pp": 3.428256648918193,
+   "seconds": 3.856312399992021,
+   "reference_seconds": 132.37423689998104,
+   "band_transmittance": 0.8269485957530637
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "3.5-4.1um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.20341843286430014,
+   "max_abs_pp": 0.9611493829574824,
+   "seconds": 8.406891599996015,
+   "reference_seconds": 132.37423689998104,
+   "band_transmittance": 0.8269485957530637
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.08911260490465449,
+   "max_abs_pp": 0.27657811748371675,
+   "seconds": 13.107890799990855,
+   "reference_seconds": 132.37423689998104,
+   "band_transmittance": 0.8269485957530637
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.03959115310982933,
+   "max_abs_pp": 0.12269247485572343,
+   "seconds": 17.969106000004103,
+   "reference_seconds": 132.37423689998104,
+   "band_transmittance": 0.8269485957530637
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.01611937400713073,
+   "max_abs_pp": 0.0479272861527269,
+   "seconds": 27.50484419998247,
+   "reference_seconds": 132.37423689998104,
+   "band_transmittance": 0.8269485957530637
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.006620039484058341,
+   "max_abs_pp": 0.017565396157814828,
+   "seconds": 41.52775950002251,
+   "reference_seconds": 132.37423689998104,
+   "band_transmittance": 0.8269485957530637
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.000946291632480759,
+   "max_abs_pp": 0.002731636265118631,
+   "seconds": 80.07147400002577,
+   "reference_seconds": 132.37423689998104,
+   "band_transmittance": 0.8269485957530637
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "2.9-3.5um",
+   "cutoff": 0.001,
+   "mean_pp": 0.3309709391656661,
+   "max_abs_pp": 2.2161384504540416,
+   "seconds": 7.539745499991113,
+   "reference_seconds": 202.82621450000443,
+   "band_transmittance": 0.23245100663977636
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "2.9-3.5um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.0667560284036052,
+   "max_abs_pp": 0.7208503249871434,
+   "seconds": 15.885426900000311,
+   "reference_seconds": 202.82621450000443,
+   "band_transmittance": 0.23245100663977636
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.02898337229208649,
+   "max_abs_pp": 0.2789067692946179,
+   "seconds": 25.16717120000976,
+   "reference_seconds": 202.82621450000443,
+   "band_transmittance": 0.23245100663977636
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.013213111002686281,
+   "max_abs_pp": 0.10986221077798897,
+   "seconds": 35.410755499993684,
+   "reference_seconds": 202.82621450000443,
+   "band_transmittance": 0.23245100663977636
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.005101791079380913,
+   "max_abs_pp": 0.036465863737522586,
+   "seconds": 53.61187679998693,
+   "reference_seconds": 202.82621450000443,
+   "band_transmittance": 0.23245100663977636
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.001989693740280305,
+   "max_abs_pp": 0.012533321321839264,
+   "seconds": 74.16639149998082,
+   "reference_seconds": 202.82621450000443,
+   "band_transmittance": 0.23245100663977636
+  },
+  {
+   "geometry": "mls_20km_nadir",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.0002707985209938492,
+   "max_abs_pp": 0.0014452273282228312,
+   "seconds": 125.02871440001763,
+   "reference_seconds": 202.82621450000443,
+   "band_transmittance": 0.23245100663977636
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "4.5-5.0um",
+   "cutoff": 0.001,
+   "mean_pp": 0.33822262500072753,
+   "max_abs_pp": 2.3189779573479563,
+   "seconds": 17.42275399999926,
+   "reference_seconds": 309.01121820000117,
+   "band_transmittance": 0.09943015458747524
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "4.5-5.0um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.07241149550452909,
+   "max_abs_pp": 0.4981206113464698,
+   "seconds": 41.15240389999235,
+   "reference_seconds": 309.01121820000117,
+   "band_transmittance": 0.09943015458747524
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.03164407879686548,
+   "max_abs_pp": 0.23099446288419867,
+   "seconds": 63.41380469998694,
+   "reference_seconds": 309.01121820000117,
+   "band_transmittance": 0.09943015458747524
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.01444004448288632,
+   "max_abs_pp": 0.10203976618148314,
+   "seconds": 92.80112970000482,
+   "reference_seconds": 309.01121820000117,
+   "band_transmittance": 0.09943015458747524
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.005561582023198298,
+   "max_abs_pp": 0.03688297527731921,
+   "seconds": 132.17998389998684,
+   "reference_seconds": 309.01121820000117,
+   "band_transmittance": 0.09943015458747524
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.002059731764382479,
+   "max_abs_pp": 0.012963322903691843,
+   "seconds": 173.09064520001994,
+   "reference_seconds": 309.01121820000117,
+   "band_transmittance": 0.09943015458747524
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.000162893433775697,
+   "max_abs_pp": 0.0010080798038880623,
+   "seconds": 244.58706079999683,
+   "reference_seconds": 309.01121820000117,
+   "band_transmittance": 0.09943015458747524
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "3.5-4.1um",
+   "cutoff": 0.001,
+   "mean_pp": 0.781458227647048,
+   "max_abs_pp": 2.993566286169125,
+   "seconds": 12.500102599995444,
+   "reference_seconds": 275.02366320000147,
+   "band_transmittance": 0.4636635839109051
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "3.5-4.1um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.1520856429839036,
+   "max_abs_pp": 0.5591190753668651,
+   "seconds": 31.131139399978565,
+   "reference_seconds": 275.02366320000147,
+   "band_transmittance": 0.4636635839109051
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.06229851036760437,
+   "max_abs_pp": 0.24222550229455742,
+   "seconds": 51.92451670000446,
+   "reference_seconds": 275.02366320000147,
+   "band_transmittance": 0.4636635839109051
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.026528212194329635,
+   "max_abs_pp": 0.10524632576863757,
+   "seconds": 66.47681490000105,
+   "reference_seconds": 275.02366320000147,
+   "band_transmittance": 0.4636635839109051
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.009898555233819257,
+   "max_abs_pp": 0.04099465722289253,
+   "seconds": 99.53900729998713,
+   "reference_seconds": 275.02366320000147,
+   "band_transmittance": 0.4636635839109051
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.003708497441920412,
+   "max_abs_pp": 0.014981252847556803,
+   "seconds": 128.46302039999864,
+   "reference_seconds": 275.02366320000147,
+   "band_transmittance": 0.4636635839109051
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.0003209784194783367,
+   "max_abs_pp": 0.0011883692148995095,
+   "seconds": 198.54356250001,
+   "reference_seconds": 275.02366320000147,
+   "band_transmittance": 0.4636635839109051
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "2.9-3.5um",
+   "cutoff": 0.001,
+   "mean_pp": 0.183549117055832,
+   "max_abs_pp": 1.8340253539324003,
+   "seconds": 21.869705999997677,
+   "reference_seconds": 412.1362102999992,
+   "band_transmittance": 0.09728107078431966
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "2.9-3.5um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.03677517217121803,
+   "max_abs_pp": 0.30817543133732084,
+   "seconds": 50.93394780001836,
+   "reference_seconds": 412.1362102999992,
+   "band_transmittance": 0.09728107078431966
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.014256399262848244,
+   "max_abs_pp": 0.10734748671316074,
+   "seconds": 76.05788109998684,
+   "reference_seconds": 412.1362102999992,
+   "band_transmittance": 0.09728107078431966
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.0059700116396750325,
+   "max_abs_pp": 0.04468117802471916,
+   "seconds": 112.44687689997954,
+   "reference_seconds": 412.1362102999992,
+   "band_transmittance": 0.09728107078431966
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.0021673989893524533,
+   "max_abs_pp": 0.020311363270464344,
+   "seconds": 160.26024180001696,
+   "reference_seconds": 412.1362102999992,
+   "band_transmittance": 0.09728107078431966
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.0008081374656317892,
+   "max_abs_pp": 0.00899899180987207,
+   "seconds": 199.63416610000422,
+   "reference_seconds": 412.1362102999992,
+   "band_transmittance": 0.09728107078431966
+  },
+  {
+   "geometry": "us_std_limb_15km",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-07,
+   "mean_pp": 6.83944099295918e-05,
+   "max_abs_pp": 0.0006081564309812215,
+   "seconds": 304.8202421000169,
+   "reference_seconds": 412.1362102999992,
+   "band_transmittance": 0.09728107078431966
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 0.001,
+   "mean_pp": 0.9129528469848442,
+   "max_abs_pp": 3.5566577336421323,
+   "seconds": 2.544440500001656,
+   "reference_seconds": 77.11220630002208,
+   "band_transmittance": 0.39011704202265385
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.23740367878170307,
+   "max_abs_pp": 1.0988218624882307,
+   "seconds": 5.11052909999853,
+   "reference_seconds": 77.11220630002208,
+   "band_transmittance": 0.39011704202265385
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.09367675609797388,
+   "max_abs_pp": 0.40184397677858197,
+   "seconds": 6.581893199996557,
+   "reference_seconds": 77.11220630002208,
+   "band_transmittance": 0.39011704202265385
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.04716103620165005,
+   "max_abs_pp": 0.18608182624260117,
+   "seconds": 9.506708600005368,
+   "reference_seconds": 77.11220630002208,
+   "band_transmittance": 0.39011704202265385
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.02123778243425242,
+   "max_abs_pp": 0.06122109506664364,
+   "seconds": 14.436556700005895,
+   "reference_seconds": 77.11220630002208,
+   "band_transmittance": 0.39011704202265385
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.009385956711567205,
+   "max_abs_pp": 0.029474556182240708,
+   "seconds": 18.825115500018,
+   "reference_seconds": 77.11220630002208,
+   "band_transmittance": 0.39011704202265385
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "4.5-5.0um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.0015310761638919594,
+   "max_abs_pp": 0.004478749801384296,
+   "seconds": 40.775705100008054,
+   "reference_seconds": 77.11220630002208,
+   "band_transmittance": 0.39011704202265385
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 0.001,
+   "mean_pp": 1.2235610451116246,
+   "max_abs_pp": 5.402787331992287,
+   "seconds": 2.24052190000657,
+   "reference_seconds": 81.09010269999271,
+   "band_transmittance": 0.6957960169054876
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.23269363951236988,
+   "max_abs_pp": 1.0725834330353679,
+   "seconds": 5.327254300005734,
+   "reference_seconds": 81.09010269999271,
+   "band_transmittance": 0.6957960169054876
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.10634782852008513,
+   "max_abs_pp": 0.27881314438060745,
+   "seconds": 8.16824979998637,
+   "reference_seconds": 81.09010269999271,
+   "band_transmittance": 0.6957960169054876
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.04844649901969872,
+   "max_abs_pp": 0.14741480520702455,
+   "seconds": 12.431965300027514,
+   "reference_seconds": 81.09010269999271,
+   "band_transmittance": 0.6957960169054876
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.019623874280609188,
+   "max_abs_pp": 0.07745186917889058,
+   "seconds": 17.06364140001824,
+   "reference_seconds": 81.09010269999271,
+   "band_transmittance": 0.6957960169054876
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.00772531747955599,
+   "max_abs_pp": 0.02617512425063806,
+   "seconds": 26.892670300003374,
+   "reference_seconds": 81.09010269999271,
+   "band_transmittance": 0.6957960169054876
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "3.5-4.1um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.001091501729467494,
+   "max_abs_pp": 0.0035291483873267637,
+   "seconds": 47.788736699993024,
+   "reference_seconds": 81.09010269999271,
+   "band_transmittance": 0.6957960169054876
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 0.001,
+   "mean_pp": 0.5097345590160393,
+   "max_abs_pp": 3.1688433593884846,
+   "seconds": 4.9047487000061665,
+   "reference_seconds": 129.55381270000362,
+   "band_transmittance": 0.2587585647701171
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 0.0001,
+   "mean_pp": 0.09480253059792018,
+   "max_abs_pp": 1.0202460095292687,
+   "seconds": 11.899278900003992,
+   "reference_seconds": 129.55381270000362,
+   "band_transmittance": 0.2587585647701171
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-05,
+   "mean_pp": 0.040987854059256236,
+   "max_abs_pp": 0.4191356523919554,
+   "seconds": 16.510817000002135,
+   "reference_seconds": 129.55381270000362,
+   "band_transmittance": 0.2587585647701171
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-05,
+   "mean_pp": 0.018825048121485544,
+   "max_abs_pp": 0.13361248222070188,
+   "seconds": 23.233382499980507,
+   "reference_seconds": 129.55381270000362,
+   "band_transmittance": 0.2587585647701171
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 3e-06,
+   "mean_pp": 0.007581136662781065,
+   "max_abs_pp": 0.056718874559624766,
+   "seconds": 32.9292575000145,
+   "reference_seconds": 129.55381270000362,
+   "band_transmittance": 0.2587585647701171
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-06,
+   "mean_pp": 0.0028116254610518936,
+   "max_abs_pp": 0.015630404352318106,
+   "seconds": 49.013786100025754,
+   "reference_seconds": 129.55381270000362,
+   "band_transmittance": 0.2587585647701171
+  },
+  {
+   "geometry": "saw_10km_horizontal",
+   "band": "2.9-3.5um",
+   "cutoff": 1e-07,
+   "mean_pp": 0.0003949858771244295,
+   "max_abs_pp": 0.0020433816381171255,
+   "seconds": 76.72335700000986,
+   "reference_seconds": 129.55381270000362,
+   "band_transmittance": 0.2587585647701171
+  }
+ ]
+}

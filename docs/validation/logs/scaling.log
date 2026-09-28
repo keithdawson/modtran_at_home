@@ -1,0 +1,16 @@
+small processes    1 workers      64.3 s     0.23 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_benchmark.json
+small processes    2 workers      34.4 s     0.43 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_benchmark.json
+small processes    4 workers      18.2 s     0.81 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_benchmark.json
+small processes    8 workers      11.9 s     1.24 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_benchmark.json
+small processes   16 workers       9.6 s     1.53 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_benchmark.json
+small threads      4 workers      41.6 s     0.35 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_benchmark.json
+small threads      8 workers      45.7 s     0.32 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_benchmark.json
+small threads     16 workers      49.0 s     0.30 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_benchmark.json

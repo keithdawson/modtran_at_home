@@ -1,0 +1,326 @@
+{
+ "generator": "scripts/physics_reference/generate_hapi_reference.py",
+ "hapi_version": "1.3.0.0",
+ "fine_step_cm1": 0.005,
+ "line_cutoff_cm1": 25.0,
+ "min_line_intensity": 1e-27,
+ "cases": {
+  "saw_15km_horizontal": {
+   "scenario": {
+    "atmosphere": "subarctic_winter",
+    "sensor_alt_km": 0.01,
+    "sensor_zenith_deg": 90.0,
+    "source_range_km": 15.0,
+    "aerosol": "none"
+   },
+   "bands": {
+    "2500-2750": [
+     2500.0,
+     2750.0
+    ]
+   },
+   "layers": 1,
+   "results": {
+    "2500-2750": {
+     "n_layers": 1,
+     "windows": [
+      {
+       "window_cm1": [
+        2500.0,
+        2510.0
+       ],
+       "transmittance": 0.9854524958052014,
+       "molecular_transmittance": 0.985518227998069
+      },
+      {
+       "window_cm1": [
+        2550.0,
+        2560.0
+       ],
+       "transmittance": 0.7105778979819144,
+       "molecular_transmittance": 0.7106292046415112
+      },
+      {
+       "window_cm1": [
+        2600.0,
+        2610.0
+       ],
+       "transmittance": 0.8662697895183635,
+       "molecular_transmittance": 0.8663373638095204
+      },
+      {
+       "window_cm1": [
+        2650.0,
+        2660.0
+       ],
+       "transmittance": 0.8429183772478672,
+       "molecular_transmittance": 0.8429893275298328
+      },
+      {
+       "window_cm1": [
+        2700.0,
+        2710.0
+       ],
+       "transmittance": 0.9170743765298965,
+       "molecular_transmittance": 0.9171575438070951
+      }
+     ],
+     "mean_transmittance": 0.8644585874166486
+    }
+   }
+  },
+  "tropical_15km_horizontal": {
+   "scenario": {
+    "atmosphere": "tropical",
+    "sensor_alt_km": 0.01,
+    "sensor_zenith_deg": 90.0,
+    "source_range_km": 15.0,
+    "aerosol": "none"
+   },
+   "bands": {
+    "2500-2750": [
+     2500.0,
+     2750.0
+    ]
+   },
+   "layers": 1,
+   "results": {
+    "2500-2750": {
+     "n_layers": 1,
+     "windows": [
+      {
+       "window_cm1": [
+        2500.0,
+        2510.0
+       ],
+       "transmittance": 0.780747071238404,
+       "molecular_transmittance": 0.7807917957673163
+      },
+      {
+       "window_cm1": [
+        2550.0,
+        2560.0
+       ],
+       "transmittance": 0.566107105524044,
+       "molecular_transmittance": 0.5661422180308642
+      },
+      {
+       "window_cm1": [
+        2600.0,
+        2610.0
+       ],
+       "transmittance": 0.3903373243060458,
+       "molecular_transmittance": 0.3903634472002105
+      },
+      {
+       "window_cm1": [
+        2650.0,
+        2660.0
+       ],
+       "transmittance": 0.29635713168540834,
+       "molecular_transmittance": 0.2963785349446292
+      },
+      {
+       "window_cm1": [
+        2700.0,
+        2710.0
+       ],
+       "transmittance": 0.4193008797724651,
+       "molecular_transmittance": 0.4193334849637924
+      }
+     ],
+     "mean_transmittance": 0.49056990250527355
+    }
+   }
+  },
+  "us_std_10km_horizontal": {
+   "scenario": {
+    "atmosphere": "us_standard",
+    "sensor_alt_km": 0.01,
+    "sensor_zenith_deg": 90.0,
+    "source_range_km": 10.0,
+    "aerosol": "rural",
+    "visibility_km": 23.0
+   },
+   "bands": {
+    "2550-2750": [
+     2550.0,
+     2750.0
+    ],
+    "2100-2170": [
+     2100.0,
+     2170.0
+    ]
+   },
+   "layers": 1,
+   "results": {
+    "2550-2750": {
+     "n_layers": 1,
+     "windows": [
+      {
+       "window_cm1": [
+        2550.0,
+        2560.0
+       ],
+       "transmittance": 0.6960980127992891,
+       "molecular_transmittance": 0.7914243085978756
+      },
+      {
+       "window_cm1": [
+        2600.0,
+        2610.0
+       ],
+       "transmittance": 0.6348943160055045,
+       "molecular_transmittance": 0.7241894474236874
+      },
+      {
+       "window_cm1": [
+        2650.0,
+        2660.0
+       ],
+       "transmittance": 0.6011127917802931,
+       "molecular_transmittance": 0.6879235872278531
+      },
+      {
+       "window_cm1": [
+        2700.0,
+        2710.0
+       ],
+       "transmittance": 0.7005805967508021,
+       "molecular_transmittance": 0.8044105252235785
+      }
+     ],
+     "mean_transmittance": 0.6581714293339722
+    },
+    "2100-2170": {
+     "n_layers": 1,
+     "windows": [
+      {
+       "window_cm1": [
+        2100.0,
+        2110.0
+       ],
+       "transmittance": 0.3604656152946914,
+       "molecular_transmittance": 0.39828418756241485
+      },
+      {
+       "window_cm1": [
+        2150.0,
+        2160.0
+       ],
+       "transmittance": 0.44326459296159565,
+       "molecular_transmittance": 0.49128789551529917
+      }
+     ],
+     "mean_transmittance": 0.4018651041281435
+    }
+   }
+  },
+  "mls_8km_lookdown_sea": {
+   "scenario": {
+    "atmosphere": "midlat_summer",
+    "sensor_alt_km": 8.0,
+    "sensor_zenith_deg": 180.0,
+    "aerosol": "rural",
+    "surface_type": "sea_water",
+    "surface_skin_temp_k": 300.0,
+    "local_datetime": null,
+    "include_solar": false,
+    "include_lunar": false
+   },
+   "bands": {
+    "2500-2857": [
+     2500.0,
+     2857.0
+    ]
+   },
+   "layers": 6,
+   "radiance": true,
+   "results": {
+    "2500-2857": {
+     "n_layers": 6,
+     "windows": [
+      {
+       "window_cm1": [
+        2500.0,
+        2510.0
+       ],
+       "transmittance": 0.9695191930884307,
+       "molecular_transmittance": 0.9824348730943255,
+       "radiance": 1.099507316637456e-07,
+       "blackbody_300k": 1.1346305475015056e-07,
+       "surface_emitted": 1.0780426650399378e-07
+      },
+      {
+       "window_cm1": [
+        2550.0,
+        2560.0
+       ],
+       "transmittance": 0.8662209110053899,
+       "molecular_transmittance": 0.8780642222322307,
+       "radiance": 8.600769041018546e-08,
+       "blackbody_300k": 9.472434923763768e-08,
+       "surface_emitted": 8.03954729690342e-08
+      },
+      {
+       "window_cm1": [
+        2600.0,
+        2610.0
+       ],
+       "transmittance": 0.8213141996287244,
+       "molecular_transmittance": 0.8328317463336321,
+       "radiance": 7.117909567104778e-08,
+       "blackbody_300k": 7.898958704902576e-08,
+       "surface_emitted": 6.361910100567862e-08
+      },
+      {
+       "window_cm1": [
+        2650.0,
+        2660.0
+       ],
+       "transmittance": 0.7974356223304789,
+       "molecular_transmittance": 0.8089015959757617,
+       "radiance": 5.838760943164171e-08,
+       "blackbody_300k": 6.579578355055893e-08,
+       "surface_emitted": 5.144078177012323e-08
+      },
+      {
+       "window_cm1": [
+        2700.0,
+        2710.0
+       ],
+       "transmittance": 0.8775248448737462,
+       "molecular_transmittance": 0.8904552105701431,
+       "radiance": 5.0756870327362995e-08,
+       "blackbody_300k": 5.4747486509138974e-08,
+       "surface_emitted": 4.711578093510685e-08
+      },
+      {
+       "window_cm1": [
+        2750.0,
+        2760.0
+       ],
+       "transmittance": 0.7916784434105085,
+       "molecular_transmittance": 0.8036301644405351,
+       "radiance": 4.001616517453997e-08,
+       "blackbody_300k": 4.550772495461799e-08,
+       "surface_emitted": 3.5289919765887526e-08
+      },
+      {
+       "window_cm1": [
+        2800.0,
+        2810.0
+       ],
+       "transmittance": 0.7611813623040606,
+       "molecular_transmittance": 0.7729485003246417,
+       "radiance": 3.245744531874381e-08,
+       "blackbody_300k": 3.778999949502243e-08,
+       "surface_emitted": 2.816337376241736e-08
+      }
+     ],
+     "mean_transmittance": 0.8406963680916199
+    }
+   }
+  }
+ }
+}

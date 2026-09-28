@@ -1,0 +1,24 @@
+saw_15km_horizontal 2500-2750 {'window_cm1': [2500.0, 2510.0], 'transmittance': 0.9854524958052014, 'molecular_transmittance': 0.985518227998069}
+saw_15km_horizontal 2500-2750 {'window_cm1': [2550.0, 2560.0], 'transmittance': 0.7105778979819144, 'molecular_transmittance': 0.7106292046415112}
+saw_15km_horizontal 2500-2750 {'window_cm1': [2600.0, 2610.0], 'transmittance': 0.8662697895183635, 'molecular_transmittance': 0.8663373638095204}
+saw_15km_horizontal 2500-2750 {'window_cm1': [2650.0, 2660.0], 'transmittance': 0.8429183772478672, 'molecular_transmittance': 0.8429893275298328}
+saw_15km_horizontal 2500-2750 {'window_cm1': [2700.0, 2710.0], 'transmittance': 0.9170743765298965, 'molecular_transmittance': 0.9171575438070951}
+tropical_15km_horizontal 2500-2750 {'window_cm1': [2500.0, 2510.0], 'transmittance': 0.780747071238404, 'molecular_transmittance': 0.7807917957673163}
+tropical_15km_horizontal 2500-2750 {'window_cm1': [2550.0, 2560.0], 'transmittance': 0.566107105524044, 'molecular_transmittance': 0.5661422180308642}
+tropical_15km_horizontal 2500-2750 {'window_cm1': [2600.0, 2610.0], 'transmittance': 0.3903373243060458, 'molecular_transmittance': 0.3903634472002105}
+tropical_15km_horizontal 2500-2750 {'window_cm1': [2650.0, 2660.0], 'transmittance': 0.29635713168540834, 'molecular_transmittance': 0.2963785349446292}
+tropical_15km_horizontal 2500-2750 {'window_cm1': [2700.0, 2710.0], 'transmittance': 0.4193008797724651, 'molecular_transmittance': 0.4193334849637924}
+us_std_10km_horizontal 2550-2750 {'window_cm1': [2550.0, 2560.0], 'transmittance': 0.6960980127992891, 'molecular_transmittance': 0.7914243085978756}
+us_std_10km_horizontal 2550-2750 {'window_cm1': [2600.0, 2610.0], 'transmittance': 0.6348943160055045, 'molecular_transmittance': 0.7241894474236874}
+us_std_10km_horizontal 2550-2750 {'window_cm1': [2650.0, 2660.0], 'transmittance': 0.6011127917802931, 'molecular_transmittance': 0.6879235872278531}
+us_std_10km_horizontal 2550-2750 {'window_cm1': [2700.0, 2710.0], 'transmittance': 0.7005805967508021, 'molecular_transmittance': 0.8044105252235785}
+us_std_10km_horizontal 2100-2170 {'window_cm1': [2100.0, 2110.0], 'transmittance': 0.3604656152946914, 'molecular_transmittance': 0.39828418756241485}
+us_std_10km_horizontal 2100-2170 {'window_cm1': [2150.0, 2160.0], 'transmittance': 0.44326459296159565, 'molecular_transmittance': 0.49128789551529917}
+mls_8km_lookdown_sea 2500-2857 {'window_cm1': [2500.0, 2510.0], 'transmittance': 0.9695191930884307, 'molecular_transmittance': 0.9824348730943255, 'radiance': 1.099507316637456e-07, 'blackbody_300k': 1.1346305475015056e-07, 'surface_emitted': 1.0780426650399378e-07}
+mls_8km_lookdown_sea 2500-2857 {'window_cm1': [2550.0, 2560.0], 'transmittance': 0.8662209110053899, 'molecular_transmittance': 0.8780642222322307, 'radiance': 8.600769041018546e-08, 'blackbody_300k': 9.472434923763768e-08, 'surface_emitted': 8.03954729690342e-08}
+mls_8km_lookdown_sea 2500-2857 {'window_cm1': [2600.0, 2610.0], 'transmittance': 0.8213141996287244, 'molecular_transmittance': 0.8328317463336321, 'radiance': 7.117909567104778e-08, 'blackbody_300k': 7.898958704902576e-08, 'surface_emitted': 6.361910100567862e-08}
+mls_8km_lookdown_sea 2500-2857 {'window_cm1': [2650.0, 2660.0], 'transmittance': 0.7974356223304789, 'molecular_transmittance': 0.8089015959757617, 'radiance': 5.838760943164171e-08, 'blackbody_300k': 6.579578355055893e-08, 'surface_emitted': 5.144078177012323e-08}
+mls_8km_lookdown_sea 2500-2857 {'window_cm1': [2700.0, 2710.0], 'transmittance': 0.8775248448737462, 'molecular_transmittance': 0.8904552105701431, 'radiance': 5.0756870327362995e-08, 'blackbody_300k': 5.4747486509138974e-08, 'surface_emitted': 4.711578093510685e-08}
+mls_8km_lookdown_sea 2500-2857 {'window_cm1': [2750.0, 2760.0], 'transmittance': 0.7916784434105085, 'molecular_transmittance': 0.8036301644405351, 'radiance': 4.001616517453997e-08, 'blackbody_300k': 4.550772495461799e-08, 'surface_emitted': 3.5289919765887526e-08}
+mls_8km_lookdown_sea 2500-2857 {'window_cm1': [2800.0, 2810.0], 'transmittance': 0.7611813623040606, 'molecular_transmittance': 0.7729485003246417, 'radiance': 3.245744531874381e-08, 'blackbody_300k': 3.778999949502243e-08, 'surface_emitted': 2.816337376241736e-08}
+wrote D:\AI-projects\modtran_at_home\tests\reference_data\hapi_window_reference.json
