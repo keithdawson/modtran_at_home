@@ -17,6 +17,7 @@ from typing import Sequence
 
 import numpy as np
 
+from .._array import array_namespace
 from ..types import (
     AerosolModel,
     LayerOptics,
@@ -93,7 +94,7 @@ def compute_layer_optics(
     tau_ray = (
         rayleigh_optical_depth(layers, grid)
         if include_rayleigh
-        else np.zeros(shape, dtype=np.float64)
+        else array_namespace(grid.wavenumber_cm1).zeros(shape, dtype=np.float64)
     )
 
     return LayerOptics(
@@ -117,20 +118,26 @@ def path_transmittance(optics: LayerOptics) -> TransmittanceResult:
     """
     grid = optics.grid
     tau_total = optics.tau_total
+    xp = array_namespace(tau_total)
 
     total_od = tau_total.sum(axis=0)
-    cumulative = np.exp(-np.concatenate([np.zeros((1, grid.n)), np.cumsum(tau_total, axis=0)]))
+    # exp(-[0, cumsum]) built in place: no concatenated copy.
+    cumulative = xp.empty((tau_total.shape[0] + 1, grid.n), dtype=np.float64)
+    cumulative[0] = 0.0
+    xp.cumsum(tau_total, axis=0, out=cumulative[1:])
+    xp.negative(cumulative, out=cumulative)
+    xp.exp(cumulative, out=cumulative)
 
     tau_aerosol = optics.tau_aerosol_abs + optics.tau_aerosol_sca
 
     return TransmittanceResult(
         grid=grid,
-        total=np.exp(-total_od),
-        molecular=np.exp(-optics.tau_molecular.sum(axis=0)),
-        aerosol=np.exp(-tau_aerosol.sum(axis=0)),
-        rayleigh=np.exp(-optics.tau_rayleigh.sum(axis=0)),
+        total=xp.exp(-total_od),
+        molecular=xp.exp(-optics.tau_molecular.sum(axis=0)),
+        aerosol=xp.exp(-tau_aerosol.sum(axis=0)),
+        rayleigh=xp.exp(-optics.tau_rayleigh.sum(axis=0)),
         by_species={
-            sp: np.exp(-t.sum(axis=0)) for sp, t in optics.tau_by_species.items()
+            sp: xp.exp(-t.sum(axis=0)) for sp, t in optics.tau_by_species.items()
         },
         cumulative=cumulative,
     )

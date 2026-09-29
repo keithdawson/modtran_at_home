@@ -202,6 +202,47 @@ def test_peak_optical_depth_cutoff_is_an_exact_threshold():
     assert evaluate(tau_peak * 2.0, column_cm2=None).max() > 0.0   # no column: no criterion
 
 
+@pytest.mark.parametrize("atmosphere, zenith, strength_fraction", [
+    ("midlat_summer", 0.0, 0.0),       # surface to space, all below 296 K
+    ("tropical", 90.0, 0.0),           # hot (> 296 K) humid surface layer
+    ("subarctic_winter", 0.0, 1e-9),   # cold, plus the strength-fraction test
+])
+def test_peak_prefilter_does_not_change_line_selection(monkeypatch, atmosphere, zenith,
+                                                       strength_fraction):
+    """The pre-filter bound only skips lines the exact peak test would drop."""
+    from mwir_atmos.api import build_profile, build_scenario_path
+    from mwir_atmos.types import ModelAtmosphere, Scenario
+
+    scenario = Scenario(atmosphere=ModelAtmosphere(atmosphere), sensor_zenith_deg=zenith,
+                        source_range_km=5.0 if zenith == 90.0 else None)
+    path = build_scenario_path(scenario, build_profile(scenario))
+    grid = make_grid(2300.0, 2450.0, 0.01)
+    rows = sorted({0, len(path.layers) // 3, len(path.layers) - 1})
+    compared = 0
+    for row in rows:
+        layer = path.layers[row]
+        for sp, linelist in LINELISTS.items():
+            column = layer.column_cm2.get(sp, 0.0)
+            if column <= 0.0:
+                continue
+            p = layer.p_eff_mbar.get(sp, layer.p_mbar)
+            args = (lbl._prepare(linelist), grid, p, layer.t_eff_k.get(sp, layer.t_k),
+                    p * column / layer.air_column_cm2, 25.0, sp == Species.H2O,
+                    strength_fraction, None, column, lbl.DEFAULT_LINE_OPTICAL_DEPTH_CUTOFF)
+            monkeypatch.setattr(lbl, "_PEAK_PREFILTER", True)
+            fast = lbl._select_lines(*args)
+            monkeypatch.setattr(lbl, "_PEAK_PREFILTER", False)
+            exact = lbl._select_lines(*args)
+            for name in ("center", "strength", "alpha_d", "gamma_l"):
+                np.testing.assert_array_equal(getattr(fast, name), getattr(exact, name))
+            assert (fast.pedestal is None) == (exact.pedestal is None)
+            if fast.pedestal is not None:
+                np.testing.assert_array_equal(fast.pedestal, exact.pedestal)
+            assert fast.plan_hwhm == exact.plan_hwhm
+            compared += exact.center.size
+    assert compared > 1000
+
+
 def test_weak_window_water_lines_survive_default_line_selection():
     """Regression: the former default discarded every 3.7 um window water line.
 

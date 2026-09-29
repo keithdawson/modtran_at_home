@@ -27,7 +27,15 @@ def _library() -> ctypes.CDLL:
         for folder in ("lib", "bin"):
             for name in names:
                 found = sorted(glob.glob(os.path.join(root, "nvidia", "cuda_nvrtc", folder, name)))
+                # Windows wheels also ship nvrtc64_*.alt.dll, which needs a
+                # builtins DLL they do not include; it sorts first.
+                found = [path for path in found if ".alt." not in os.path.basename(path)]
                 if found:
+                    if os.name == "nt":
+                        # NVRTC loads its builtins DLL from the same folder at compile time.
+                        folder_path = os.path.dirname(found[0])
+                        os.add_dll_directory(folder_path)
+                        os.environ["PATH"] = folder_path + os.pathsep + os.environ.get("PATH", "")
                     return ctypes.CDLL(found[0])
     raise SystemExit("NVRTC not found: pip install nvidia-cuda-nvrtc-cu12")
 

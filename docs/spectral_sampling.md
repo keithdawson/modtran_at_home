@@ -180,6 +180,18 @@ at every fine point, which is correct but slow.
   per `LineList` and cached. Reassigning a list's arrays invalidates the cache.
 - **Window selection** by binary search: each evaluation touches only lines
   whose wings can reach the grid.
+- **Peak pre-filter** (`_peak_candidates`). Before the exact
+  peak-optical-depth test, every line in the window is compared with an
+  upper bound on its peak optical depth built from precomputed per-line
+  numbers: the Voigt peak is at most the smaller of the Doppler and Lorentz
+  peaks, S(T) is bounded by its largest partition, Boltzmann and
+  stimulated-emission factors, and gamma_L by its air-broadened part. Only
+  the lines that pass get S(T), their widths and `erfcx`. On the full default
+  band (76 layers x 6 species, 65.8 M (line, layer) pairs scanned) 16% pass
+  and 10.3% are kept; single-threaded selection went from 11.1 s to 2.0 s,
+  with bit-identical selections
+  (`test_peak_prefilter_does_not_change_line_selection`, including a layer
+  above 296 K).
 - **Ragged evaluation**: `(line, grid point)` pairs are flattened, so windows
   clipped at the grid edge cost nothing. Batches of 2^14 pairs keep
   temporaries in L2 cache. On Windows, 2^17 was 4x slower single-threaded,
@@ -205,27 +217,70 @@ at every fine point, which is correct but slow.
 `backend="cuda"` (`--backend cuda`, `MWIR_BACKEND=cuda`) evaluates the line
 sums on an NVIDIA GPU through CuPy (`pip install .[cuda]`). Line-by-line work
 is ~98% of a resolved run (a 100 cm^-1 ground-to-space run spent 77 of 78 s
-in it), and every (line, grid point) pair is independent. The CPU still
-selects lines (in threads); `mwir_atmos/optics/lbl_cuda.py` then evaluates
-every (layer, species) pair of a chunk in one kernel launch, by direct
-summation. Consumer and workstation GPUs run float64 at 1/64 speed, so the
-far wings (~99.7% of pairs) use a float32 continued fraction and the line
-cores a float64 Weideman expansion (`optics/voigt_gpu.py`); offsets and sums
-are float64. The profile is within 4.7e-7 of `scipy.special.wofz`, and a
-NumPy twin of the kernel matches the CPU engine's exact sums to 2e-6 on
-surface-to-stratosphere layers (`tests/test_lbl_cuda.py`). On an RTX 4090
-(`validation/cuda_check_DESKTOP-RLDQTSU.json`) the on-device tests pass, and
-against all 16 CPU threads of the same desktop:
+in it), and every (line, grid point) pair is independent. Consumer and
+workstation GPUs run float64 at 1/64 speed, so the far wings (~99.7% of
+pairs) use a float32 continued fraction and the line cores a float64
+Weideman expansion (`optics/voigt_gpu.py`); offsets and sums are float64.
+The profile is within 4.7e-7 of `scipy.special.wofz`, and a NumPy twin of
+the kernel matches the CPU engine's exact sums to 2e-6 on
+surface-to-stratosphere layers (`tests/test_lbl_cuda.py`).
+
+How a resolved run uses the GPU (`optics/lbl_cuda.py`, `api._resolved_chunk`):
+
+1. The band is split into chunks of 2^23 fine point x layer elements (five
+   for the default band; ~1.0 GiB of GPU memory at the peak, released after
+   the run, since the GPU may be shared).
+2. The CPU selects lines (with the peak pre-filter above) and the GPU sums
+   them by direct evaluation. A chunk's (layer, species) tasks are dealt into
+   eight groups; the CPU selects group k+1 while the GPU evaluates group k,
+   and each task writes its own row of one (species x layer, point) array.
+   Selection then hides behind the kernels even on one thread, so the CUDA
+   backend uses 4 selection threads unless `n_threads`/`MWIR_THREADS` says
+   otherwise (point sampling: 0.34 s on 4 threads, 0.32 s on 16).
+3. For the single-scatter solver the chunk stays on the GPU: continuum,
+   aerosol, Rayleigh, path transmittance, radiance and the instrument
+   reduction run on CuPy arrays through the same code as on the CPU (each
+   function takes its array module from the grid, `mwir_atmos/_array.py`),
+   and only the output-grid arrays are copied back. DISORT, Monte Carlo and
+   Mie aerosol optics copy the optical depths back once and continue on the
+   CPU (the "host path").
+
+On an RTX 4090 (`validation/cuda_check_DESKTOP-RLDQTSU.json`) the on-device
+tests pass, and against all 16 CPU threads of the same desktop:
 
 | Run | CPU | GPU | Speedup | Max difference |
 |---|---:|---:|---:|---|
-| 2000-2200 cm^-1, ground-to-space | 8.9 s | 0.62 s | 14.3x | 3.4e-6 T, 7.6e-6 L |
-| Full default band 1800-4300 cm^-1 | 36.3 s | 7.6 s | 4.8x | 4.5e-6 T, 1.0e-5 L |
+| 2000-2200 cm^-1, ground-to-space | 8.3 s | 0.20 s | 40.6x | 3.4e-6 T, 7.6e-6 L |
+| Full default band 1800-4300 cm^-1 | 33.4 s | 0.95 s | 35.2x | 4.5e-6 T, 1.0e-5 L |
 
-The full band is limited by CPU-side work (line selection, continuum,
-transmittance, radiance), not the GPU. Resolved
-runs on the GPU use large chunks in one process; DISORT and Monte Carlo stay
-on the CPU.
+Before the changes above the GPU took 0.62 s and 7.6 s (14.3x and 4.8x); on
+the day of the new measurement the old code took 0.56 s and 6.58 s. Its
+full-band time, profiled (`run_scenario(Scenario(), backend="cuda")`, three
+chunks of 2^24, stage timers synchronised with the GPU):
+
+| Stage | Old | New |
+|---|---:|---:|
+| Kernels (CUDA events) | 0.75 s | 0.77 s |
+| Line selection (16 threads) + packing | ~1.1 s | hidden behind the kernels |
+| Copying (layer, species) rows back and into per-species arrays | 0.64 s | 0 (stays on the GPU) |
+| MT_CKD continuum (recomputed its stencil per layer, two interpolations) | 2.01 s | 0.035 s |
+| Per-species copies, continuum additions, species sum (`np.stack`) | ~0.6 s | on the GPU, in place |
+| Aerosol + Rayleigh | 0.32 s | 0.010 s |
+| Path transmittance | 0.61 s | 0.021 s |
+| Radiance | 0.61 s | 0.010 s |
+| Instrument reduction (+ copy to host) | 0.013 s | 0.014 s |
+| **Wall time, uninstrumented** | **6.58 s** | **0.95 s** |
+
+The new GPU results equal the old ones to 3e-15 relative (transmittance,
+cumulative, per-species) and 4e-16 (radiance); the device-resident chunks
+equal the host path to 3e-16 T and 1.4e-15 L. The host path takes 2.8 s for
+the same band. The CPU backend is essentially unchanged (33.3 s vs 33.5-33.9 s
+for the old code, same session): its time is Voigt evaluation.
+
+The kernels are now ~80% of a full-band GPU run. Every (line, point) pair
+still does float64 work (the offset from line centre, the cutoff test, the
+accumulation), which runs at 1/64 rate on this class of GPU; see the open
+work in [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
 
 ### Parallelism
 

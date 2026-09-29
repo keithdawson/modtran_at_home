@@ -51,6 +51,7 @@ from typing import Callable, Optional, Sequence
 
 import numpy as np
 
+from ._array import array_namespace
 from .constants import GAS_CONSTANT_R, LIGHT_C, STD_PRESSURE_MBAR
 from .types import (
     InstrumentFunction,
@@ -246,11 +247,13 @@ def degrade(values: np.ndarray, plan: FineGridPlan, n_output: int) -> np.ndarray
     """Apply the instrument function along the last axis of a chunk array.
 
     ``values[..., i]`` is on the chunk's fine grid; output point ``j`` of the
-    chunk is centred on fine index ``support + j*ratio``.
+    chunk is centred on fine index ``support + j*ratio``. NumPy or CuPy,
+    following ``values``.
     """
-    windows = np.lib.stride_tricks.sliding_window_view(
-        np.asarray(values, dtype=np.float64), plan.weights.size, axis=-1)
-    return windows[..., ::plan.ratio, :][..., :n_output, :] @ plan.weights
+    xp = array_namespace(values)
+    windows = xp.lib.stride_tricks.sliding_window_view(
+        xp.asarray(values, dtype=np.float64), plan.weights.size, axis=-1)
+    return windows[..., ::plan.ratio, :][..., :n_output, :] @ xp.asarray(plan.weights)
 
 
 def degrade_transmittance(t: TransmittanceResult, plan: FineGridPlan, n_output: int,

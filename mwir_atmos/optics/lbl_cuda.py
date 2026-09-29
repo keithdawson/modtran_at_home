@@ -4,8 +4,12 @@ Line-by-line Voigt summation is ~98% of a resolved run's time, and every
 (line, grid point) pair is independent, so it maps directly onto a GPU. The
 CPU still selects lines (:func:`mwir_atmos.optics.lbl._select_lines`, which
 applies the peak-optical-depth cutoff and pressure shift/broadening); this
-module then evaluates every selected line of every (layer, species) task of a
-spectral chunk in **one kernel launch** and returns optical depths.
+module evaluates the selected lines of a spectral chunk's (layer, species)
+tasks in a few kernel launches (:func:`evaluate_groups`: the CPU selects the
+next group of tasks while the GPU evaluates the current one), each task
+writing its own row of one ``(species x layer, grid point)`` device array.
+That array stays on the GPU when the grid does (resolved runs, see
+``mwir_atmos.api._device_resident``); otherwise it is copied back once.
 
 Kernel layout: one CUDA block per (task, 256 consecutive grid points). The
 block binary-searches the task's lines (sorted by shifted centre) for those
@@ -26,13 +30,15 @@ from __future__ import annotations
 import os
 import threading
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import Iterable, Optional, Sequence
 
 import numpy as np
 
+from .._array import is_device
 from .voigt_gpu import CF_RADIUS, CF_TERMS, re_faddeeva, weideman_coefficients
 
-__all__ = ["available", "device_summary", "evaluate", "evaluate_emulated", "pack"]
+__all__ = ["available", "concatenate", "device_summary", "evaluate", "evaluate_emulated",
+           "evaluate_groups", "evaluate_groups_emulated", "launch", "pack", "pack_task"]
 
 _SQRT_LN2 = float(np.sqrt(np.log(2.0)))
 _SQRT_LN2_OVER_PI = float(np.sqrt(np.log(2.0) / np.pi))
@@ -57,34 +63,43 @@ class Packed:
     has_pedestal: np.ndarray  # int32 per task
 
 
+_LINE_ARRAYS = (("center", np.float64), ("inv_alpha", np.float32), ("y", np.float32),
+                ("amp", np.float32), ("pedestal", np.float32))
+
+
+def pack_task(lines, cutoff: float, column: float) -> tuple:
+    """One task's kernel inputs: ``(line arrays in _LINE_ARRAYS order, cutoff, has_pedestal)``.
+
+    Runs in the line-selection threads, so the serial :func:`pack` only concatenates.
+    """
+    order = np.argsort(lines.center, kind="stable")
+    alpha = lines.alpha_d[order]
+    scale = column * lines.strength[order]
+    arrays = (lines.center[order],
+              (_SQRT_LN2 / alpha).astype(np.float32),
+              (_SQRT_LN2 * lines.gamma_l[order] / alpha).astype(np.float32),
+              (scale * _SQRT_LN2_OVER_PI / alpha).astype(np.float32),
+              (scale * lines.pedestal[order] if lines.pedestal is not None
+               else np.zeros(order.size)).astype(np.float32))
+    return arrays, float(cutoff), lines.pedestal is not None
+
+
 def pack(tasks: Sequence[tuple]) -> Packed:
     """Pack ``(lines, cutoff, column)`` tasks (``lines`` is an ``lbl._Lines``)."""
-    parts = {k: [] for k in ("center", "inv_alpha", "y", "amp", "pedestal")}
-    start, stop, cutoff, has_ped = [], [], [], []
-    offset = 0
-    for lines, cut, column in tasks:
-        order = np.argsort(lines.center, kind="stable")
-        alpha = lines.alpha_d[order]
-        scale = column * lines.strength[order]
-        parts["center"].append(lines.center[order])
-        parts["inv_alpha"].append(_SQRT_LN2 / alpha)
-        parts["y"].append(_SQRT_LN2 * lines.gamma_l[order] / alpha)
-        parts["amp"].append(scale * _SQRT_LN2_OVER_PI / alpha)
-        parts["pedestal"].append(scale * lines.pedestal[order] if lines.pedestal is not None
-                                 else np.zeros(order.size))
-        start.append(offset)
-        offset += order.size
-        stop.append(offset)
-        cutoff.append(cut)
-        has_ped.append(lines.pedestal is not None)
-    cat = lambda name, dtype: (np.concatenate(parts[name]).astype(dtype) if parts[name]
-                               else np.zeros(0, dtype))
-    return Packed(center=cat("center", np.float64), inv_alpha=cat("inv_alpha", np.float32),
-                  y=cat("y", np.float32), amp=cat("amp", np.float32),
-                  pedestal=cat("pedestal", np.float32),
-                  start=np.asarray(start, np.int64), stop=np.asarray(stop, np.int64),
-                  cutoff=np.asarray(cutoff, np.float64),
-                  has_pedestal=np.asarray(has_ped, np.int32))
+    return concatenate([pack_task(*task) for task in tasks])
+
+
+def concatenate(tasks: Sequence[tuple]) -> Packed:
+    """Join :func:`pack_task` results into one :class:`Packed`, in order."""
+    counts = np.array([arrays[0].size for arrays, _, _ in tasks], dtype=np.int64)
+    stop = np.cumsum(counts)
+    columns = {}
+    for k, (name, dtype) in enumerate(_LINE_ARRAYS):
+        columns[name] = (np.concatenate([arrays[k] for arrays, _, _ in tasks]).astype(dtype, copy=False)
+                         if tasks else np.zeros(0, dtype))
+    return Packed(**columns, start=stop - counts, stop=stop,
+                  cutoff=np.array([cut for _, cut, _ in tasks], dtype=np.float64),
+                  has_pedestal=np.array([ped for _, _, ped in tasks], dtype=np.int32))
 
 
 # =========================================================================
@@ -114,6 +129,15 @@ def evaluate_emulated(nu: np.ndarray, packed: Packed) -> np.ndarray:
         if packed.has_pedestal[t]:
             value = np.maximum(value - packed.pedestal[line], np.float32(0.0))
         out[t] = np.bincount(point, weights=value.astype(np.float64), minlength=nu.size)
+    return out
+
+
+def evaluate_groups_emulated(nu: np.ndarray, groups: Iterable[tuple], n_rows: int) -> np.ndarray:
+    """NumPy twin of :func:`evaluate_groups` (host arrays only)."""
+    nu = np.asarray(nu, dtype=np.float64)
+    out = np.zeros((n_rows, nu.size))
+    for packed, rows in groups:
+        out[np.asarray(rows, dtype=np.int64)] = evaluate_emulated(nu, packed)
     return out
 
 
@@ -188,7 +212,7 @@ extern "C" __global__ void voigt_tau(
         const float* __restrict__ ped,
         const long long* __restrict__ task_start, const long long* __restrict__ task_stop,
         const double* __restrict__ cutoff, const int* __restrict__ has_ped,
-        const int task0, double* __restrict__ out) {
+        const long long* __restrict__ out_row, const int task0, double* __restrict__ out) {
     const int task = task0 + blockIdx.y;
     const int i0 = blockIdx.x * TILE;
     const int i = i0 + threadIdx.x;
@@ -229,7 +253,7 @@ extern "C" __global__ void voigt_tau(
         }
         __syncthreads();
     }
-    if (i < n) out[(size_t)(task - task0) * n + i] = acc;
+    if (i < n) out[(size_t)out_row[task] * n + i] = acc;
 }
 """ % dict(tile=_TILE, n=len(coefficients), coeffs=coeffs, big_l=big_l,
            cf_r2=float(CF_RADIUS**2), cf_terms=CF_TERMS)
@@ -273,29 +297,92 @@ def _kernel():
     return kernel
 
 
+def launch(out, nu, packed: Packed, rows) -> None:
+    """Enqueue the kernel for every task of ``packed``; task ``t`` fills row ``rows[t]`` of ``out``.
+
+    ``out`` (float64, shape ``(R, nu.size)``) and ``nu`` are CuPy arrays. The
+    call returns once the work is queued, without waiting for the GPU.
+    """
+    cp = _cupy()
+    n_tasks, n = packed.start.size, int(nu.size)
+    if n == 0 or n_tasks == 0 or packed.center.size == 0:
+        return
+    kernel = _kernel()
+    d = {name: cp.asarray(getattr(packed, name)) for name in
+         ("center", "inv_alpha", "y", "amp", "pedestal", "start", "stop", "cutoff", "has_pedestal")}
+    d_rows = cp.asarray(np.asarray(rows, dtype=np.int64))
+    blocks_x = (n + _TILE - 1) // _TILE
+    for task0 in range(0, n_tasks, 65535):
+        count = min(65535, n_tasks - task0)
+        kernel((blocks_x, count), (_TILE,),
+               (nu, np.int32(n), d["center"], d["inv_alpha"], d["y"], d["amp"], d["pedestal"],
+                d["start"], d["stop"], d["cutoff"], d["has_pedestal"], d_rows, np.int32(task0),
+                out))
+    # Submit now: Windows (WDDM) drivers may otherwise hold queued launches back
+    # until the next synchronising call, and the CPU prepares the next group meanwhile.
+    cp.cuda.get_current_stream().done
+
+
+def evaluate_groups(nu, groups: Iterable[tuple], n_rows: int):
+    """Optical depths of packed task groups in one ``(n_rows, nu.size)`` array.
+
+    ``groups`` yields ``(packed, rows)``: task ``t`` of ``packed`` goes to row
+    ``rows[t]``; rows no task names stay zero. Each group's kernel is queued
+    before the next group is requested, so a lazy ``groups`` (the CPU line
+    selection in :func:`mwir_atmos.optics.lbl.molecular_optical_depth`)
+    prepares group ``k+1`` while the GPU evaluates group ``k``. A CuPy ``nu``
+    gives a CuPy result that stays on the device; a NumPy ``nu`` a NumPy copy.
+    """
+    cp = _cupy()
+    select_device()
+    on_device = is_device(nu)
+    d_nu = nu if on_device else cp.asarray(np.ascontiguousarray(nu, dtype=np.float64))
+    out = cp.zeros((n_rows, int(d_nu.size)), dtype=cp.float64)
+    for packed, rows in groups:
+        launch(out, d_nu, packed, rows)
+    return out if on_device else out.get()
+
+
 def evaluate(nu: np.ndarray, packed: Packed) -> np.ndarray:
     """Optical depth of every packed task on ``nu``: shape ``(n_tasks, nu.size)``."""
-    cp = _cupy()
     nu = np.ascontiguousarray(nu, dtype=np.float64)
     n_tasks, n = packed.start.size, nu.size
     result = np.zeros((n_tasks, n))
     if n == 0 or n_tasks == 0 or packed.center.size == 0:
         return result
-    select_device()
-    kernel = _kernel()
-    d = {name: cp.asarray(getattr(packed, name)) for name in
-         ("center", "inv_alpha", "y", "amp", "pedestal", "start", "stop", "cutoff", "has_pedestal")}
-    d_nu = cp.asarray(nu)
-    rows = max(1, min(n_tasks, _MAX_OUTPUT_BYTES // (8 * n), 65535))
-    blocks_x = (n + _TILE - 1) // _TILE
+    # Bound the device output: at most _MAX_OUTPUT_BYTES of rows at a time.
+    rows = max(1, min(n_tasks, _MAX_OUTPUT_BYTES // (8 * n)))
     for task0 in range(0, n_tasks, rows):
-        count = min(rows, n_tasks - task0)
-        d_out = cp.empty((count, n), dtype=cp.float64)
-        kernel((blocks_x, count), (_TILE,),
-               (d_nu, np.int32(n), d["center"], d["inv_alpha"], d["y"], d["amp"], d["pedestal"],
-                d["start"], d["stop"], d["cutoff"], d["has_pedestal"], np.int32(task0), d_out))
-        result[task0:task0 + count] = cp.asnumpy(d_out)
+        part = _task_slice(packed, task0, min(task0 + rows, n_tasks))
+        result[task0:task0 + part.start.size] = evaluate_groups(
+            nu, [(part, np.arange(part.start.size))], part.start.size)
     return result
+
+
+def _task_slice(packed: Packed, a: int, b: int) -> Packed:
+    """Tasks ``a..b-1`` of ``packed`` as their own :class:`Packed`."""
+    if a == 0 and b == packed.start.size:
+        return packed
+    lo, hi = int(packed.start[a]), int(packed.stop[b - 1])
+    return Packed(**{name: getattr(packed, name)[lo:hi] for name, _ in _LINE_ARRAYS},
+                  start=packed.start[a:b] - lo, stop=packed.stop[a:b] - lo,
+                  cutoff=packed.cutoff[a:b], has_pedestal=packed.has_pedestal[a:b])
+
+
+def to_device(array):
+    """``array`` as a CuPy array on the selected GPU (``MWIR_CUDA_DEVICE``)."""
+    select_device()
+    return _cupy().asarray(array)
+
+
+def release_memory() -> None:
+    """Return CuPy's cached device and pinned memory to the driver (the GPU may be shared)."""
+    try:
+        cp = _cupy()
+    except ImportError:
+        return
+    cp.get_default_memory_pool().free_all_blocks()
+    cp.get_default_pinned_memory_pool().free_all_blocks()
 
 
 def select_device() -> Optional[int]:

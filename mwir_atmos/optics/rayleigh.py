@@ -30,6 +30,7 @@ from typing import Sequence
 
 import numpy as np
 
+from .._array import array_namespace
 from ..types import PathLayer, SpectralGrid
 
 __all__ = ["rayleigh_optical_depth"]
@@ -40,7 +41,7 @@ _REFERENCE_DENSITY_CM3 = 2.54743e19
 
 def _king_factor(wavelength_um: np.ndarray) -> np.ndarray:
     """Bodhaine et al. (1999), dry air with 300 ppm CO2."""
-    inv2 = 1.0 / np.asarray(wavelength_um)**2
+    inv2 = 1.0 / wavelength_um**2
     nitrogen = 1.034 + 3.17e-4*inv2
     oxygen = 1.096 + 1.385e-3*inv2 + 1.448e-4*inv2**2
     return (78.084*nitrogen + 20.946*oxygen + 0.934 + 0.03*1.15) / 99.994
@@ -80,5 +81,7 @@ def rayleigh_optical_depth(layers: Sequence[PathLayer], grid: SpectralGrid) -> n
     contributes only to ``LayerOptics.tau_rayleigh``.
     """
     sigma = _rayleigh_cross_section_cm2(grid.wavelength_um)  # (n_wn,)
-    air_col = np.array([layer.air_column_cm2 for layer in layers], dtype=np.float64)[:, None]
+    xp = array_namespace(sigma)
+    air_col = xp.asarray(np.array([layer.air_column_cm2 for layer in layers],
+                                  dtype=np.float64))[:, None]
     return air_col * sigma[None, :]

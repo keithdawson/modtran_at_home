@@ -32,6 +32,7 @@ from ..constants import (
     SOLAR_SOLID_ANGLE_SR,
     STEFAN_BOLTZMANN,
 )
+from .._array import array_namespace
 from ..spectral import planck
 from ..types import (
     AtmosphereProfile,
@@ -99,8 +100,9 @@ def lunar_irradiance(grid: SpectralGrid, moon: SkyPosition) -> tuple[np.ndarray,
 def _henyey_greenstein(g: np.ndarray, theta_deg: float) -> np.ndarray:
     """Henyey-Greenstein phase function, normalised to 1 over 4*pi steradians."""
     mu = math.cos(math.radians(theta_deg))
-    g = np.clip(g, -0.99, 0.99)
-    return (1.0 - g**2) / np.power(1.0 + g**2 - 2.0 * g * mu, 1.5)
+    xp = array_namespace(g)
+    g = xp.clip(g, -0.99, 0.99)
+    return (1.0 - g**2) / xp.power(1.0 + g**2 - 2.0 * g * mu, 1.5)
 
 
 def _rayleigh_phase(theta_deg: float) -> float:
@@ -111,12 +113,12 @@ def _rayleigh_phase(theta_deg: float) -> float:
 def _vertical_optical_depth(path: PathGeometry, optics: LayerOptics) -> np.ndarray:
     """De-slant each layer's extinction to a vertical optical depth."""
     tau = optics.tau_total
-    scale = np.array(
+    scale = array_namespace(tau).asarray(np.array(
         [
             (abs(l.z_top_km - l.z_bottom_km) / l.ds_km) if l.ds_km > 0 else 0.0
             for l in path.layers
         ]
-    )
+    ))
     return tau * scale[:, None]
 
 
@@ -130,16 +132,17 @@ def _beam_transmittance_to_layers(
     accumulated by altitude rather than by index.
     """
     tau_vert = _vertical_optical_depth(path, optics)
+    xp = array_namespace(tau_vert)
     mid_alt = np.array([0.5 * (l.z_bottom_km + l.z_top_km) for l in path.layers])
     order = np.argsort(-mid_alt)                 # highest first
 
-    above = np.zeros_like(tau_vert)
-    running = np.zeros(tau_vert.shape[1])
+    above = xp.zeros_like(tau_vert)
+    running = xp.zeros(tau_vert.shape[1])
     for idx in order:
         above[idx] = running
         running = running + tau_vert[idx]
 
-    return np.exp(-above * airmass(body_zenith_deg))
+    return xp.exp(-above * airmass(body_zenith_deg))
 
 
 def _beam_transmittance_to_surface(
@@ -147,7 +150,7 @@ def _beam_transmittance_to_surface(
 ) -> np.ndarray:
     """Transmittance from space to the ground along the illumination beam."""
     tau_vert = _vertical_optical_depth(path, optics)
-    return np.exp(-tau_vert.sum(axis=0) * airmass(body_zenith_deg))
+    return array_namespace(tau_vert).exp(-tau_vert.sum(axis=0) * airmass(body_zenith_deg))
 
 
 def _single_scatter(
@@ -159,18 +162,19 @@ def _single_scatter(
     irradiance: np.ndarray,
 ) -> np.ndarray:
     """Single-scattered radiance from one illumination source."""
+    xp = array_namespace(grid.wavenumber_cm1)
     if not body.is_above_horizon:
-        return np.zeros(grid.n)
+        return xp.zeros(grid.n)
 
     tau_total = optics.tau_total
     tau_sca = optics.tau_scattering
     with np.errstate(divide="ignore", invalid="ignore"):
-        omega = np.where(tau_total > 0, tau_sca / tau_total, 0.0)
+        omega = xp.where(tau_total > 0, tau_sca / tau_total, 0.0)
 
     g = (
         optics.aerosol_asymmetry
         if optics.aerosol_asymmetry is not None
-        else np.zeros_like(tau_total)
+        else xp.zeros_like(tau_total)
     )
     p_aer = _henyey_greenstein(g, body.scattering_angle_deg)
     p_ray = _rayleigh_phase(body.scattering_angle_deg)
@@ -178,11 +182,11 @@ def _single_scatter(
     aer_sca, ray_sca = optics.tau_aerosol_sca, optics.tau_rayleigh
     denom = aer_sca + ray_sca
     with np.errstate(divide="ignore", invalid="ignore"):
-        phase = np.where(denom > 0, (p_aer * aer_sca + p_ray * ray_sca) / denom, 0.0)
+        phase = xp.where(denom > 0, (p_aer * aer_sca + p_ray * ray_sca) / denom, 0.0)
 
     beam = _beam_transmittance_to_layers(path, optics, body.zenith_deg)
     to_sensor = transmittance.cumulative[:-1]
-    emitted = 1.0 - np.exp(-tau_total)
+    emitted = 1.0 - xp.exp(-tau_total)
 
     contrib = omega * phase / (4.0 * math.pi) * irradiance[None, :] * beam * to_sensor * emitted
     return contrib.sum(axis=0)
@@ -201,14 +205,15 @@ def compute_radiance(
 ) -> RadianceResult:
     """Assemble sensor-aperture spectral radiance, W cm^-2 sr^-1 / cm^-1."""
     n = grid.n
-    zeros = np.zeros(n)
+    xp = array_namespace(grid.wavenumber_cm1)
+    zeros = xp.zeros(n)
     total_trans = transmittance.total
     cumulative = transmittance.cumulative
 
     # --- path thermal emission (Schwarzschild) --------------------------------
     layer_t = np.array([l.t_k for l in path.layers])
     b_layers = planck(grid.wavenumber_cm1, layer_t)          # (n_layers, n)
-    layer_emissivity = 1.0 - np.exp(-optics.tau_absorption)
+    layer_emissivity = 1.0 - xp.exp(-optics.tau_absorption)
     path_thermal = (b_layers * layer_emissivity * cumulative[:-1]).sum(axis=0)
 
     # --- surface terms --------------------------------------------------------

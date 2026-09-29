@@ -8,22 +8,22 @@
  "device": "NVIDIA GeForce RTX 4090 (device 0, compute 8.9, 24 GiB)",
  "tests": {
   "returncode": 0,
-  "tail": ".........                                                                [100%]\n============================== warnings summary ===============================\nC:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286\n  C:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n9 passed, 1 warning in 59.11s\n"
+  "tail": "............                                                             [100%]\n============================== warnings summary ===============================\nC:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286\n  C:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n12 passed, 1 warning in 48.17s\n"
  },
  "runs": {
   "slice_2000_2200": {
-   "cuda_seconds": 0.6207501000026241,
-   "cpu_seconds": 8.889451299997745,
-   "speedup": 14.320499183101488,
-   "max_abs_transmittance_diff": 3.418527690868256e-06,
-   "max_rel_radiance_diff": 7.570843337356692e-06
+   "cuda_seconds": 0.20380469999508932,
+   "cpu_seconds": 8.273184999998193,
+   "speedup": 40.593690921737995,
+   "max_abs_transmittance_diff": 3.4185276907572337e-06,
+   "max_rel_radiance_diff": 7.570843337134647e-06
   },
   "default_full_band": {
-   "cuda_seconds": 7.598810700001195,
-   "cpu_seconds": 36.29798130001291,
-   "speedup": 4.776797677037434,
+   "cuda_seconds": 0.9486294999951497,
+   "cpu_seconds": 33.417428500019014,
+   "speedup": 35.227060195987875,
    "max_abs_transmittance_diff": 4.516405245458266e-06,
-   "max_rel_radiance_diff": 1.015582885988131e-05
+   "max_rel_radiance_diff": 1.0155828860103355e-05
   }
  }
 }

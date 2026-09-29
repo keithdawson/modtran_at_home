@@ -70,6 +70,7 @@ from typing import Sequence
 
 import numpy as np
 
+from .._array import array_namespace
 from ..types import AerosolModel, PathLayer, SpectralGrid
 
 __all__ = ["aerosol_optical_depth"]
@@ -141,10 +142,11 @@ def aerosol_optical_depth(
     n_layers = len(layers)
     n_wn = grid.n
 
+    xp = array_namespace(grid.wavenumber_cm1)
     if model == AerosolModel.NONE or n_layers == 0:
         for layer in layers:
             layer.aerosol_od_550nm = 0.0
-        zeros = np.zeros((n_layers, n_wn), dtype=np.float64)
+        zeros = xp.zeros((n_layers, n_wn), dtype=np.float64)
         return zeros, zeros.copy(), zeros.copy()
 
     if visibility_km <= 0.0:
@@ -168,25 +170,21 @@ def aerosol_optical_depth(
     sigma_550_ref_per_km = (3.912 / float(visibility_km)) * wind_factor  # Koschmieder
 
     lam = grid.wavelength_um  # (n_wn,)
-    t = np.clip((lam - 3.0) / (5.0 - 3.0), 0.0, 1.0)
+    t = xp.clip((lam - 3.0) / (5.0 - 3.0), 0.0, 1.0)
     omega0 = omega0_3 + (omega0_5 - omega0_3) * t
     g_spectrum = g_3 + (g_5 - g_3) * t
     spectral_shape = (lam / 0.55) ** (-alpha)  # (n_wn,)
 
-    tau_abs = np.zeros((n_layers, n_wn), dtype=np.float64)
-    tau_sca = np.zeros((n_layers, n_wn), dtype=np.float64)
-    g_out = np.zeros((n_layers, n_wn), dtype=np.float64)
-
+    tau_550 = np.empty(n_layers)
     for i, layer in enumerate(layers):
         z_mid = 0.5 * (layer.z_bottom_km + layer.z_top_km)
         f_rh = _hanel_growth_factor(layer.rh_pct, gamma)
         sigma_550 = sigma_550_ref_per_km * np.exp(-z_mid / h_km) * f_rh
-        tau_550_layer = sigma_550 * layer.ds_km
-        layer.aerosol_od_550nm = float(tau_550_layer)
+        tau_550[i] = sigma_550 * layer.ds_km
+        layer.aerosol_od_550nm = float(tau_550[i])
 
-        tau_ext = tau_550_layer * spectral_shape  # (n_wn,)
-        tau_sca[i, :] = tau_ext * omega0
-        tau_abs[i, :] = tau_ext * (1.0 - omega0)
-        g_out[i, :] = g_spectrum
-
+    tau_ext = xp.asarray(tau_550)[:, None] * spectral_shape[None, :]  # (n_layers, n_wn)
+    tau_sca = tau_ext * omega0
+    tau_abs = tau_ext * (1.0 - omega0)
+    g_out = xp.broadcast_to(g_spectrum, (n_layers, n_wn)).copy()
     return tau_abs, tau_sca, g_out

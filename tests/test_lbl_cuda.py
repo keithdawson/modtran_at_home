@@ -8,6 +8,7 @@ the CPU engine and skip without CuPy and a CUDA device.
 from __future__ import annotations
 
 import dataclasses
+from datetime import datetime
 
 import numpy as np
 import pytest
@@ -18,7 +19,7 @@ from mwir_atmos.hitran.fetch import ensure_linelists
 from mwir_atmos.optics import lbl, lbl_cuda
 from mwir_atmos.optics.voigt_gpu import re_faddeeva
 from mwir_atmos.spectral import make_grid
-from mwir_atmos.types import ModelAtmosphere, Scenario, Species, SpectralSampling
+from mwir_atmos.types import AerosolModel, ModelAtmosphere, Scenario, Species, SpectralSampling
 
 gpu = pytest.mark.skipif(not lbl_cuda.available(), reason="needs CuPy and a CUDA device")
 
@@ -81,7 +82,7 @@ def test_cuda_path_with_the_numpy_twin_matches_cpu(monkeypatch):
     """Whole ``backend="cuda"`` path (selection threads, packing, row mapping)
     with the kernel replaced by its NumPy twin: every layer and species."""
     monkeypatch.setattr(lbl_cuda, "available", lambda: True)
-    monkeypatch.setattr(lbl_cuda, "evaluate", lbl_cuda.evaluate_emulated)
+    monkeypatch.setattr(lbl_cuda, "evaluate_groups", lbl_cuda.evaluate_groups_emulated)
     scenario = Scenario()
     path = build_scenario_path(scenario, build_profile(scenario))
     grid = make_grid(2140.0, 2142.0, 0.01)
@@ -92,6 +93,22 @@ def test_cuda_path_with_the_numpy_twin_matches_cpu(monkeypatch):
     np.testing.assert_allclose(gpu_total, cpu_total, rtol=2e-6, atol=1e-12)
     for sp in cpu_species:
         np.testing.assert_allclose(gpu_species[sp], cpu_species[sp], rtol=2e-6, atol=1e-12)
+
+
+def test_task_groups_fill_their_rows_and_leave_others_zero(monkeypatch):
+    """Grouped evaluation (CPU selection of group k+1 while the GPU runs group k)
+    places every task in its (species, layer) row, however the tasks are grouped."""
+    grid = make_grid(2140.0, 2145.0, 0.05)
+    tasks, expected = _tasks(grid, Scenario())
+    single = lbl_cuda.evaluate_emulated(grid.wavenumber_cm1, lbl_cuda.pack(tasks))
+    rows = [7, 0, 3, 8, 1, 5, 2, 6, 4]
+    groups = [(lbl_cuda.pack([tasks[k] for k in (0, 4)]), [rows[0], rows[4]]),
+              (lbl_cuda.concatenate([lbl_cuda.pack_task(*tasks[k]) for k in (1, 2, 3)]),
+               rows[1:4]),
+              (lbl_cuda.pack(tasks[5:]), rows[5:])]
+    got = lbl_cuda.evaluate_groups_emulated(grid.wavenumber_cm1, groups, 11)
+    np.testing.assert_array_equal(got[rows], single)
+    assert np.all(got[9:] == 0.0)
 
 
 def test_cuda_backend_is_refused_without_a_device(monkeypatch):
@@ -127,6 +144,39 @@ def test_molecular_optical_depth_cuda_matches_cpu():
     cpu_total, _ = lbl.molecular_optical_depth(path.layers, grid, backend="cpu", method="direct")
     gpu_total, _ = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")
     np.testing.assert_allclose(gpu_total, cpu_total, rtol=2e-6, atol=1e-9)
+
+
+@gpu
+@pytest.mark.parametrize("aerosol", [AerosolModel.RURAL, AerosolModel.LOWTRAN_RURAL])
+def test_device_resident_chunks_match_the_host_path(monkeypatch, aerosol):
+    """Daytime look-down path (surface, solar and scattered terms): keeping the
+    fine-grid arrays on the GPU changes nothing but rounding, and frees them."""
+    import cupy
+    from mwir_atmos import api
+
+    scenario = Scenario(wavenumber_min_cm1=2500.0, wavenumber_max_cm1=2530.0,
+                        spectral_sampling=SpectralSampling.RESOLVED, aerosol=aerosol,
+                        sensor_alt_km=5.0, sensor_zenith_deg=150.0,
+                        local_datetime=datetime(2026, 6, 21, 12, 0))
+    device = run_scenario(scenario, backend="cuda")
+    assert cupy.get_default_memory_pool().total_bytes() == 0
+    monkeypatch.setattr(api, "_CUDA_DEVICE_RESIDENT", False)
+    host = run_scenario(scenario, backend="cuda")
+    assert device.radiance.solar_single_scatter.max() > 0.0
+    assert device.radiance.surface_reflected_solar.max() > 0.0
+    for name in ("total", "molecular", "aerosol", "rayleigh"):
+        np.testing.assert_allclose(getattr(device.transmittance, name),
+                                   getattr(host.transmittance, name), rtol=1e-12, atol=1e-15)
+    np.testing.assert_allclose(device.transmittance.cumulative, host.transmittance.cumulative,
+                               rtol=1e-12, atol=1e-15)
+    for sp, values in host.transmittance.by_species.items():
+        np.testing.assert_allclose(device.transmittance.by_species[sp], values, rtol=1e-12, atol=1e-15)
+    for name in ("total", "path_thermal", "surface_emitted", "surface_reflected_solar",
+                 "solar_single_scatter", "direct_solar"):
+        np.testing.assert_allclose(getattr(device.radiance, name), getattr(host.radiance, name),
+                                   rtol=1e-10, atol=1e-20)
+    assert all(isinstance(v, np.ndarray) for v in (device.transmittance.total,
+                                                  device.radiance.total))
 
 
 @gpu

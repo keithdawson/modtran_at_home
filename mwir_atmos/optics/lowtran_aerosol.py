@@ -9,6 +9,7 @@ from typing import Sequence
 
 import numpy as np
 
+from .._array import array_namespace
 from ..data_paths import aerosol_data_dir
 from ..types import AerosolModel, PathLayer, SpectralGrid
 
@@ -36,8 +37,9 @@ def optical_properties(prefix: str, rh_pct: float, wavelength_um: np.ndarray) ->
     RH is bounded to the original table's 0–99% range. At fixed visibility,
     RH changes spectral shape and albedo, not the 550-nm reference loading.
     """
-    lam = np.asarray(wavelength_um, dtype=float)
-    if not np.isfinite(lam).all() or np.any((lam < .2) | (lam > 40.)):
+    xp = array_namespace(wavelength_um)
+    lam = xp.asarray(wavelength_um, dtype=float)
+    if not bool(xp.isfinite(lam).all()) or bool(xp.any((lam < .2) | (lam > 40.))):
         raise ValueError("LOWTRAN aerosol tables support wavelengths from 0.2 to 40 micrometers")
     if not np.isfinite(rh_pct):
         raise ValueError("rh_pct must be finite")
@@ -56,7 +58,7 @@ def optical_properties(prefix: str, rh_pct: float, wavelength_um: np.ndarray) ->
             values.append(np.exp(np.log(lo) * (1. - weight) + np.log(hi) * weight))
     else:
         raise ValueError(f"Unknown LOWTRAN optical table: {prefix}")
-    return tuple(np.interp(lam, native, value) for value in values)
+    return tuple(xp.interp(lam, xp.asarray(native), xp.asarray(value)) for value in values)
 
 
 def extinction_profile(visibility_km: float, *, winter: bool = False) -> tuple[np.ndarray, np.ndarray]:
@@ -97,8 +99,9 @@ def table_optical_depth(
     log_sigma = np.log(sigma)
     # Validate spectral bounds even for an empty path.
     optical_properties(TABLE_MODELS[model], 70., grid.wavelength_um)
+    xp = array_namespace(grid.wavenumber_cm1)
     shape = (len(layers), grid.n)
-    absorption, scattering, g_numerator = (np.zeros(shape) for _ in range(3))
+    absorption, scattering, g_numerator = (xp.zeros(shape) for _ in range(3))
     for i, layer in enumerate(layers):
         lo, hi = sorted((layer.z_bottom_km, layer.z_top_km))
         if lo < 0. or not np.isfinite([lo, hi, layer.ds_km, layer.rh_pct]).all() or layer.ds_km < 0.:
@@ -117,11 +120,14 @@ def table_optical_depth(
             prefix = TABLE_MODELS[model] if mid <= 2. else "TRO" if mid <= 10. else "BST" if mid <= 30. else "DME"
             rh = 70. if 2. < mid <= 10. else layer.rh_pct
             ext, ab, g = optical_properties(prefix, rh, grid.wavelength_um)
-            sca = np.maximum(ext - ab, 0.)  # source rounding can make tiny differences
+            sca = xp.maximum(ext - ab, 0.)  # source rounding can make tiny differences
             absorption[i] += reference_od * ab
             scattering[i] += reference_od * sca
             g_numerator[i] += reference_od * sca * g
             tau550 += reference_od
         layer.aerosol_od_550nm = float(tau550)
-    g = np.divide(g_numerator, scattering, out=np.zeros(shape), where=scattering > 0.)
+    if xp is np:
+        g = np.divide(g_numerator, scattering, out=np.zeros(shape), where=scattering > 0.)
+    else:
+        g = xp.where(scattering > 0., g_numerator / xp.where(scattering > 0., scattering, 1.), 0.)
     return absorption, scattering, g

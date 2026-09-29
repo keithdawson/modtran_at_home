@@ -11,6 +11,7 @@ from typing import Iterable, Optional
 
 import numpy as np
 
+from ._array import array_namespace
 from .constants import (
     BANDS_CM1,
     C1_RAD,
@@ -123,17 +124,21 @@ def planck(wavenumber_cm1: np.ndarray, temperature_k: float | np.ndarray) -> np.
     Temperatures <= 0 yield zeros rather than raising, so that "no surface" and
     "no source" cases can be handled without branching.
     """
-    nu = np.asarray(wavenumber_cm1, dtype=np.float64)
+    xp = array_namespace(wavenumber_cm1)
+    nu = xp.asarray(wavenumber_cm1, dtype=np.float64)
     t = np.asarray(temperature_k, dtype=np.float64)
     scalar_t = t.ndim == 0
     t2 = np.atleast_1d(t)[:, None]
 
-    out = np.zeros((t2.shape[0], nu.size), dtype=np.float64)
     valid = (t2 > 0.0).ravel()
-    if np.any(valid):
-        x = C2_RAD * nu[None, :] / t2[valid]
+    if np.all(valid):
         # expm1 keeps precision for the small-x (long wave) limit.
-        out[valid] = C1_RAD * nu[None, :] ** 3 / np.expm1(x)
+        out = C1_RAD * nu[None, :] ** 3 / xp.expm1(C2_RAD * nu[None, :] / xp.asarray(t2))
+    else:
+        out = xp.zeros((t2.shape[0], nu.size), dtype=np.float64)
+        if np.any(valid):
+            x = C2_RAD * nu[None, :] / xp.asarray(t2[valid])
+            out[xp.asarray(np.flatnonzero(valid))] = C1_RAD * nu[None, :] ** 3 / xp.expm1(x)
     return out[0] if scalar_t else out
 
 

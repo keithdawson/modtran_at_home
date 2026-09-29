@@ -1,7 +1,7 @@
 # Development status and handoff
 
 Written at the end of a cloud session (29 September 2026) so a local session
-can pick up the work. Physics and results live in
+can pick up the work, and kept up to date since. Physics and results live in
 [spectral_sampling.md](spectral_sampling.md); the validation runbook in
 [validation/README.md](validation/README.md). This file records *state*,
 *why*, *what's next*, and the traps.
@@ -21,10 +21,11 @@ Commits of this line of work, oldest first:
 | `307ac81` | Defaults from round 1: cutoff 3e-6, 10% fine-step rule, single-scatter correction of binned radiance, recalibrated cost estimate, HAPI-based test thresholds |
 | `2262168` | Experimental CUDA backend (`backend="cuda"`) |
 | `026f4ad` | Round-2 validation and RTX 4090 CUDA check (the user's commit) |
-| next | Handoff docs (this file, `CLAUDE.md`) |
+| `510c051`, `15764f4` | Handoff docs (this file, `CLAUDE.md`); round-2 results in the docs |
+| next | GPU path's CPU side: peak pre-filter for line selection, vectorised MT_CKD continuum, selection overlapped with grouped kernels, device-resident resolved chunks (full band 6.6 s -> 0.95 s on the RTX 4090) |
 
-Test suite: 610 passed, 3 skipped (GPU-only) on Linux; the GPU tests pass on
-the RTX 4090.
+Test suite: 619 passed, 0 skipped on the RTX 4090 desktop (`pytest -n auto`,
+67 s); without a GPU the 5 GPU-only tests skip.
 
 ## Decisions and their evidence
 
@@ -38,21 +39,35 @@ the RTX 4090.
 | Window-test thresholds (subarctic > 0.80, look-down > 0.88) | independent HAPI line-by-line reference; model agrees to 0.001 T, 0.38% L | `tests/reference_data/hapi_window_reference.json` |
 | Cost estimate: 0.15 M elements/s/worker, speedup workers**0.7 | desktop measured 0.23 M at the *old* step | `mwir_atmos/cli.py` `_COST_*` |
 | GPU: float32 wings, float64 cores/offsets/sums | GPUs run fp64 at 1/64 rate; profile within 4.7e-7 of wofz | `optics/voigt_gpu.py` |
+| Peak pre-filter before exact line selection | 16% of (line, layer) pairs pass the bound, 10.3% are kept; selection 11.1 s -> 2.0 s single-threaded, bit-identical | `lbl._peak_candidates`, `test_peak_prefilter_does_not_change_line_selection` |
+| Resolved CUDA chunks stay on the GPU (single scatter) | full band 2.8 s on the host path vs 0.95 s device-resident, equal to 1.4e-15 | `api._device_resident`, [spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental) |
+| CUDA chunks of 2^23 elements | 0.95 s / 1.0 GiB, vs 0.92 s / 2.0 GiB at 2^24 and 1.30 s at 2^22 | `api._CUDA_CHUNK_ELEMENTS` |
+| 4 selection threads on the CUDA backend | resolved full band 0.96 s on 1 thread, 0.97 s on 16; point sampling 0.34 s on 4, 0.32 s on 16 | `lbl._CUDA_SELECTION_THREADS` |
 
 ## Open work, in order
 
 Round 2 and the RTX 4090 check are done (commit `026f4ad`; results in
 [spectral_sampling.md](spectral_sampling.md#validation-results)): corrected
-binning <= 0.49% worst bin on every path, fine step confirmed, GPU tests pass
-with 14.3x on a 200 cm^-1 slice but only 4.8x on the full band (7.6 s vs
-36.3 s), because the CPU side dominates there.
+binning <= 0.49% worst bin on every path, fine step confirmed.
 
-1. **Make the GPU path's CPU side fast** (biggest remaining win for the
-   full band). Profile `run_scenario(Scenario(), backend="cuda")` first.
-   Likely: overlap chunk k+1's line selection with chunk k's kernel, run the
-   non-LBL per-chunk work (continuum, transmittance, radiance, instrument
-   reduction) in worker processes or on the GPU, and consider line selection
-   on the GPU.
+The GPU path's CPU side is done: the full default band takes 0.95 s on the
+RTX 4090 (was 6.6-7.6 s), 35x the 16-thread CPU backend (was 4.8x); a
+200 cm^-1 slice 0.20 s, 41x. Profile, before and after, in
+[spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental). The
+old time went to the MT_CKD continuum (2.0 s), CPU-side transmittance and
+radiance (1.2 s), line selection (1.1 s) and copying/stacking the per-(layer,
+species) results (1.2 s); the kernels were 0.75 s.
+
+1. **GPU kernel float64 work** (now ~80% of a full-band GPU run: 0.77 of
+   0.95 s). Each (line, point) pair does float64 work: the offset from line
+   centre, the cutoff test and the accumulation, at 1/64 rate on consumer and
+   workstation GPUs. Ideas, not yet tried: offsets as float32 pairs relative
+   to a per-block reference wavenumber (hi/lo split of each line's offset,
+   computed once per tile in float64), the cutoff as a per-line index range
+   computed once per tile, compensated float32 sums per tile added to the
+   float64 total, and an exact float64 offset only in the Weideman core
+   branch. Keep `lbl_cuda.evaluate_emulated` in step and re-check against
+   `scipy.special.wofz` and the CPU engine (`tests/test_lbl_cuda.py`).
 2. **Other CUDA follow-ups**:
    - Multi-GPU (work server: 4 x Blackwell 6000 on CPU 0, 1 x Ada 6000 on
      CPU 1): one worker process per GPU, **spawned** (never fork after CUDA
@@ -60,8 +75,12 @@ with 14.3x on a 200 cm^-1 slice but only 4.8x on the full band (7.6 s vs
    - GPU-aware runtime estimate; GUI control for the backend.
    - CuPy warns "CUDA path could not be detected" on the desktop; harmless
      with `cupy-cuda12x[ctk]`, silence by setting `CUDA_PATH` if wanted.
-   - Consider making `cuda` the default when a GPU is present, once the
-     full-band speedup is worth it.
+   - Consider making `cuda` the default when a GPU is present: the full
+     band is now 35x faster than the CPU backend on the desktop.
+   - DISORT, Monte Carlo and Mie aerosol optics on the CUDA backend use the
+     host path: optical depths are copied back once and the rest runs on the
+     CPU (2.8 s for the full band with the single-scatter solver, against
+     0.95 s device-resident). Not profiled with those solvers.
    - Keep `lbl_cuda.evaluate_emulated` in step with the kernel source;
      `tests/test_lbl_cuda.py` relies on it.
 3. **Work server scaling**: `python scripts/validation/scaling_benchmark.py
@@ -89,6 +108,14 @@ with 14.3x on a 200 cm^-1 slice but only 4.8x on the full band (7.6 s vs
   predate resolved sampling); GUI tests start via `_point_app()` because a
   resolved full-band first render takes minutes. New tests should follow suit
   unless they are about sampling.
+- **NumPy or CuPy after line-by-line**: continuum, aerosol, Rayleigh,
+  `path_transmittance`, `compute_radiance`, `planck` and `resolved.degrade`
+  take their array module from their spectral input
+  (`mwir_atmos._array.array_namespace`), so resolved CUDA chunks run them on
+  the GPU. New code there must not build spectral arrays with `np.zeros`,
+  `np.array` or `np.asarray`; use the array module (`xp`). CuPy raises a
+  `TypeError` on mixing, and `test_device_resident_chunks_match_the_host_path`
+  (GPU only) exercises the whole single-scatter path.
 - **Never loosen a physics threshold to match new output.** Use an independent
   reference (`scripts/physics_reference/generate_hapi_reference.py`,
   dev-only `hitran-api==1.3.0.0`).

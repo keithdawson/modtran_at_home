@@ -132,10 +132,15 @@ def run_scenario(
     spectral_pass = _SpectralPass(scenario, profile, path, column, indices, factors, sun, moon,
                                   include_radiance, n_threads, backend=backend)
     fine_step = None
-    if scenario.spectral_sampling == SpectralSampling.RESOLVED:
-        transmittance, radiance, fine_step = _run_resolved(spectral_pass, grid)
-    else:
-        _, _, transmittance, radiance = spectral_pass.run(grid)
+    try:
+        if scenario.spectral_sampling == SpectralSampling.RESOLVED:
+            transmittance, radiance, fine_step = _run_resolved(spectral_pass, grid)
+        else:
+            _, _, transmittance, radiance = spectral_pass.run(grid)
+    finally:
+        if backend == "cuda":
+            from .optics import lbl_cuda
+            lbl_cuda.release_memory()   # the GPU may be shared: keep nothing cached
 
     result = ScenarioResult(
         scenario=scenario,
@@ -187,6 +192,8 @@ class _SpectralPass:
         self.n_threads = n_threads
         self.strength_references = strength_references
         self.backend = backend
+        #: Resolved chunks run on the GPU with device arrays (see _device_resident).
+        self.device = False
 
     @property
     def optics_layers(self):
@@ -263,6 +270,7 @@ def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
     workers = resolve_thread_count(spectral_pass.n_threads)
     n_fine = (grid.n - 1) * plan.ratio + 2 * plan.support + 1
     gpu = spectral_pass.backend == "cuda"
+    spectral_pass.device = gpu and _device_resident(spectral_pass)
     parallel = (not gpu and workers > 1 and _parallel_mode() == "processes"
                 and n_fine * len(layers) >= _PROCESS_MIN_ELEMENTS)
     pieces = list(resolved.chunks(plan, grid.n, len(layers),
@@ -280,10 +288,16 @@ def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
     return transmittance, radiance, plan.step_cm1
 
 
-#: Fine point x layer elements per resolved chunk on the CUDA backend: the GPU
-#: evaluates a whole chunk in one launch, so chunks are large (the CPU side of
-#: a chunk holds ~13 float64 arrays of this size, ~1.7 GB).
-_CUDA_CHUNK_ELEMENTS = 1 << 24
+#: Fine point x layer elements per resolved chunk on the CUDA backend. Chunks
+#: are large, because each one repeats line selection over its 25 cm^-1
+#: cutoff margins. Full default band on an RTX 4090 (device-resident):
+#: 2**22 -> 1.30 s, 0.5 GiB of GPU memory; 2**23 -> 0.95 s, 1.0 GiB;
+#: 2**24 -> 0.92 s, 2.0 GiB. The GPU may be shared, so the middle one.
+_CUDA_CHUNK_ELEMENTS = 1 << 23
+#: Resolved chunks on the CUDA backend keep every fine-grid array on the GPU
+#: and copy back only the instrument-reduced output (see _device_resident).
+#: Off only for comparisons with the host path.
+_CUDA_DEVICE_RESIDENT = True
 #: Resolved runs smaller than this many (fine point x layer) elements stay in
 #: one process: worker start-up (~1 s) would cost more than it saves.
 _PROCESS_MIN_ELEMENTS = 1 << 21
@@ -305,6 +319,21 @@ def _parallel_mode() -> str:
     return mode
 
 
+def _device_resident(spectral_pass: "_SpectralPass") -> bool:
+    """Whether resolved chunks can run entirely on the GPU.
+
+    True for the single-scatter solver: continuum, aerosol, Rayleigh, path
+    transmittance, radiance and the instrument reduction all accept CuPy
+    arrays (their array module follows the grid), so a chunk's fine-grid
+    arrays never leave the device. DISORT and Monte Carlo (binned with
+    ``scipy.sparse`` on the CPU) and Mie aerosol optics use the host path.
+    """
+    scenario = spectral_pass.scenario
+    return (_CUDA_DEVICE_RESIDENT and spectral_pass.column is None
+            and scenario.radiance_solver == RadianceSolver.SINGLE_SCATTER
+            and scenario.aerosol_polarization != "mie_sphere")
+
+
 def _resolved_chunk(spectral_pass: "_SpectralPass", plan, first: int, stop: int,
                     fine: SpectralGrid, output_wavenumbers: np.ndarray, resolution: float,
                     binned: bool):
@@ -313,6 +342,21 @@ def _resolved_chunk(spectral_pass: "_SpectralPass", plan, first: int, stop: int,
 
     n_out = stop - first
     out_grid = SpectralGrid(wavenumber_cm1=output_wavenumbers, resolution_cm1=resolution)
+    if spectral_pass.device:
+        from .optics import lbl_cuda
+        fine = SpectralGrid(wavenumber_cm1=lbl_cuda.to_device(fine.wavenumber_cm1),
+                            resolution_cm1=fine.resolution_cm1,
+                            lattice_origin_cm1=fine.lattice_origin_cm1,
+                            lattice_index0=fine.lattice_index0)
+        optics, column_optics, transmittance = spectral_pass.optics(fine)
+        t_out = resolved.degrade_transmittance(transmittance, plan, n_out, out_grid)
+        r_out = None
+        if spectral_pass.include_radiance:
+            r_out = _host_arrays(resolved.degrade_radiance(
+                spectral_pass.radiance(fine, optics, column_optics, transmittance),
+                plan, n_out, out_grid))
+        return _host_arrays(t_out), r_out
+
     optics, column_optics, transmittance = spectral_pass.optics(fine)
     t_out = resolved.degrade_transmittance(transmittance, plan, n_out, out_grid)
     if not spectral_pass.include_radiance:
@@ -333,6 +377,19 @@ def _resolved_chunk(spectral_pass: "_SpectralPass", plan, first: int, stop: int,
             lambda g, col: _binned_solve(spectral_pass, g, col), out_grid, **reference)
     return t_out, resolved.degrade_radiance(
         spectral_pass.radiance(fine, optics, column_optics, transmittance), plan, n_out, out_grid)
+
+
+def _host_arrays(result):
+    """``result`` (a result dataclass) with its CuPy arrays, and dicts of them, copied to NumPy."""
+    from dataclasses import fields
+    from ._array import to_host
+    for f in fields(result):
+        value = getattr(result, f.name)
+        if isinstance(value, dict):
+            setattr(result, f.name, {k: to_host(v) for k, v in value.items()})
+        elif f.name != "grid":
+            setattr(result, f.name, to_host(value))
+    return result
 
 
 _WORKER_PASS: Optional["_SpectralPass"] = None

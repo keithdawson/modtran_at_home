@@ -86,6 +86,7 @@ from typing import Mapping, Optional, Sequence
 import numpy as np
 from scipy.special import erfcx, wofz
 
+from .._array import array_namespace, to_host
 from ..constants import C2_RAD, GAS_CONSTANT_R, LIGHT_C, STD_PRESSURE_MBAR
 from ..hitran.cache import LineList
 from ..hitran.fetch import GLOBAL_ISOTOPOLOGUES, ensure_linelists
@@ -195,6 +196,16 @@ class _PreparedLines:
     #: ``alpha_D / sqrt(T)``. Derived from the list, not from the lines near a
     #: particular grid, so every spectral chunk chooses the same mesh.
     width_reference: tuple
+    #: Per-line upper bounds on the Voigt peak cross-section for the
+    #: peak-optical-depth pre-filter (see :func:`_peak_candidates`):
+    #: ``S296 * sqrt(ln2/pi) / (alpha_D / sqrt(T))`` (Doppler limit, divide by
+    #: sqrt(T)) and ``S296 / (pi * gamma_air)`` (Lorentz limit, divide by
+    #: ``p_air * (296/T)**n``; infinite where gamma_air <= 0).
+    peak_doppler: np.ndarray
+    peak_lorentz: np.ndarray
+    #: ``(min E'', min n_air, max n_air)`` over the list, and whether every
+    #: gamma_self is >= 0 (the Lorentz bound drops the self-broadened term).
+    bound_reference: tuple
 
 
 _PREPARED: dict[int, _PreparedLines] = {}
@@ -242,24 +253,39 @@ def _prepare(linelist: LineList) -> _PreparedLines:
     unique_isos, iso_index = np.unique(linelist.local_iso_id, return_inverse=True)
     nu = np.ascontiguousarray(linelist.nu_cm1[order], dtype=np.float64)
     delta_air = np.ascontiguousarray(linelist.delta_air[order], dtype=np.float64)
+    s296 = np.ascontiguousarray(linelist.s296[order], dtype=np.float64)
+    gamma_air = np.ascontiguousarray(linelist.gamma_air[order], dtype=np.float64)
+    gamma_self = np.ascontiguousarray(linelist.gamma_self[order], dtype=np.float64)
+    e_lower = np.ascontiguousarray(linelist.e_lower[order], dtype=np.float64)
+    n_air = np.ascontiguousarray(linelist.n_air[order], dtype=np.float64)
+    m_kg_mol = _isotopologue_mass_g_mol(linelist)[order] * 1.0e-3
+    with np.errstate(divide="ignore", invalid="ignore"):
+        peak_doppler = s296 * _SQRT_LN2_OVER_PI / (
+            nu * np.sqrt(2.0 * _LN2 * GAS_CONSTANT_R / (m_kg_mol * LIGHT_C**2)))
+        peak_lorentz = np.where(gamma_air > 0.0, s296 / (np.pi * gamma_air), np.inf)
     prepared = _PreparedLines(
         source_arrays=arrays,
         molecule_id=int(linelist.molecule_id),
         nu=nu,
-        s296=np.ascontiguousarray(linelist.s296[order], dtype=np.float64),
-        gamma_air=np.ascontiguousarray(linelist.gamma_air[order], dtype=np.float64),
-        gamma_self=np.ascontiguousarray(linelist.gamma_self[order], dtype=np.float64),
-        e_lower=np.ascontiguousarray(linelist.e_lower[order], dtype=np.float64),
-        n_air=np.ascontiguousarray(linelist.n_air[order], dtype=np.float64),
+        s296=s296,
+        gamma_air=gamma_air,
+        gamma_self=gamma_self,
+        e_lower=e_lower,
+        n_air=n_air,
         delta_air=delta_air,
         iso_index=np.ascontiguousarray(iso_index.reshape(-1)[order]),
         unique_isos=tuple(int(i) for i in unique_isos),
         q_ref=np.array([partition_function(linelist.molecule_id, int(i), _T_REF_K)
                         for i in unique_isos]),
-        m_kg_mol=_isotopologue_mass_g_mol(linelist)[order] * 1.0e-3,
+        m_kg_mol=m_kg_mol,
         stim_ref=np.expm1(-C2_RAD * nu / _T_REF_K),
         max_abs_shift=float(np.abs(delta_air).max()) if nu.size else 0.0,
         width_reference=_width_reference(linelist),
+        peak_doppler=peak_doppler,
+        peak_lorentz=peak_lorentz,
+        bound_reference=((float(e_lower.min()), float(n_air.min()), float(n_air.max()),
+                          bool(np.all(gamma_self >= 0.0))) if nu.size
+                         else (0.0, 0.0, 0.0, True)),
     )
     with _PREPARED_LOCK:
         _PREPARED[key] = prepared
@@ -267,12 +293,20 @@ def _prepare(linelist: LineList) -> _PreparedLines:
     return prepared
 
 
-def _intensity(prepared: _PreparedLines, temperature_k: float,
-               lines: slice = slice(None)) -> np.ndarray:
-    """S(T) for ``prepared`` lines (sorted order); see :func:`_line_intensity_at_t`."""
+def _partition_ratio(prepared: _PreparedLines, temperature_k: float) -> np.ndarray:
+    """``Q(296)/Q(T)`` per isotopologue of ``prepared.unique_isos``."""
     q_t = np.array([partition_function(prepared.molecule_id, iso, temperature_k)
                     for iso in prepared.unique_isos])
-    q_ratio = (prepared.q_ref / q_t)[prepared.iso_index[lines]]
+    return prepared.q_ref / q_t
+
+
+def _intensity(prepared: _PreparedLines, temperature_k: float,
+               lines: slice | np.ndarray = slice(None),
+               partition_ratio: Optional[np.ndarray] = None) -> np.ndarray:
+    """S(T) for ``prepared`` lines (sorted order); see :func:`_line_intensity_at_t`."""
+    if partition_ratio is None:
+        partition_ratio = _partition_ratio(prepared, temperature_k)
+    q_ratio = partition_ratio[prepared.iso_index[lines]]
     boltzmann = np.exp(-C2_RAD * prepared.e_lower[lines] * (1.0 / temperature_k - 1.0 / _T_REF_K))
     stim = np.expm1(-C2_RAD * prepared.nu[lines] / temperature_k) / prepared.stim_ref[lines]
     return prepared.s296[lines] * q_ratio * boltzmann * stim
@@ -568,6 +602,67 @@ def _multigrid_sum(grid: SpectralGrid, lines: _Lines, cutoff: float, plan: _Plan
     return out
 
 
+#: Skip lines whose peak optical depth provably stays below the cutoff before
+#: evaluating their widths and exact Voigt peak (see _peak_candidates). Off
+#: only to check that the pre-filter changes nothing.
+_PEAK_PREFILTER = True
+#: Relative slack on the pre-filter bound, which is exact up to rounding.
+_PREFILTER_MARGIN = 1.0e-6
+
+
+def _peak_candidates(prepared: _PreparedLines, first: int, last: int, temperature_k: float,
+                     p_air_atm: float, column_cm2: float, min_peak_optical_depth: float,
+                     q_ratio: np.ndarray) -> Optional[np.ndarray]:
+    """Indices in ``[first, last)`` of the lines that can reach ``min_peak_optical_depth``.
+
+    Peak optical depth is ``column * S(T) * V(0)``, and the Voigt peak
+    ``V(0) = sqrt(ln2/pi)/alpha_D * erfcx(y)`` is at most
+    ``min(sqrt(ln2/pi)/alpha_D, 1/(pi*gamma_L))`` (``erfcx(y) <= 1`` and
+    ``< 1/(y*sqrt(pi))``). With ``S(T) <= S296 * max Q(296)/Q(T) * (largest
+    Boltzmann and stimulated-emission factors)`` and ``gamma_L >= gamma_air *
+    p_air * min (296/T)**n``, both limits become comparisons of precomputed
+    per-line numbers (``_PreparedLines.peak_doppler`` / ``peak_lorentz``) with
+    one threshold per call, so S(T), the widths and ``erfcx`` are evaluated
+    only for the lines that pass: ~16% of the scanned (line, layer) pairs of
+    the default scenario, against ~10% finally kept. Every line the exact
+    test keeps passes, so the selection is unchanged. Returns None when a
+    bound does not apply; the caller then evaluates the whole window.
+    """
+    if last <= first or temperature_k <= 0.0:
+        return None
+    e_min, n_min, n_max, self_nonnegative = prepared.bound_reference
+    nu_min = float(prepared.nu[first])
+    if nu_min <= 0.0:
+        return None
+    inverse_delta = 1.0 / temperature_k - 1.0 / _T_REF_K
+    # expm1(-c2 nu/T) / expm1(-c2 nu/296) is <= 1 for T >= 296, and otherwise
+    # largest at the window's lowest wavenumber.
+    stim = 1.0 if inverse_delta <= 0.0 else 1.0 / -np.expm1(-C2_RAD * nu_min / _T_REF_K)
+    scale = column_cm2 * float(np.max(q_ratio)) * stim * (1.0 + _PREFILTER_MARGIN)
+    window = slice(first, last)
+    boltzmann = None
+    if inverse_delta >= 0.0:
+        # The Boltzmann factor falls with E'': the list's lowest E'' bounds it.
+        scale *= float(np.exp(-C2_RAD * min(e_min, 0.0) * inverse_delta))
+    else:
+        boltzmann = np.exp(-C2_RAD * prepared.e_lower[window] * inverse_delta)
+    if not (np.isfinite(scale) and scale > 0.0):
+        return None
+
+    doppler = prepared.peak_doppler[window]
+    if boltzmann is not None:
+        doppler = doppler * boltzmann
+    keep = doppler >= min_peak_optical_depth * np.sqrt(temperature_k) / scale
+    ratio = _T_REF_K / temperature_k
+    width_floor = p_air_atm * ratio ** (n_min if ratio >= 1.0 else n_max)
+    if self_nonnegative and width_floor > 0.0:
+        lorentz = prepared.peak_lorentz[window]
+        if boltzmann is not None:
+            lorentz = lorentz * boltzmann
+        keep &= lorentz >= min_peak_optical_depth * width_floor / scale
+    return first + np.flatnonzero(keep)
+
+
 def _select_lines(prepared: _PreparedLines, grid: SpectralGrid, pressure_mbar: float,
                   temperature_k: float, partial_pressure_mbar: float, cutoff: float,
                   subtract_pedestal: bool, min_strength_fraction: float,
@@ -583,15 +678,22 @@ def _select_lines(prepared: _PreparedLines, grid: SpectralGrid, pressure_mbar: f
     nu_hi = grid.wavenumber_cm1[-1] + reach
     first = int(np.searchsorted(prepared.nu, nu_lo, side="left"))
     last = int(np.searchsorted(prepared.nu, nu_hi, side="right"))
-    window = slice(first, last)
+    q_ratio = _partition_ratio(prepared, temperature_k)
+    window: slice | np.ndarray = slice(first, last)
+    prefiltered = False
+    if _PEAK_PREFILTER and min_peak_optical_depth > 0.0 and column_cm2 is not None:
+        candidates = _peak_candidates(prepared, first, last, temperature_k, p_air_atm,
+                                      column_cm2, min_peak_optical_depth, q_ratio)
+        if candidates is not None:
+            window, prefiltered = candidates, True
 
-    s_t = _intensity(prepared, temperature_k, window)
+    s_t = _intensity(prepared, temperature_k, window, q_ratio)
     nu_shifted = prepared.nu[window] + prepared.delta_air[window] * p_total_atm
     keep = np.abs(nu_shifted - np.clip(nu_shifted, grid.wavenumber_cm1[0],
                                        grid.wavenumber_cm1[-1])) <= cutoff
     if min_strength_fraction > 0.0:
         if s_max is None:
-            everything = first == 0 and last == prepared.nu.size
+            everything = not prefiltered and first == 0 and last == prepared.nu.size
             s_max = float((s_t if everything else _intensity(prepared, temperature_k)).max())
         if s_max > 0.0:
             keep &= s_t >= (min_strength_fraction * s_max)
@@ -749,20 +851,27 @@ def molecular_optical_depth(
 
     ``backend`` is ``"cpu"`` or ``"cuda"`` (default: :func:`resolve_backend`).
     With ``"cuda"`` the CPU selects lines exactly as above and a GPU evaluates
-    every (layer, species) pair of the grid in one kernel launch, always by
-    direct summation (:mod:`mwir_atmos.optics.lbl_cuda`); ``method`` then
-    does not apply, and ``n_threads`` sets the line-selection threads.
+    every (layer, species) pair, always by direct summation
+    (:mod:`mwir_atmos.optics.lbl_cuda`), in groups of tasks so that selection
+    overlaps the kernels; ``method`` then does not apply, and ``n_threads``
+    sets the line-selection threads (default: ``MWIR_THREADS``, else
+    ``_CUDA_SELECTION_THREADS``). A grid whose ``wavenumber_cm1`` is a CuPy
+    array (``"cuda"`` only) gives CuPy results that never leave the GPU.
+
+    The per-species arrays are views into one ``(species, layer, point)``
+    array, and ``tau_total`` is their sum.
     """
     if species is None:
         species = REQUIRED_SPECIES
     if linelists is None:
         linelists = ensure_linelists()
+    backend = resolve_backend(backend)
+    xp = array_namespace(grid.wavenumber_cm1)
+    if xp is not np and backend != "cuda":
+        raise ValueError("a grid of CuPy arrays needs backend='cuda'")
 
     n_layers = len(layers)
-    tau_by_species: dict[Species, np.ndarray] = {
-        sp: np.zeros((n_layers, grid.n), dtype=np.float64) for sp in species
-    }
-
+    species = list(dict.fromkeys(species))
     tasks = []
     for row, layer in enumerate(layers):
         for sp in species:
@@ -790,36 +899,22 @@ def molecular_optical_depth(
             min_peak_optical_depth=min_peak_optical_depth,
         )
 
+    if backend == "cuda":
+        block = _cuda_optical_depth(tasks, arguments, grid, len(species) * n_layers,
+                                    {sp: k * n_layers for k, sp in enumerate(species)}, n_threads)
+        block = block.reshape(len(species), n_layers, grid.n)
+    else:
+        block = np.zeros((len(species), n_layers, grid.n), dtype=np.float64)
+    # One (species, layer, point) block; each species' array is a view into it.
+    tau_by_species: dict[Species, np.ndarray] = {sp: block[k] for k, sp in enumerate(species)}
+
     def evaluate(task) -> None:
         row, sp, column, linelist = task
         xsec = absorption_cross_section(linelist, grid, method=method, **arguments(task))
         tau_by_species[sp][row] = xsec * column
 
-    if resolve_backend(backend) == "cuda":
-        from . import lbl_cuda
-        tasks = [task for task in tasks if len(task[3])]
-
-        def select(task):
-            a = arguments(task)
-            lines = _select_lines(
-                _prepare(task[3]), grid, a["pressure_mbar"], a["temperature_k"],
-                a["partial_pressure_mbar"], a["wing_cutoff_cm1"], a["subtract_pedestal"],
-                a["min_strength_fraction"], a["strength_reference"], a["column_cm2"],
-                a["min_peak_optical_depth"])
-            return lines, a["wing_cutoff_cm1"], task[2]
-
-        # Line selection stays on the CPU (large NumPy operations, so threads help).
-        workers = min(resolve_thread_count(n_threads), max(len(tasks), 1))
-        if workers > 1:
-            with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mwir-select") as pool:
-                gpu_tasks = list(pool.map(select, tasks))
-        else:
-            gpu_tasks = [select(task) for task in tasks]
-        tau = lbl_cuda.evaluate(grid.wavenumber_cm1, lbl_cuda.pack(gpu_tasks))
-        for (row, sp, _, _), values in zip(tasks, tau):
-            tau_by_species[sp][row] = values
+    if backend == "cuda":
         tasks = []
-
     workers = min(resolve_thread_count(n_threads), len(tasks))
     if not tasks:
         pass
@@ -835,17 +930,70 @@ def molecular_optical_depth(
 
     if include_continuum:
         if Species.H2O in tau_by_species:
-            tau_by_species[Species.H2O] = tau_by_species[Species.H2O] + h2o_continuum_optical_depth(
-                layers, grid
-            )
+            tau_by_species[Species.H2O] += h2o_continuum_optical_depth(layers, grid)
         if Species.CO2 in tau_by_species:
-            tau_by_species[Species.CO2] = tau_by_species[Species.CO2] + co2_continuum_optical_depth(
-                layers, grid
-            )
+            tau_by_species[Species.CO2] += co2_continuum_optical_depth(layers, grid)
 
-    if tau_by_species:
-        tau_total = np.sum(np.stack(list(tau_by_species.values()), axis=0), axis=0)
-    else:
-        tau_total = np.zeros((n_layers, grid.n), dtype=np.float64)
-
+    # Same summation order as adding the species one by one.
+    tau_total = block.sum(axis=0)
     return tau_total, tau_by_species
+
+
+#: The (layer, species) tasks of one CUDA evaluation are split into this many
+#: groups: the CPU selects lines for group k+1 while the GPU evaluates group k,
+#: so only the first group's selection is not hidden behind the kernel.
+_CUDA_TASK_GROUPS = 8
+#: Line-selection threads for the CUDA backend when neither ``n_threads`` nor
+#: ``MWIR_THREADS`` says otherwise. Selection hides behind the kernels of a
+#: resolved run even on one thread (full default band on an RTX 4090: 0.96 s
+#: on 1 thread, 0.97 s on 16); point sampling, where the kernel is tiny, takes
+#: 0.34 s on 4 threads and 0.32 s on 16. The rest of a shared machine stays free.
+_CUDA_SELECTION_THREADS = 4
+
+
+def _cuda_selection_threads(n_threads: Optional[int]) -> int:
+    if n_threads is None and not os.environ.get("MWIR_THREADS", "").strip():
+        return min(_CUDA_SELECTION_THREADS, os.cpu_count() or 1)
+    return resolve_thread_count(n_threads)
+
+
+def _cuda_optical_depth(tasks: list, arguments, grid: SpectralGrid, n_rows: int,
+                        row0: Mapping[Species, int], n_threads: Optional[int]):
+    """Optical depths of every ``(row, species, column, linelist)`` task on the GPU.
+
+    Returns ``(n_rows, grid.n)`` with task ``(row, sp)`` in row ``row0[sp] + row``,
+    other rows zero; a CuPy array when the grid is on the device, NumPy otherwise.
+    Lines are selected on the CPU exactly as for the CPU backend.
+    """
+    from . import lbl_cuda
+
+    tasks = [task for task in tasks if len(task[3])]
+    wavenumber = to_host(grid.wavenumber_cm1)
+    host_grid = SpectralGrid(wavenumber_cm1=wavenumber, resolution_cm1=grid.resolution_cm1,
+                             lattice_origin_cm1=grid.lattice_origin_cm1,
+                             lattice_index0=grid.lattice_index0)
+
+    def select(task):
+        a = arguments(task)
+        lines = _select_lines(
+            _prepare(task[3]), host_grid, a["pressure_mbar"], a["temperature_k"],
+            a["partial_pressure_mbar"], a["wing_cutoff_cm1"], a["subtract_pedestal"],
+            a["min_strength_fraction"], a["strength_reference"], a["column_cm2"],
+            a["min_peak_optical_depth"])
+        return lbl_cuda.pack_task(lines, a["wing_cutoff_cm1"], task[2])
+
+    # Costliest line lists dealt round-robin, so every group has a similar mix.
+    tasks.sort(key=lambda task: -len(task[3]))
+    n_groups = max(1, min(_CUDA_TASK_GROUPS, len(tasks)))
+    groups = [tasks[g::n_groups] for g in range(n_groups)] if tasks else []
+    workers = min(_cuda_selection_threads(n_threads), max(len(groups[0]) if groups else 1, 1))
+
+    def produce(pool):
+        for group in groups:
+            packed = list(pool.map(select, group)) if pool else [select(t) for t in group]
+            yield lbl_cuda.concatenate(packed), [row0[sp] + row for row, sp, _, _ in group]
+
+    if workers > 1:
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mwir-select") as pool:
+            return lbl_cuda.evaluate_groups(grid.wavenumber_cm1, produce(pool), n_rows)
+    return lbl_cuda.evaluate_groups(grid.wavenumber_cm1, produce(None), n_rows)
