@@ -50,7 +50,7 @@ What each answers:
 5. **scaling**: per-core throughput at 1, 2, 4 ... N workers, process vs
    thread mode, used to recalibrate the CLI/GUI runtime estimate.
 
-## Round 2 (after the new defaults)
+## Round 2 (after the new defaults) -- done, commit `026f4ad`
 
 Round 1 set the defaults: cutoff 3e-6, 10% fine-step rule, and the
 single-scatter correction of binned DISORT/Monte Carlo radiance (see

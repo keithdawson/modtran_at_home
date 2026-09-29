@@ -213,8 +213,17 @@ far wings (~99.7% of pairs) use a float32 continued fraction and the line
 cores a float64 Weideman expansion (`optics/voigt_gpu.py`); offsets and sums
 are float64. The profile is within 4.7e-7 of `scipy.special.wofz`, and a
 NumPy twin of the kernel matches the CPU engine's exact sums to 2e-6 on
-surface-to-stratosphere layers (`tests/test_lbl_cuda.py`). GPU timings and
-the on-device tests are pending ([runbook](validation/README.md)). Resolved
+surface-to-stratosphere layers (`tests/test_lbl_cuda.py`). On an RTX 4090
+(`validation/cuda_check_DESKTOP-RLDQTSU.json`) the on-device tests pass, and
+against all 16 CPU threads of the same desktop:
+
+| Run | CPU | GPU | Speedup | Max difference |
+|---|---:|---:|---:|---|
+| 2000-2200 cm^-1, ground-to-space | 8.9 s | 0.62 s | 14.3x | 3.4e-6 T, 7.6e-6 L |
+| Full default band 1800-4300 cm^-1 | 36.3 s | 7.6 s | 4.8x | 4.5e-6 T, 1.0e-5 L |
+
+The full band is limited by CPU-side work (line selection, continuum,
+transmittance, radiance), not the GPU. Resolved
 runs on the GPU use large chunks in one process; DISORT and Monte Carlo stay
 on the CPU.
 
@@ -304,10 +313,19 @@ The worst bins sit in the opaque CH4 Q-branch near 3015 cm^-1 on the nadir
 path, where emission comes from different layers at different fine points.
 The binning error of the single-scattering solver on the same path was the
 same (47.4% vs 47.1%), which motivated the single-scatter correction (step 6
-above). With it, the worst nadir case (3010-3020 cm^-1, no sun, cloud session)
-fell from 47.1% to 0.055% in the worst bin and from -6.6% to -0.012% over the
-window, at unchanged cost. The full sweep with the correction is queued in
-[validation/README.md](validation/README.md) (round 2).
+above). Round 2 (`validation/correlated_k_accuracy_round2.json`, all paths,
+windows, day and night) with the correction:
+
+| Path | Binned: worst bin / window | Corrected: worst bin / window |
+|---|---:|---:|
+| Tropical 10 km horizontal | 2.84% / 0.43% | 0.091% / 0.014% |
+| Subarctic winter 10 km horizontal | 1.30% / 0.58% | 0.49% / 0.092% |
+| Ground-to-space | 1.82% / 0.49% | 0.012% / 0.002% |
+| 20 km nadir | 47.1% / 2.06% | 0.082% / 0.006% |
+| 15 km limb | 40.4% / 4.49% | 0.23% / 0.038% |
+
+Both run 21-27x faster than DISORT at every fine point; the correction costs
+nothing measurable.
 
 ### 4. Performance
 
@@ -322,7 +340,10 @@ rule), 8-core desktop:
 | 8 | 11.9 s | 45.7 s |
 | 16 (SMT) | 9.6 s | 49.0 s |
 
-Processes scale 5.4x on 8 cores; threads get slower as they are added.
+Processes scale 5.4x on 8 cores; threads get slower as they are added. At
+the new default step (round 2, `validation/scaling_round2.json`) the same
+slice takes 42.0 / 16.0 / 9.1 / 8.8 s on 1 / 4 / 8 / 16 workers, and the full
+default band 36.3 s on 16.
 With the new defaults (10% step rule: 0.0046 cm^-1, ~0.53M fine points x 76
 layers), the full default 1800-4300 cm^-1 run took 247 s on 4 cloud cores,
 against ~25 min at the old 0.001 cm^-1 step.

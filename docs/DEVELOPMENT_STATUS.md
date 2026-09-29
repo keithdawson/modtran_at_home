@@ -8,7 +8,7 @@ can pick up the work. Physics and results live in
 
 ## Where things stand
 
-`main` at `2262168`. Commits of this line of work, oldest first:
+Commits of this line of work, oldest first:
 
 | Commit | What |
 |---|---|
@@ -20,9 +20,11 @@ can pick up the work. Physics and results live in
 | `25e4c17` | Round-1 validation results from the 8-core desktop (the user's commit) |
 | `307ac81` | Defaults from round 1: cutoff 3e-6, 10% fine-step rule, single-scatter correction of binned radiance, recalibrated cost estimate, HAPI-based test thresholds |
 | `2262168` | Experimental CUDA backend (`backend="cuda"`) |
+| `026f4ad` | Round-2 validation and RTX 4090 CUDA check (the user's commit) |
+| next | Handoff docs (this file, `CLAUDE.md`) |
 
-Test suite: 610 passed, 3 skipped (GPU-only) on Linux. Nothing has run on a
-GPU yet.
+Test suite: 610 passed, 3 skipped (GPU-only) on Linux; the GPU tests pass on
+the RTX 4090.
 
 ## Decisions and their evidence
 
@@ -39,35 +41,38 @@ GPU yet.
 
 ## Open work, in order
 
-1. **Round 2 + CUDA check** on the desktop: `python scripts/validation/run_all.py`
-   (round-1 steps skip; ~1 h). Then:
-   - `correlated_k_accuracy_round2.json`: expect `corrected` worst bin well
-     under 1% on every path. If the limb path is still poor, the likely cause
-     is ranking fine points by *vertical column* optical depth for a limb
-     sightline (`resolved.binned_radiance`); try ranking by sightline optical
-     depth, or finer g-intervals at the transparent end (`_G_EDGES`).
-   - `fine_step_convergence_round2.json`: confirm <= ~0.05 pp everywhere.
-   - `scaling_round2.json`: update `_COST_RESOLVED_RATE_PER_WORKER` in
-     `mwir_atmos/cli.py` from the per-worker rate at the new step; check the
-     full-band time (expected ~35-70 s on 8 cores).
-   - `cuda_check_<host>.json`: GPU tests must pass; note speedup and CPU/GPU
-     differences (expect transmittance <= 1e-4, the CPU multigrid tolerance).
-2. **CUDA follow-ups** (after the check shows it works):
-   - Expected bottleneck is CPU-side: line selection (~1.7 s per 2^24-element
-     chunk, now threaded) and continuum/transmittance/radiance (~7 s serial
-     over the full band). Overlap chunk k+1's CPU work with chunk k's GPU
-     work, or move selection to the GPU.
+Round 2 and the RTX 4090 check are done (commit `026f4ad`; results in
+[spectral_sampling.md](spectral_sampling.md#validation-results)): corrected
+binning <= 0.49% worst bin on every path, fine step confirmed, GPU tests pass
+with 14.3x on a 200 cm^-1 slice but only 4.8x on the full band (7.6 s vs
+36.3 s), because the CPU side dominates there.
+
+1. **Make the GPU path's CPU side fast** (biggest remaining win for the
+   full band). Profile `run_scenario(Scenario(), backend="cuda")` first.
+   Likely: overlap chunk k+1's line selection with chunk k's kernel, run the
+   non-LBL per-chunk work (continuum, transmittance, radiance, instrument
+   reduction) in worker processes or on the GPU, and consider line selection
+   on the GPU.
+2. **Other CUDA follow-ups**:
    - Multi-GPU (work server: 4 x Blackwell 6000 on CPU 0, 1 x Ada 6000 on
      CPU 1): one worker process per GPU, **spawned** (never fork after CUDA
      is initialised), each with `MWIR_CUDA_DEVICE`.
    - GPU-aware runtime estimate; GUI control for the backend.
+   - CuPy warns "CUDA path could not be detected" on the desktop; harmless
+     with `cupy-cuda12x[ctk]`, silence by setting `CUDA_PATH` if wanted.
+   - Consider making `cuda` the default when a GPU is present, once the
+     full-band speedup is worth it.
    - Keep `lbl_cuda.evaluate_emulated` in step with the kernel source;
      `tests/test_lbl_cuda.py` relies on it.
 3. **Work server scaling**: `python scripts/validation/scaling_benchmark.py
    --out docs/validation/scaling_benchmark_server.json`. With 384 logical CPUs
    the default band only splits into ~130 chunks (`_MIN_CHUNK_FINE_POINTS`,
    `_MIN_CHUNK_OVER_SUPPORT` in `resolved.py`), so parallelism caps there.
-4. **Smaller items**
+4. **Cost estimate**: round 2 measured 0.08 M elements/s per worker at the
+   new step (1 worker) and 36 s for the full band on 16 workers; the
+   estimate (`_COST_RESOLVED_RATE_PER_WORKER = 150_000`) says ~68 s on 8, so it
+   errs slow by ~2x. Recalibrate from `validation/scaling_round2.json`.
+5. **Smaller items**
    - The 1 GB memory gate (`cli._CONFIRM_BYTES_THRESHOLD`) trips for the
      default resolved run at >= 8 workers (one chunk per worker is resident),
      so the GUI asks for confirmation on the desktop. Raise the gate or cap
