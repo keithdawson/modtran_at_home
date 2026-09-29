@@ -250,8 +250,12 @@ tests pass, and against all 16 CPU threads of the same desktop:
 
 | Run | CPU | GPU | Speedup | Max difference |
 |---|---:|---:|---:|---|
-| 2000-2200 cm^-1, ground-to-space | 8.3 s | 0.20 s | 40.6x | 3.4e-6 T, 7.6e-6 L |
-| Full default band 1800-4300 cm^-1 | 33.4 s | 0.95 s | 35.2x | 4.5e-6 T, 1.0e-5 L |
+| 2000-2200 cm^-1, ground-to-space | 9.4 s | 0.18 s | 51.7x | 3.4e-6 T, 7.6e-6 L |
+| Full default band 1800-4300 cm^-1 | 35.7 s | 0.93 s | 38.2x | 4.5e-6 T, 1.0e-5 L |
+
+(With the float32 kernel described below, `e8b70e4`. Before it, at
+`6432598`, the same check measured 8.3 s / 0.20 s and 33.4 s / 0.95 s; the
+CPU code is the same, so the CPU times differ by run-to-run variation only.)
 
 Before the changes above the GPU took 0.62 s and 7.6 s (14.3x and 4.8x); on
 the day of the new measurement the old code took 0.56 s and 6.58 s. Its
@@ -282,8 +286,12 @@ as float32 hi/lo pairs from a per-block reference, per-line cutoff ranges
 found once per tile with the float64 test, compensated float32 tile sums):
 kernels 0.85 s -> 0.33 s for the full band, accuracy against the CPU float64
 sums unchanged (worst 1.3e-6 relative in upper layers, 1.2e-6 before). The
-full band takes 0.80 s; CPU line selection (GIL-bound, ~0.8 s) is now the
-limit -- see [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
+full band gains much less: CPU line selection (GIL-bound, ~0.8 s) is now the
+limit, and it slows after the first two full-band runs in a process (cause
+not found yet). Ten runs per process, old and new code interleaved, idle
+desktop: old kernel 0.95-1.10 s, steady; new kernel 0.76-0.79 s for runs 1-2,
+then 0.89-1.0 s (one outlier 1.41 s). See
+[DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
 
 ### Parallelism
 

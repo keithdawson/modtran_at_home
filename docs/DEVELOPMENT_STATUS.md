@@ -22,10 +22,11 @@ Commits of this line of work, oldest first:
 | `2262168` | Experimental CUDA backend (`backend="cuda"`) |
 | `026f4ad` | Round-2 validation and RTX 4090 CUDA check (the user's commit) |
 | `510c051`, `15764f4` | Handoff docs (this file, `CLAUDE.md`); round-2 results in the docs |
-| next | GPU path's CPU side: peak pre-filter for line selection, vectorised MT_CKD continuum, selection overlapped with grouped kernels, device-resident resolved chunks (full band 6.6 s -> 0.95 s on the RTX 4090) |
+| `6432598` | GPU path's CPU side: peak pre-filter for line selection, vectorised MT_CKD continuum, selection overlapped with grouped kernels, device-resident resolved chunks (full band 6.6 s -> 0.95 s on the RTX 4090) |
+| `e8b70e4` | CUDA kernel without float64 work per (line, point) pair (kernels 0.85 s -> 0.33 s) |
 
 Test suite: 619 passed, 0 skipped on the RTX 4090 desktop (`pytest -n auto`,
-67 s); without a GPU the 5 GPU-only tests skip.
+67-78 s; last run on `e8b70e4`); without a GPU the 5 GPU-only tests skip.
 
 ## Decisions and their evidence
 
@@ -64,9 +65,15 @@ species) results (1.2 s); the kernels were 0.75 s.
    once per tile, compensated float32 tile sums): full-band kernel time
    0.85 s -> 0.33 s (same-process A/B, RTX 4090), accuracy against the CPU
    float64 sums unchanged (worst 1.3e-6 vs 1.2e-6 relative). The full band
-   only went 0.95 s -> 0.80 s, because CPU line selection (~0.8 s, GIL-bound:
-   1 thread 0.88 s, 4 threads 0.80 s, 16 threads 0.93 s) no longer hides
-   behind the kernels. Plan: one elementwise kernel over every (task, window
+   gained much less, because CPU line selection (~0.8 s, GIL-bound: 1 thread
+   0.88 s, 4 threads 0.80 s, 16 threads 0.93 s) no longer hides behind the
+   kernels, and it slows after the first two full-band runs in a process:
+   0.76-0.79 s for runs 1-2, then 0.89-1.0 s (old kernel: steady ~1.0 s;
+   `cuda_check.py`, best of two after the slice runs: 0.93 s). Cause not
+   found yet -- time summed in `_select_lines` rises ~2.0 s -> ~2.5 s, GPU
+   clocks stay at 2925 MHz, GC pauses are ~1 ms per run. Find it first (it
+   may be a cheap fix, and it is the number a GUI or batch user sees).
+   Plan for the GPU selection: one elementwise kernel over every (task, window
    line) pair of a chunk computing S(T), shift, widths and the exact
    peak-optical-depth test (mirror `_select_lines`' operation order, compile
    with `--fmad=false`), then compaction, `cupy.lexsort` by (task, centre),
