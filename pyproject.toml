@@ -22,6 +22,7 @@ gui = [
 ]
 dev = [
     "pytest>=7.4",
+    "pytest-xdist>=3.5",
 ]
 # GPU line-by-line backend (NVIDIA). Use cupy-cuda13x instead to match a
 # CUDA 13 driver; Blackwell (sm_120) needs CUDA 12.8 or newer.

@@ -94,7 +94,9 @@ it is usually a driver/toolkit mismatch (Blackwell needs CUDA 12.8+).
 
 Use it anywhere with `--backend cuda` (CLI), `backend="cuda"`
 (`run_scenario`) or `MWIR_BACKEND=cuda` (API, GUI, scripts).
-`MWIR_CUDA_DEVICE=N` picks the GPU.
+`MWIR_CUDA_DEVICE=N` picks the GPU. After editing the kernel on a machine
+without a GPU, `python scripts/validation/nvrtc_compile_check.py` compiles it
+for sm_89 and sm_120 (needs `pip install nvidia-cuda-nvrtc-cu12`).
 
 ## Work server (2 x 96 cores)
 
