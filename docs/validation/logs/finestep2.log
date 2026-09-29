@@ -1,0 +1,304 @@
+[1/160]       8 s  ('mls_20km_nadir', '2500', 0.0005)
+[2/160]      10 s  ('mls_ground_to_space', '2500', 0.0005)
+[3/160]      10 s  ('mls_20km_nadir', '2700', 0.0005)
+[4/160]      10 s  ('tropical_10km_horizontal', '2500', 0.0005)
+[5/160]      13 s  ('tropical_10km_horizontal', '2700', 0.0005)
+[6/160]      14 s  ('mls_ground_to_space', '2700', 0.0005)
+[7/160]      16 s  ('tropical_10km_horizontal', '2050', None)
+[8/160]      17 s  ('tropical_10km_horizontal', '2500', None)
+[9/160]      17 s  ('saw_10km_horizontal', '2500', 0.0005)
+[10/160]      17 s  ('us_std_limb_15km', '2500', 0.0005)
+[11/160]      19 s  ('tropical_10km_horizontal', '2700', None)
+[12/160]      19 s  ('saw_10km_horizontal', '2700', 0.0005)
+[13/160]      21 s  ('mls_20km_nadir', '2050', 0.0005)
+[14/160]      22 s  ('tropical_10km_horizontal', '2050', 0.0005)
+[15/160]      22 s  ('tropical_10km_horizontal', '2500', 0.001)
+[16/160]      22 s  ('saw_10km_horizontal', '2050', 0.0005)
+[17/160]      24 s  ('tropical_10km_horizontal', '3000', None)
+[18/160]      24 s  ('tropical_10km_horizontal', '2700', 0.001)
+[19/160]      24 s  ('mls_ground_to_space', '2500', None)
+[20/160]      25 s  ('tropical_10km_horizontal', '2050', 0.001)
+[21/160]      27 s  ('mls_ground_to_space', '2700', None)
+[22/160]      27 s  ('mls_ground_to_space', '2500', 0.001)
+[23/160]      31 s  ('us_std_limb_15km', '2700', 0.0005)
+[24/160]      31 s  ('mls_ground_to_space', '2050', None)
+[25/160]      31 s  ('mls_20km_nadir', '2050', None)
+[26/160]      32 s  ('mls_ground_to_space', '2700', 0.001)
+[27/160]      32 s  ('mls_20km_nadir', '2500', None)
+[28/160]      33 s  ('mls_20km_nadir', '2700', None)
+[29/160]      34 s  ('mls_ground_to_space', '3000', None)
+[30/160]      34 s  ('mls_20km_nadir', '3000', 0.0005)
+[31/160]      35 s  ('mls_20km_nadir', '2500', 0.001)
+[32/160]      38 s  ('mls_20km_nadir', '2700', 0.001)
+[33/160]      38 s  ('mls_ground_to_space', '2050', 0.0005)
+[34/160]      39 s  ('mls_20km_nadir', '3000', None)
+[35/160]      39 s  ('mls_20km_nadir', '2050', 0.001)
+[36/160]      39 s  ('us_std_limb_15km', '2500', None)
+[37/160]      42 s  ('tropical_10km_horizontal', '3000', 0.001)
+[38/160]      43 s  ('tropical_10km_horizontal', '3000', 0.0005)
+[39/160]      43 s  ('saw_10km_horizontal', '2050', None)
+[40/160]      44 s  ('mls_ground_to_space', '3000', 0.0005)
+[41/160]      44 s  ('saw_10km_horizontal', '2500', None)
+[42/160]      44 s  ('saw_10km_horizontal', '3000', 0.0005)
+[43/160]      45 s  ('saw_10km_horizontal', '2700', None)
+[44/160]      46 s  ('mls_ground_to_space', '2050', 0.001)
+[45/160]      47 s  ('us_std_limb_15km', '2700', None)
+[46/160]      48 s  ('saw_10km_horizontal', '2500', 0.001)
+[47/160]      48 s  ('us_std_limb_15km', '2500', 0.001)
+[48/160]      48 s  ('saw_10km_horizontal', '3000', None)
+[49/160]      49 s  ('saw_10km_horizontal', '2700', 0.001)
+[50/160]      51 s  ('tropical_10km_horizontal', '2500', 0.002)
+[51/160]      51 s  ('saw_10km_horizontal', '2050', 0.001)
+[52/160]      52 s  ('tropical_10km_horizontal', '2700', 0.002)
+[53/160]      52 s  ('mls_ground_to_space', '3000', 0.001)
+[54/160]      53 s  ('tropical_10km_horizontal', '2050', 0.002)
+[55/160]      53 s  ('mls_20km_nadir', '3000', 0.001)
+[56/160]      54 s  ('mls_ground_to_space', '2500', 0.002)
+[57/160]      55 s  ('us_std_limb_15km', '2050', None)
+[58/160]      55 s  ('mls_20km_nadir', '2500', 0.002)
+[59/160]      56 s  ('us_std_limb_15km', '3000', None)
+[60/160]      57 s  ('mls_20km_nadir', '2700', 0.002)
+[61/160]      57 s  ('mls_ground_to_space', '2700', 0.002)
+[62/160]      58 s  ('us_std_limb_15km', '2700', 0.001)
+[63/160]      60 s  ('mls_20km_nadir', '2050', 0.002)
+[64/160]      60 s  ('saw_10km_horizontal', '2500', 0.002)
+[65/160]      61 s  ('saw_10km_horizontal', '2050', 0.002)
+[66/160]      62 s  ('tropical_10km_horizontal', '3000', 0.002)
+[67/160]      62 s  ('saw_10km_horizontal', '2700', 0.002)
+[68/160]      63 s  ('us_std_limb_15km', '2500', 0.002)
+[69/160]      63 s  ('tropical_10km_horizontal', '2500', 0.005)
+[70/160]      64 s  ('saw_10km_horizontal', '3000', 0.001)
+[71/160]      64 s  ('tropical_10km_horizontal', '2050', 0.005)
+[72/160]      64 s  ('tropical_10km_horizontal', '2700', 0.005)
+[73/160]      65 s  ('mls_ground_to_space', '2050', 0.002)
+[74/160]      66 s  ('mls_ground_to_space', '2500', 0.005)
+[75/160]      67 s  ('mls_20km_nadir', '3000', 0.002)
+[76/160]      67 s  ('mls_20km_nadir', '2500', 0.005)
+[77/160]      68 s  ('mls_ground_to_space', '2700', 0.005)
+[78/160]      68 s  ('mls_ground_to_space', '3000', 0.002)
+[79/160]      69 s  ('mls_20km_nadir', '2700', 0.005)
+[80/160]      70 s  ('tropical_10km_horizontal', '3000', 0.005)
+[81/160]      70 s  ('saw_10km_horizontal', '3000', 0.002)
+[82/160]      70 s  ('us_std_limb_15km', '2700', 0.002)
+[83/160]      70 s  ('mls_20km_nadir', '2050', 0.005)
+[84/160]      71 s  ('us_std_limb_15km', '3000', 0.0005)
+[85/160]      72 s  ('saw_10km_horizontal', '2500', 0.005)
+[86/160]      72 s  ('saw_10km_horizontal', '2700', 0.005)
+[87/160]      72 s  ('saw_10km_horizontal', '2050', 0.005)
+[88/160]      73 s  ('tropical_10km_horizontal', '2500', 0.01)
+[89/160]      74 s  ('us_std_limb_15km', '2500', 0.005)
+[90/160]      74 s  ('tropical_10km_horizontal', '2050', 0.01)
+[91/160]      74 s  ('tropical_10km_horizontal', '2700', 0.01)
+[92/160]      74 s  ('mls_ground_to_space', '2050', 0.005)
+[93/160]      75 s  ('mls_20km_nadir', '3000', 0.005)
+[94/160]      75 s  ('mls_ground_to_space', '3000', 0.005)
+[95/160]      75 s  ('mls_ground_to_space', '2500', 0.01)
+[96/160]      76 s  ('saw_10km_horizontal', '3000', 0.005)
+[97/160]      76 s  ('mls_ground_to_space', '2700', 0.01)
+[98/160]      76 s  ('mls_20km_nadir', '2500', 0.01)
+[99/160]      77 s  ('mls_20km_nadir', '2700', 0.01)
+[100/160]      78 s  ('us_std_limb_15km', '2700', 0.005)
+[101/160]      78 s  ('tropical_10km_horizontal', '3000', 0.01)
+[102/160]      79 s  ('mls_20km_nadir', '2050', 0.01)
+[103/160]      79 s  ('saw_10km_horizontal', '2500', 0.01)
+[104/160]      80 s  ('us_std_limb_15km', '2500', 0.01)
+[105/160]      80 s  ('saw_10km_horizontal', '2050', 0.01)
+[106/160]      80 s  ('saw_10km_horizontal', '2700', 0.01)
+[107/160]      81 s  ('mls_20km_nadir', '3000', 0.01)
+[108/160]      81 s  ('mls_ground_to_space', '3000', 0.01)
+[109/160]      81 s  ('tropical_10km_horizontal', '2500', 0.02)
+[110/160]      82 s  ('mls_ground_to_space', '2050', 0.01)
+[111/160]      82 s  ('tropical_10km_horizontal', '2050', 0.02)
+[112/160]      82 s  ('us_std_limb_15km', '2050', 0.0005)
+[113/160]      82 s  ('tropical_10km_horizontal', '2700', 0.02)
+[114/160]      83 s  ('mls_ground_to_space', '2500', 0.02)
+[115/160]      83 s  ('us_std_limb_15km', '2700', 0.01)
+[116/160]      83 s  ('saw_10km_horizontal', '3000', 0.01)
+[117/160]      84 s  ('mls_ground_to_space', '2700', 0.02)
+[118/160]      84 s  ('mls_20km_nadir', '2500', 0.02)
+[119/160]      84 s  ('mls_20km_nadir', '2700', 0.02)
+[120/160]      85 s  ('tropical_10km_horizontal', '3000', 0.02)
+[121/160]      85 s  ('us_std_limb_15km', '3000', 0.001)
+[122/160]      85 s  ('mls_20km_nadir', '2050', 0.02)
+[123/160]      86 s  ('saw_10km_horizontal', '2500', 0.02)
+[124/160]      86 s  ('saw_10km_horizontal', '2050', 0.02)
+[125/160]      87 s  ('us_std_limb_15km', '2500', 0.02)
+[126/160]      87 s  ('mls_ground_to_space', '2050', 0.02)
+[127/160]      87 s  ('saw_10km_horizontal', '2700', 0.02)
+[128/160]      87 s  ('mls_20km_nadir', '3000', 0.02)
+[129/160]      88 s  ('mls_ground_to_space', '3000', 0.02)
+[130/160]      88 s  ('tropical_10km_horizontal', '2500', 0.05)
+[131/160]      88 s  ('us_std_limb_15km', '2050', 0.001)
+[132/160]      88 s  ('tropical_10km_horizontal', '2700', 0.05)
+[133/160]      88 s  ('tropical_10km_horizontal', '2050', 0.05)
+[134/160]      89 s  ('mls_ground_to_space', '2500', 0.05)
+[135/160]      89 s  ('saw_10km_horizontal', '3000', 0.02)
+[136/160]      89 s  ('us_std_limb_15km', '2700', 0.02)
+[137/160]      89 s  ('us_std_limb_15km', '3000', 0.002)
+[138/160]      90 s  ('mls_ground_to_space', '2700', 0.05)
+[139/160]      90 s  ('mls_20km_nadir', '2500', 0.05)
+[140/160]      90 s  ('mls_20km_nadir', '2700', 0.05)
+[141/160]      91 s  ('us_std_limb_15km', '3000', 0.005)
+[142/160]      91 s  ('mls_20km_nadir', '2050', 0.05)
+[143/160]      91 s  ('tropical_10km_horizontal', '3000', 0.05)
+[144/160]      91 s  ('saw_10km_horizontal', '2500', 0.05)
+[145/160]      92 s  ('saw_10km_horizontal', '2050', 0.05)
+[146/160]      92 s  ('saw_10km_horizontal', '2700', 0.05)
+[147/160]      92 s  ('us_std_limb_15km', '2500', 0.05)
+[148/160]      93 s  ('us_std_limb_15km', '3000', 0.01)
+[149/160]      93 s  ('us_std_limb_15km', '2050', 0.005)
+[150/160]      93 s  ('mls_ground_to_space', '2050', 0.05)
+[151/160]      93 s  ('mls_ground_to_space', '3000', 0.05)
+[152/160]      93 s  ('mls_20km_nadir', '3000', 0.05)
+[153/160]      93 s  ('us_std_limb_15km', '2050', 0.01)
+[154/160]      94 s  ('us_std_limb_15km', '2050', 0.002)
+[155/160]      94 s  ('saw_10km_horizontal', '3000', 0.05)
+[156/160]      94 s  ('us_std_limb_15km', '2700', 0.05)
+[157/160]      95 s  ('us_std_limb_15km', '3000', 0.02)
+[158/160]      96 s  ('us_std_limb_15km', '2050', 0.02)
+[159/160]      99 s  ('us_std_limb_15km', '3000', 0.05)
+[160/160]     100 s  ('us_std_limb_15km', '2050', 0.05)
+
+geometry                   win       step  T max pp  L max %  L mean %    time
+tropical_10km_horizontal   2050   0.0345*    0.0014    0.002     0.000    2.4s
+tropical_10km_horizontal   2050   0.0500     0.0058    0.006     0.000    1.6s
+tropical_10km_horizontal   2050   0.0200     0.0009    0.001     0.000    1.9s
+tropical_10km_horizontal   2050   0.0100     0.0002    0.000     0.000    2.1s
+tropical_10km_horizontal   2050   0.0050     0.0001    0.000     0.000    3.3s
+tropical_10km_horizontal   2050   0.0020     0.0000    0.000     0.000    6.3s
+tropical_10km_horizontal   2050   0.0010     0.0000    0.000     0.000   11.3s
+tropical_10km_horizontal   2500   0.0345*    0.0258    0.106     0.010    1.3s
+tropical_10km_horizontal   2500   0.0500     0.1586    0.651     0.000    0.9s
+tropical_10km_horizontal   2500   0.0200     0.0036    0.015    -0.000    0.9s
+tropical_10km_horizontal   2500   0.0100     0.0009    0.004    -0.000    1.2s
+tropical_10km_horizontal   2500   0.0050     0.0002    0.001    -0.000    1.6s
+tropical_10km_horizontal   2500   0.0020     0.0000    0.000    -0.000    2.9s
+tropical_10km_horizontal   2500   0.0010     0.0000    0.000    -0.000    5.1s
+tropical_10km_horizontal   2700   0.0345*    0.0105    0.026    -0.001    1.6s
+tropical_10km_horizontal   2700   0.0500     0.0442    0.122     0.004    1.1s
+tropical_10km_horizontal   2700   0.0200     0.0070    0.020     0.001    1.1s
+tropical_10km_horizontal   2700   0.0100     0.0017    0.005     0.000    1.4s
+tropical_10km_horizontal   2700   0.0050     0.0004    0.001     0.000    2.1s
+tropical_10km_horizontal   2700   0.0020     0.0001    0.000     0.000    3.6s
+tropical_10km_horizontal   2700   0.0010     0.0000    0.000     0.000    6.6s
+tropical_10km_horizontal   3000   0.0345*    0.0005    0.001    -0.000    5.2s
+tropical_10km_horizontal   3000   0.0500     0.0027    0.003     0.000    3.6s
+tropical_10km_horizontal   3000   0.0200     0.0003    0.000     0.000    3.7s
+tropical_10km_horizontal   3000   0.0100     0.0001    0.000     0.000    5.2s
+tropical_10km_horizontal   3000   0.0050     0.0000    0.000     0.000    6.8s
+tropical_10km_horizontal   3000   0.0020     0.0000    0.000     0.000   13.4s
+tropical_10km_horizontal   3000   0.0010     0.0000    0.000     0.000   22.4s
+mls_ground_to_space        2050   0.0047*    0.0218    0.011     0.001   10.6s
+mls_ground_to_space        2050   0.0500     0.5950    0.328     0.010    5.3s
+mls_ground_to_space        2050   0.0200     0.6436    0.229     0.008    5.5s
+mls_ground_to_space        2050   0.0100     0.1166    0.055     0.001    8.1s
+mls_ground_to_space        2050   0.0050     0.0267    0.017     0.000   10.5s
+mls_ground_to_space        2050   0.0020     0.0009    0.000     0.000   16.4s
+mls_ground_to_space        2050   0.0010     0.0002    0.000     0.000   23.7s
+mls_ground_to_space        2500   0.0047*    0.0008    0.004     0.000    2.1s
+mls_ground_to_space        2500   0.0500     0.4906    2.308    -0.002    1.2s
+mls_ground_to_space        2500   0.0200     0.1309    0.236    -0.002    1.3s
+mls_ground_to_space        2500   0.0100     0.0112    0.031     0.002    1.6s
+mls_ground_to_space        2500   0.0050     0.0009    0.004    -0.000    2.2s
+mls_ground_to_space        2500   0.0020     0.0001    0.001    -0.000    3.3s
+mls_ground_to_space        2500   0.0010     0.0000    0.000    -0.000    5.2s
+mls_ground_to_space        2700   0.0048*    0.0008    0.004     0.000    3.4s
+mls_ground_to_space        2700   0.0500     0.8258    0.651     0.002    1.8s
+mls_ground_to_space        2700   0.0200     0.1401    0.072     0.001    2.1s
+mls_ground_to_space        2700   0.0100     0.0114    0.015    -0.000    2.4s
+mls_ground_to_space        2700   0.0050     0.0009    0.004     0.000    3.6s
+mls_ground_to_space        2700   0.0020     0.0001    0.001     0.000    5.7s
+mls_ground_to_space        2700   0.0010     0.0000    0.000     0.000    8.1s
+mls_ground_to_space        3000   0.0048*    0.0011    0.001     0.000   10.1s
+mls_ground_to_space        3000   0.0500     0.8812    0.126     0.002    5.0s
+mls_ground_to_space        3000   0.0200     0.0766    0.013     0.001    5.5s
+mls_ground_to_space        3000   0.0100     0.0272    0.006     0.000    7.2s
+mls_ground_to_space        3000   0.0050     0.0007    0.001     0.000   10.8s
+mls_ground_to_space        3000   0.0020     0.0001    0.000     0.000   16.7s
+mls_ground_to_space        3000   0.0010     0.0000    0.000     0.000   26.6s
+mls_20km_nadir             2050   0.0070*    0.0016    0.004    -0.000    4.2s
+mls_20km_nadir             2050   0.0500     0.1285    0.474    -0.080    2.6s
+mls_20km_nadir             2050   0.0200     0.0489    0.074    -0.008    3.0s
+mls_20km_nadir             2050   0.0100     0.0031    0.011    -0.000    3.6s
+mls_20km_nadir             2050   0.0050     0.0008    0.002    -0.000    5.3s
+mls_20km_nadir             2050   0.0020     0.0001    0.000    -0.000    7.7s
+mls_20km_nadir             2050   0.0010     0.0000    0.000    -0.000   11.9s
+mls_20km_nadir             2500   0.0071*    0.0003    0.000     0.000    1.4s
+mls_20km_nadir             2500   0.0500     0.2414    0.249    -0.023    0.9s
+mls_20km_nadir             2500   0.0200     0.0432    0.045     0.001    1.0s
+mls_20km_nadir             2500   0.0100     0.0014    0.001    -0.000    1.1s
+mls_20km_nadir             2500   0.0050     0.0003    0.000     0.000    1.8s
+mls_20km_nadir             2500   0.0020     0.0001    0.000    -0.000    2.6s
+mls_20km_nadir             2500   0.0010     0.0000    0.000    -0.000    3.9s
+mls_20km_nadir             2700   0.0071*    0.0018    0.001    -0.000    1.8s
+mls_20km_nadir             2700   0.0500     0.4644    0.563    -0.016    1.2s
+mls_20km_nadir             2700   0.0200     0.0378    0.061    -0.001    1.2s
+mls_20km_nadir             2700   0.0100     0.0033    0.002     0.000    1.5s
+mls_20km_nadir             2700   0.0050     0.0009    0.001    -0.000    2.2s
+mls_20km_nadir             2700   0.0020     0.0001    0.000    -0.000    3.7s
+mls_20km_nadir             2700   0.0010     0.0000    0.000    -0.000    5.6s
+mls_20km_nadir             3000   0.0072*    0.0004    0.005     0.000    6.3s
+mls_20km_nadir             3000   0.0500     0.5495    2.455    -0.336    3.7s
+mls_20km_nadir             3000   0.0200     0.0159    0.157    -0.004    4.1s
+mls_20km_nadir             3000   0.0100     0.0023    0.023    -0.001    5.3s
+mls_20km_nadir             3000   0.0050     0.0004    0.005    -0.000    7.6s
+mls_20km_nadir             3000   0.0020     0.0001    0.001    -0.000   12.7s
+mls_20km_nadir             3000   0.0010     0.0000    0.000    -0.000   19.8s
+us_std_limb_15km           2050   0.0069*    0.0070    0.009     0.000   21.0s
+us_std_limb_15km           2050   0.0500     0.3463    0.752    -0.047   10.3s
+us_std_limb_15km           2050   0.0200     0.0688    0.081    -0.006   12.6s
+us_std_limb_15km           2050   0.0100     0.0406    0.041    -0.003   17.2s
+us_std_limb_15km           2050   0.0050     0.0040    0.007     0.000   25.0s
+us_std_limb_15km           2050   0.0020     0.0001    0.000    -0.000   38.3s
+us_std_limb_15km           2050   0.0010     0.0000    0.000    -0.000   53.5s
+us_std_limb_15km           2500   0.0069*    0.0122    0.093    -0.002    4.2s
+us_std_limb_15km           2500   0.0500     0.8682    2.527    -0.325    2.4s
+us_std_limb_15km           2500   0.0200     0.1182    0.381    -0.020    2.7s
+us_std_limb_15km           2500   0.0100     0.0331    0.182    -0.005    3.4s
+us_std_limb_15km           2500   0.0050     0.0036    0.026    -0.000    5.2s
+us_std_limb_15km           2500   0.0020     0.0004    0.003    -0.000    7.7s
+us_std_limb_15km           2500   0.0010     0.0001    0.001    -0.000   10.5s
+us_std_limb_15km           2700   0.0070*    0.0057    0.020    -0.001    8.2s
+us_std_limb_15km           2700   0.0500     0.5884    1.975    -0.368    4.2s
+us_std_limb_15km           2700   0.0200     0.0782    0.203     0.008    4.9s
+us_std_limb_15km           2700   0.0100     0.0153    0.116     0.002    6.5s
+us_std_limb_15km           2700   0.0050     0.0021    0.006     0.000    9.3s
+us_std_limb_15km           2700   0.0020     0.0004    0.001     0.000   14.1s
+us_std_limb_15km           2700   0.0010     0.0001    0.000     0.000   19.6s
+us_std_limb_15km           3000   0.0070*    0.0041    0.015    -0.001   17.1s
+us_std_limb_15km           3000   0.0500     0.2039    2.177    -0.217    8.4s
+us_std_limb_15km           3000   0.0200     0.1719    0.252     0.028    9.8s
+us_std_limb_15km           3000   0.0100     0.0449    0.040     0.001   14.5s
+us_std_limb_15km           3000   0.0050     0.0023    0.008    -0.000   20.6s
+us_std_limb_15km           3000   0.0020     0.0003    0.001    -0.000   32.9s
+us_std_limb_15km           3000   0.0010     0.0001    0.000    -0.000   45.7s
+saw_10km_horizontal        2050   0.0385*    0.0450    0.105     0.002    1.2s
+saw_10km_horizontal        2050   0.0500     0.0761    0.178     0.003    1.0s
+saw_10km_horizontal        2050   0.0200     0.0122    0.028     0.001    1.1s
+saw_10km_horizontal        2050   0.0100     0.0030    0.007     0.000    1.5s
+saw_10km_horizontal        2050   0.0050     0.0008    0.002     0.000    2.1s
+saw_10km_horizontal        2050   0.0020     0.0001    0.000     0.000    4.3s
+saw_10km_horizontal        2050   0.0010     0.0000    0.000     0.000    7.8s
+saw_10km_horizontal        2500   0.0385*    0.0155    0.093     0.001    0.8s
+saw_10km_horizontal        2500   0.0500     0.0258    0.157    -0.003    0.6s
+saw_10km_horizontal        2500   0.0200     0.0042    0.025     0.000    0.7s
+saw_10km_horizontal        2500   0.0100     0.0010    0.006    -0.000    0.8s
+saw_10km_horizontal        2500   0.0050     0.0003    0.002    -0.000    1.3s
+saw_10km_horizontal        2500   0.0020     0.0000    0.000     0.000    2.3s
+saw_10km_horizontal        2500   0.0010     0.0000    0.000     0.000    4.2s
+saw_10km_horizontal        2700   0.0385*    0.0218    0.075     0.002    1.0s
+saw_10km_horizontal        2700   0.0500     0.0339    0.116     0.002    0.8s
+saw_10km_horizontal        2700   0.0200     0.0057    0.020     0.001    0.9s
+saw_10km_horizontal        2700   0.0100     0.0014    0.005     0.000    1.0s
+saw_10km_horizontal        2700   0.0050     0.0004    0.001     0.000    1.5s
+saw_10km_horizontal        2700   0.0020     0.0001    0.000     0.000    2.6s
+saw_10km_horizontal        2700   0.0010     0.0000    0.000     0.000    4.6s
+saw_10km_horizontal        3000   0.0385*    0.0334    0.049     0.001    3.6s
+saw_10km_horizontal        3000   0.0500     0.0619    0.091     0.001    2.3s
+saw_10km_horizontal        3000   0.0200     0.0093    0.014     0.000    2.9s
+saw_10km_horizontal        3000   0.0100     0.0023    0.003     0.000    3.5s
+saw_10km_horizontal        3000   0.0050     0.0006    0.001     0.000    5.1s
+saw_10km_horizontal        3000   0.0020     0.0001    0.000     0.000    9.8s
+saw_10km_horizontal        3000   0.0010     0.0000    0.000     0.000   17.9s
+* = automatic step
+wrote D:\AI-projects\modtran_at_home\docs\validation\fine_step_convergence_round2.json

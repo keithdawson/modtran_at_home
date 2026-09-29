@@ -1,0 +1,12 @@
+small processes    1 workers      42.0 s     0.08 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_round2.json
+small processes    2 workers      30.4 s     0.11 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_round2.json
+small processes    4 workers      16.0 s     0.20 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_round2.json
+small processes    8 workers       9.1 s     0.36 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_round2.json
+small processes   16 workers       8.8 s     0.37 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_round2.json
+full  processes   16 workers      36.3 s     1.14 M elem/s
+wrote D:\AI-projects\modtran_at_home\docs\validation\scaling_round2.json

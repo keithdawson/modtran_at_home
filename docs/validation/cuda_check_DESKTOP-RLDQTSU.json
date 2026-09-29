@@ -1,0 +1,29 @@
+{
+ "machine": {
+  "host": "DESKTOP-RLDQTSU",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "cpu_count": 16,
+  "python": "3.11.6 (tags/v3.11.6:8b6ee5b, Oct  2 2023, 14:57:12) [MSC v.1935 64 bit (AMD64)]"
+ },
+ "device": "NVIDIA GeForce RTX 4090 (device 0, compute 8.9, 24 GiB)",
+ "tests": {
+  "returncode": 0,
+  "tail": ".........                                                                [100%]\n============================== warnings summary ===============================\nC:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286\n  C:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n9 passed, 1 warning in 59.11s\n"
+ },
+ "runs": {
+  "slice_2000_2200": {
+   "cuda_seconds": 0.6207501000026241,
+   "cpu_seconds": 8.889451299997745,
+   "speedup": 14.320499183101488,
+   "max_abs_transmittance_diff": 3.418527690868256e-06,
+   "max_rel_radiance_diff": 7.570843337356692e-06
+  },
+  "default_full_band": {
+   "cuda_seconds": 7.598810700001195,
+   "cpu_seconds": 36.29798130001291,
+   "speedup": 4.776797677037434,
+   "max_abs_transmittance_diff": 4.516405245458266e-06,
+   "max_rel_radiance_diff": 1.015582885988131e-05
+  }
+ }
+}
