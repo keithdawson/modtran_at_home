@@ -17,10 +17,16 @@ whose cutoff window reaches its points, stages them through shared memory in
 tiles, and every thread accumulates its own point. Each thread sums lines in
 the same order on every run, so results are deterministic.
 
-Precision (see :mod:`mwir_atmos.optics.voigt_gpu`): offsets from line centre
-and the per-point sums are float64; the profile itself is float32 in the far
-wings and float64 in the cores. Evaluation is always *direct* (every pair
-within the cutoff) -- the GPU needs none of the CPU's multigrid shortcuts.
+Precision (see :mod:`mwir_atmos.optics.voigt_gpu`): the profile is float32 in
+the far wings and float64 in the cores. Nothing else per (line, point) pair
+is float64, which runs at 1/64 rate on consumer and workstation GPUs: the
+offset from line centre is formed from float32 hi/lo pairs relative to the
+block's first point (:func:`_offset32`, ~1e-7 relative), the cutoff is a
+per-line range of block points found once per tile with the float64 test
+``|nu - c| <= cut``, and each tile is summed with compensated float32
+arithmetic before adding to the float64 total. Evaluation is always *direct*
+(every pair within the cutoff) -- the GPU needs none of the CPU's multigrid
+shortcuts.
 
 :func:`evaluate_emulated` runs the identical algorithm in NumPy, so packing,
 pedestal handling and precision are tested on machines without a GPU.
@@ -107,6 +113,27 @@ def concatenate(tasks: Sequence[tuple]) -> Packed:
 # =========================================================================
 
 
+def _split32(value: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """``value`` (float64) as float32 ``(hi, lo)`` with ``hi + lo`` ~ value to ~2**-48."""
+    hi = value.astype(np.float32)
+    return hi, (value - hi.astype(np.float64)).astype(np.float32)
+
+
+def _offset32(nu: np.ndarray, point: np.ndarray, center: np.ndarray) -> np.ndarray:
+    """``nu[point] - center`` in float32 exactly as the kernel forms it.
+
+    ``nu0`` is the first point of the point's block of ``_TILE``; the point's
+    offset from it (exact in float64) and ``nu0 - center`` are split into
+    float32 pairs and added as ``(a_hi + b_hi) + (a_lo + b_lo)``: when the
+    large parts nearly cancel their sum is exact, otherwise it dominates, so
+    the offset is accurate to ~1e-7 relative however close to line centre.
+    """
+    nu0 = nu[(point // _TILE) * _TILE]
+    a_hi, a_lo = _split32(nu[point] - nu0)
+    b_hi, b_lo = _split32(nu0 - center)
+    return (a_hi + b_hi) + (a_lo + b_lo)
+
+
 def evaluate_emulated(nu: np.ndarray, packed: Packed) -> np.ndarray:
     """The kernel's algorithm and precision in NumPy; shape ``(n_tasks, nu.size)``."""
     nu = np.asarray(nu, dtype=np.float64)
@@ -123,8 +150,8 @@ def evaluate_emulated(nu: np.ndarray, packed: Packed) -> np.ndarray:
                 + np.repeat(lo, counts)) + a
         dnu = nu[point] - packed.center[line]
         keep = np.abs(dnu) <= cut
-        point, line, dnu = point[keep], line[keep], dnu[keep]
-        x = dnu.astype(np.float32) * packed.inv_alpha[line]
+        point, line = point[keep], line[keep]
+        x = _offset32(nu, point, packed.center[line]) * packed.inv_alpha[line]
         value = packed.amp[line] * re_faddeeva(x, packed.y[line])
         if packed.has_pedestal[t]:
             value = np.maximum(value - packed.pedestal[line], np.float32(0.0))
@@ -213,47 +240,79 @@ extern "C" __global__ void voigt_tau(
         const long long* __restrict__ task_start, const long long* __restrict__ task_stop,
         const double* __restrict__ cutoff, const int* __restrict__ has_ped,
         const long long* __restrict__ out_row, const int task0, double* __restrict__ out) {
+    // Float64 runs at 1/64 rate on consumer and workstation GPUs, so the
+    // per-(line, point) work is float32 (see the module docstring):
+    //  - offsets: nu_i - c = (nu_i - nu0) + (nu0 - c), both parts as float32
+    //    hi/lo pairs (nu0 = the block's first point), summed as
+    //    (a_hi + b_hi) + (a_lo + b_lo);
+    //  - the cutoff |fl(nu_i - c)| <= cut: a per-line range of block points,
+    //    found once per tile by binary search with that float64 test;
+    //  - sums: compensated (Kahan) float32 per tile, then float64.
     const int task = task0 + blockIdx.y;
     const int i0 = blockIdx.x * TILE;
-    const int i = i0 + threadIdx.x;
-    const int i1 = min(i0 + TILE, n) - 1;
+    const int t = threadIdx.x;
+    const int i = i0 + t;
+    const int m_pts = min(i0 + TILE, n) - i0;
     const double cut = cutoff[task];
     const bool subtract = has_ped[task] != 0;
 
     __shared__ long long range[2];
-    __shared__ double s_c[TILE];
-    __shared__ float s_ia[TILE], s_y[TILE], s_amp[TILE], s_ped[TILE];
-    if (threadIdx.x == 0) {
+    __shared__ double s_nu[TILE];
+    __shared__ float s_hi[TILE], s_lo[TILE], s_ia[TILE], s_y[TILE], s_amp[TILE], s_ped[TILE];
+    __shared__ int s_first[TILE], s_last[TILE];
+    if (t < m_pts) s_nu[t] = nu[i];
+    if (t == 0) {
         range[0] = lower_bound(center, task_start[task], task_stop[task], nu[i0] - cut);
-        range[1] = upper_bound(center, task_start[task], task_stop[task], nu[i1] + cut);
+        range[1] = upper_bound(center, task_start[task], task_stop[task], nu[i0 + m_pts - 1] + cut);
     }
     __syncthreads();
     const long long lo = range[0], hi = range[1];
-    const double nu_i = (i < n) ? nu[i] : 0.0;
+    const double nu0 = s_nu[0];
+    float a_hi = 0.0f, a_lo = 0.0f;
+    if (t < m_pts) {
+        const double a = s_nu[t] - nu0;          // exact (Sterbenz)
+        a_hi = (float)a;
+        a_lo = (float)(a - (double)a_hi);
+    }
     double acc = 0.0;
     for (long long base = lo; base < hi; base += TILE) {
-        const long long j = base + threadIdx.x;
+        const long long j = base + t;
         if (j < hi) {
-            s_c[threadIdx.x] = center[j];
-            s_ia[threadIdx.x] = inv_alpha[j];
-            s_y[threadIdx.x] = yv[j];
-            s_amp[threadIdx.x] = amp[j];
-            s_ped[threadIdx.x] = ped[j];
+            const double c = center[j];
+            const double off = nu0 - c;
+            const float b_hi = (float)off;
+            s_hi[t] = b_hi;
+            s_lo[t] = (float)(off - (double)b_hi);
+            int a = 0, b = m_pts;                // first point with fl(nu - c) >= -cut
+            while (a < b) { const int mid = (a + b) >> 1; if (s_nu[mid] - c < -cut) a = mid + 1; else b = mid; }
+            s_first[t] = a;
+            b = m_pts;                           // one past the last with fl(nu - c) <= cut
+            while (a < b) { const int mid = (a + b) >> 1; if (s_nu[mid] - c <= cut) a = mid + 1; else b = mid; }
+            s_last[t] = a - 1;
+            s_ia[t] = inv_alpha[j];
+            s_y[t] = yv[j];
+            s_amp[t] = amp[j];
+            s_ped[t] = ped[j];
         }
         __syncthreads();
         const int m = (int)min((long long)TILE, hi - base);
-        if (i < n) {
+        if (t < m_pts) {
+            float sum = 0.0f, comp = 0.0f;
             for (int k = 0; k < m; ++k) {
-                const double dnu = nu_i - s_c[k];
-                if (fabs(dnu) > cut) continue;
-                float v = s_amp[k] * re_w((float)dnu * s_ia[k], s_y[k]);
+                if (t < s_first[k] || t > s_last[k]) continue;
+                const float dnu = (a_hi + s_hi[k]) + (a_lo + s_lo[k]);
+                float v = s_amp[k] * re_w(dnu * s_ia[k], s_y[k]);
                 if (subtract) v = fmaxf(v - s_ped[k], 0.0f);
-                acc += (double)v;
+                const float term = v - comp;
+                const float next = sum + term;
+                comp = (next - sum) - term;
+                sum = next;
             }
+            acc += (double)sum - (double)comp;
         }
         __syncthreads();
     }
-    if (i < n) out[(size_t)out_row[task] * n + i] = acc;
+    if (t < m_pts) out[(size_t)out_row[task] * n + i] = acc;
 }
 """ % dict(tile=_TILE, n=len(coefficients), coeffs=coeffs, big_l=big_l,
            cf_r2=float(CF_RADIUS**2), cf_terms=CF_TERMS)

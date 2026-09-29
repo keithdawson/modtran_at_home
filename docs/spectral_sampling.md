@@ -277,10 +277,13 @@ equal the host path to 3e-16 T and 1.4e-15 L. The host path takes 2.8 s for
 the same band. The CPU backend is essentially unchanged (33.3 s vs 33.5-33.9 s
 for the old code, same session): its time is Voigt evaluation.
 
-The kernels are now ~80% of a full-band GPU run. Every (line, point) pair
-still does float64 work (the offset from line centre, the cutoff test, the
-accumulation), which runs at 1/64 rate on this class of GPU; see the open
-work in [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
+Since then the kernel does no float64 work per (line, point) pair (offsets
+as float32 hi/lo pairs from a per-block reference, per-line cutoff ranges
+found once per tile with the float64 test, compensated float32 tile sums):
+kernels 0.85 s -> 0.33 s for the full band, accuracy against the CPU float64
+sums unchanged (worst 1.3e-6 relative in upper layers, 1.2e-6 before). The
+full band takes 0.80 s; CPU line selection (GIL-bound, ~0.8 s) is now the
+limit -- see [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
 
 ### Parallelism
 

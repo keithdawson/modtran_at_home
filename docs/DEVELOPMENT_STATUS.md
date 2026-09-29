@@ -58,16 +58,21 @@ old time went to the MT_CKD continuum (2.0 s), CPU-side transmittance and
 radiance (1.2 s), line selection (1.1 s) and copying/stacking the per-(layer,
 species) results (1.2 s); the kernels were 0.75 s.
 
-1. **GPU kernel float64 work** (now ~80% of a full-band GPU run: 0.77 of
-   0.95 s). Each (line, point) pair does float64 work: the offset from line
-   centre, the cutoff test and the accumulation, at 1/64 rate on consumer and
-   workstation GPUs. Ideas, not yet tried: offsets as float32 pairs relative
-   to a per-block reference wavenumber (hi/lo split of each line's offset,
-   computed once per tile in float64), the cutoff as a per-line index range
-   computed once per tile, compensated float32 sums per tile added to the
-   float64 total, and an exact float64 offset only in the Weideman core
-   branch. Keep `lbl_cuda.evaluate_emulated` in step and re-check against
-   `scipy.special.wofz` and the CPU engine (`tests/test_lbl_cuda.py`).
+1. **GPU line selection** (now the bottleneck of a full-band GPU run).
+   The kernel no longer does float64 work per (line, point) pair (hi/lo
+   float32 offsets from a per-block reference, per-line cutoff ranges found
+   once per tile, compensated float32 tile sums): full-band kernel time
+   0.85 s -> 0.33 s (same-process A/B, RTX 4090), accuracy against the CPU
+   float64 sums unchanged (worst 1.3e-6 vs 1.2e-6 relative). The full band
+   only went 0.95 s -> 0.80 s, because CPU line selection (~0.8 s, GIL-bound:
+   1 thread 0.88 s, 4 threads 0.80 s, 16 threads 0.93 s) no longer hides
+   behind the kernels. Plan: one elementwise kernel over every (task, window
+   line) pair of a chunk computing S(T), shift, widths and the exact
+   peak-optical-depth test (mirror `_select_lines`' operation order, compile
+   with `--fmad=false`), then compaction, `cupy.lexsort` by (task, centre),
+   and the packed arrays straight into `launch`; the CPU keeps only per-task
+   scalars (windows by `searchsorted`, pressures, partition ratios -- cache
+   those, 5.6 us per call). Needed before multi-GPU is worth doing.
 2. **Other CUDA follow-ups**:
    - Multi-GPU (work server: 4 x Blackwell 6000 on CPU 0, 1 x Ada 6000 on
      CPU 1): one worker process per GPU, **spawned** (never fork after CUDA
