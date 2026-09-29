@@ -1,0 +1,17 @@
+C:\Users\Blake Mizzell\AppData\Local\Programs\Python\Python311\Lib\site-packages\cupy\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.
+  warnings.warn(
+GPU: NVIDIA GeForce RTX 4090 (device 0, compute 8.9, 24 GiB)
+.........                                                                [100%]
+============================== warnings summary ===============================
+C:\Users\Blake Mizzell\AppData\Local\Programs\Python\Python311\Lib\site-packages\cupy\_environment.py:286
+  C:\Users\Blake Mizzell\AppData\Local\Programs\Python\Python311\Lib\site-packages\cupy\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+9 passed, 1 warning in 59.11s
+
+slice_2000_2200    cuda     0.62 s
+slice_2000_2200    cpu      8.89 s  speedup 14.3x  dT 3.4e-06  dL 7.6e-06
+default_full_band  cuda     7.60 s
+default_full_band  cpu     36.30 s  speedup 4.8x  dT 4.5e-06  dL 1.0e-05
+wrote D:\AI-projects\modtran_at_home\docs\validation\cuda_check_DESKTOP-RLDQTSU.json

@@ -1,0 +1,70 @@
+{
+ "machine": {
+  "cpu_count": 16,
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python": "3.11.6 (tags/v3.11.6:8b6ee5b, Oct  2 2023, 14:57:12) [MSC v.1935 64 bit (AMD64)]",
+  "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD"
+ },
+ "rows": [
+  {
+   "seconds": 42.04339550001896,
+   "fine_points": 43001,
+   "layers": 76,
+   "fine_step_cm1": 0.004651162790697674,
+   "size": "small",
+   "workers": 1,
+   "mode": "processes",
+   "elements_per_s": 77731.0196080268
+  },
+  {
+   "seconds": 30.362771799991606,
+   "fine_points": 43001,
+   "layers": 76,
+   "fine_step_cm1": 0.004651162790697674,
+   "size": "small",
+   "workers": 2,
+   "mode": "processes",
+   "elements_per_s": 107634.3102509799
+  },
+  {
+   "seconds": 15.969616600021254,
+   "fine_points": 43001,
+   "layers": 76,
+   "fine_step_cm1": 0.004651162790697674,
+   "size": "small",
+   "workers": 4,
+   "mode": "processes",
+   "elements_per_s": 204643.3600663682
+  },
+  {
+   "seconds": 9.117399899987504,
+   "fine_points": 43001,
+   "layers": 76,
+   "fine_step_cm1": 0.004651162790697674,
+   "size": "small",
+   "workers": 8,
+   "mode": "processes",
+   "elements_per_s": 358443.8585395908
+  },
+  {
+   "seconds": 8.762693800003035,
+   "fine_points": 43001,
+   "layers": 76,
+   "fine_step_cm1": 0.004651162790697674,
+   "size": "small",
+   "workers": 16,
+   "mode": "processes",
+   "elements_per_s": 372953.3491172393
+  },
+  {
+   "seconds": 36.30340919998707,
+   "fine_points": 542501,
+   "layers": 76,
+   "fine_step_cm1": 0.004608294930875576,
+   "size": "full",
+   "workers": 16,
+   "mode": "processes",
+   "elements_per_s": 1135708.1031391036
+  }
+ ]
+}
