@@ -68,11 +68,19 @@ species) results (1.2 s); the kernels were 0.75 s.
    gained much less, because CPU line selection (~0.8 s, GIL-bound: 1 thread
    0.88 s, 4 threads 0.80 s, 16 threads 0.93 s) no longer hides behind the
    kernels, and it slows after the first two full-band runs in a process:
-   0.76-0.79 s for runs 1-2, then 0.89-1.0 s (old kernel: steady ~1.0 s;
-   `cuda_check.py`, best of two after the slice runs: 0.93 s). Cause not
-   found yet -- time summed in `_select_lines` rises ~2.0 s -> ~2.5 s, GPU
-   clocks stay at 2925 MHz, GC pauses are ~1 ms per run. Find it first (it
-   may be a cheap fix, and it is the number a GUI or batch user sees).
+   0.79 s for runs 1-2, then ~0.95 s (`cuda_check.py`, best of two after
+   the slice runs: 0.93 s). Cause: on Windows the selection threads end up
+   sharing physical cores (SMT siblings) -- the same selection work costs
+   1.04 thread-CPU-s in runs 1-2 and 1.33 after; one thread needs 0.62. With
+   the process limited to one logical CPU per core (mask 0x5555) 4 threads
+   stay at 0.76-0.83 s over ten runs; the selection threads alone limited,
+   0.82-0.87 s. Ruled out: the kernel (old code and no-kernel runs drift the
+   same), freeing the CuPy pools, memory growth, page faults, GC, reusing one
+   thread pool, ideal-processor hints (no effect), core parking (High
+   performance plan). 1 thread: median 0.89 s, no drift. Not fixed in the
+   library (affinity is Windows-only and a hard limit on a shared machine);
+   GPU selection removes the CPU work. Probes and numbers:
+   [spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental).
    Plan for the GPU selection: one elementwise kernel over every (task, window
    line) pair of a chunk computing S(T), shift, widths and the exact
    peak-optical-depth test (mirror `_select_lines`' operation order, compile

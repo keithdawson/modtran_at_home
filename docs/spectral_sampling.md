@@ -287,10 +287,30 @@ found once per tile with the float64 test, compensated float32 tile sums):
 kernels 0.85 s -> 0.33 s for the full band, accuracy against the CPU float64
 sums unchanged (worst 1.3e-6 relative in upper layers, 1.2e-6 before). The
 full band gains much less: CPU line selection (GIL-bound, ~0.8 s) is now the
-limit, and it slows after the first two full-band runs in a process (cause
-not found yet). Ten runs per process, old and new code interleaved, idle
-desktop: old kernel 0.95-1.10 s, steady; new kernel 0.76-0.79 s for runs 1-2,
-then 0.89-1.0 s (one outlier 1.41 s). See
+limit, and it slows after the first two full-band runs in a process because
+Windows lets the selection threads share physical cores. Ten uninstrumented
+runs per process, idle desktop (Ryzen 7 9800X3D, High performance plan):
+
+| Selection threads | Runs 1-2 | Runs 3-10 (median) |
+|---|---:|---:|
+| 4 (default) | 0.79-0.81 s | 0.95-0.96 s |
+| 4, process on one logical CPU per core (mask 0x5555) | 0.76-0.78 s | 0.81 s |
+| 4, selection threads alone on one logical CPU per core | 0.79-0.80 s | 0.84-0.85 s |
+| 4, ideal-processor hints 0, 2, 4, 6 | 0.79-0.80 s | 0.95 s |
+| 4, one thread pool reused across chunks and runs | 0.81-0.83 s | 0.97 s |
+| 2 | 0.77-0.78 s | 0.98 s |
+| 1 | 0.85-0.89 s | 0.89 s |
+
+Instrumented probes (fresh process each; thread cycle counters around
+`_select_lines`): the same 2280 selections cost 1.04 thread-CPU-s in runs 1-2
+and 1.33 after on 4 threads, 0.62 -> 0.67 on one thread, and 0.61-0.63 s per
+pass when replayed single-threaded without the GPU. The old kernel and runs
+with the kernel launches skipped drift the same way; private memory (2.10
+GiB), page faults (~80k per run) and GC (0.2 ms) stay flat; not freeing the
+CuPy pools changes nothing. With 30 s pauses between runs every run after the
+first is slow (1.18-1.23 s: clocks also drop while idle). The library keeps
+4 threads and no affinity (Windows-only, and a hard limit on a shared
+machine); moving selection to the GPU removes this CPU work. See
 [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
 
 ### Parallelism
