@@ -1,27 +1,51 @@
 {
  "machine": {
   "host": "DESKTOP-RLDQTSU",
-  "platform": "Windows-10-10.0.26200-SP0",
+  "platform": "Windows-10-10.0.26300-SP0",
   "cpu_count": 16,
   "python": "3.11.6 (tags/v3.11.6:8b6ee5b, Oct  2 2023, 14:57:12) [MSC v.1935 64 bit (AMD64)]"
  },
  "device": "NVIDIA GeForce RTX 4090 (device 0, compute 8.9, 24 GiB)",
  "tests": {
   "returncode": 0,
-  "tail": "............                                                             [100%]\n============================== warnings summary ===============================\nC:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286\n  C:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n12 passed, 1 warning in 56.16s\n"
+  "tail": ".................                                                        [100%]\n============================== warnings summary ===============================\nC:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286\n  C:\\Users\\Blake Mizzell\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\cupy\\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n17 passed, 1 warning in 66.22s (0:01:06)\n"
  },
  "runs": {
   "slice_2000_2200": {
-   "cuda_seconds": 0.1810352000175044,
-   "cpu_seconds": 9.35885129997041,
-   "speedup": 51.69630712184978,
+   "cuda_seconds": 0.1805439000017941,
+   "gpu_selection": {
+    "seconds": 0.18193289999908302,
+    "run_seconds": [
+     0.28575809999892954,
+     0.18662469999981113,
+     0.1900650999887148,
+     0.18193289999908302,
+     0.18876930000260472
+    ],
+    "max_abs_transmittance_diff": 0.0,
+    "max_rel_radiance_diff": 0.0
+   },
+   "cpu_seconds": 8.989323500005412,
+   "speedup": 49.79023661234793,
    "max_abs_transmittance_diff": 3.4180148854590087e-06,
    "max_rel_radiance_diff": 7.571280615792375e-06
   },
   "default_full_band": {
-   "cuda_seconds": 0.9335507999639958,
-   "cpu_seconds": 35.65070840000408,
-   "speedup": 38.18828970140566,
+   "cuda_seconds": 0.9392877999925986,
+   "gpu_selection": {
+    "seconds": 0.9363826000044355,
+    "run_seconds": [
+     0.9472036999941338,
+     0.9363826000044355,
+     0.9452734000078635,
+     0.9449280999979237,
+     0.9408101000008173
+    ],
+    "max_abs_transmittance_diff": 0.0,
+    "max_rel_radiance_diff": 0.0
+   },
+   "cpu_seconds": 38.3000999000069,
+   "speedup": 40.77568121326466,
    "max_abs_transmittance_diff": 4.518700106370677e-06,
    "max_rel_radiance_diff": 1.0157718223435808e-05
   }
