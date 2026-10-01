@@ -81,22 +81,16 @@ species) results (1.2 s); the kernels were 0.75 s.
    library (affinity is Windows-only and a hard limit on a shared machine);
    GPU selection removes the CPU work. Probes and numbers:
    [spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental).
-   **GPU selection is written, opt-in (`MWIR_CUDA_SELECTION=gpu`), and not
-   yet run on a GPU** (`lbl._select_packed`; written in a cloud session
-   without a GPU). It uses CuPy array operations rather than a raw kernel (one
-   correctly rounded op per kernel, so no FMA contraction), then compaction,
-   two stable argsorts by (task, centre), and the packed arrays straight into
-   `launch`. In NumPy it reproduces the CPU path bit for bit on every task of
-   the default scenario. Next, on the desktop: `python -m pytest
-   tests/test_lbl_cuda.py` (four new tests, two of them `gpu`), then
-   `python scripts/validation/cuda_check.py` (records `gpu_selection` per
-   case: best time, all five run times, differences from CPU selection).
-   If it is faster with no drift across runs and the differences are around
-   1e-6, make it the default and record the numbers in
-   [spectral_sampling.md](spectral_sampling.md#gpu-line-selection-opt-in-not-yet-measured-on-a-gpu).
-   Possible follow-ups: cache the partition ratios (5.6 us per call, 456
-   calls); the selection passes synchronise once each (`flatnonzero`), so a
-   pass waits for the previous group's kernel. Needed before multi-GPU is
+   **GPU selection is written and opt-in (`MWIR_CUDA_SELECTION=gpu`).** It
+   passes its GPU tests on the RTX 4090 and gives results identical to CPU
+   selection, but the full band still takes 0.94 s (numbers in
+   [spectral_sampling.md](spectral_sampling.md#gpu-line-selection-opt-in)).
+   Since then: one host-to-device copy per selection pass, not ~15 that
+   each waited for the queued kernels, and cached partition ratios. Next:
+   `python scripts/validation/cuda_selection_profile.py` on the desktop
+   (alternated timings, then stage times with the GPU synchronised: task
+   setup, every selection pass, kernels). Make GPU selection the default
+   once it is faster. Needed before multi-GPU is
    worth doing.
 2. **Other CUDA follow-ups**:
    - Multi-GPU (work server: 4 x Blackwell 6000 on CPU 0, 1 x Ada 6000 on

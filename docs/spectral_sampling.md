@@ -313,7 +313,7 @@ first is slow (1.18-1.23 s: clocks also drop while idle). The library keeps
 machine); moving selection to the GPU removes this CPU work. See
 [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
 
-#### GPU line selection (opt-in, not yet measured on a GPU)
+#### GPU line selection (opt-in)
 
 `MWIR_CUDA_SELECTION=gpu` selects lines on the GPU
 (`lbl._gpu_selected_groups` / `lbl._select_packed`). Per line list, every
@@ -335,7 +335,25 @@ operation is one correctly rounded CuPy kernel, so only `exp`, `expm1`, `pow`
 and `erfcx` may differ by an ulp; a line within that of the 3e-6 threshold
 can flip, changing tau by < 3e-6. The `gpu` tests check that at most 1e-5 of
 the kept lines flip, and `cuda_check.py` times five runs per case with
-both selections. To do: those numbers.
+both selections.
+
+First RTX 4090 check (`ff3674c`, `validation/cuda_check_DESKTOP-RLDQTSU.json`):
+`tests/test_lbl_cuda.py` 17/17 pass, so on-device selection keeps the same
+lines as NumPy to within the 1e-5 bound. GPU and CPU selection give exactly
+the same transmittance and radiance (difference 0.0: a 1-ulp float64
+difference almost never changes the float32 kernel inputs). But no speedup:
+
+| Run | CPU selection | GPU selection, 5 runs |
+|---|---:|---:|
+| 2000-2200 cm^-1 | 0.181 s | 0.182 s (0.286 first run: CuPy compiles), 0.187-0.190 |
+| Full default band | 0.939 s (best of 2) | 0.936-0.947 s |
+
+No drift across the five GPU-selection runs. Host-side setup is ~0.15 s for
+the 2280 selections (9500 partition-function lookups, now cached per
+temperature). Each pass also made ~15 small host-to-device copies, and a copy
+from pageable memory waits for the kernels already queued, so selection and
+kernels ran one after the other. These now go in one copy per pass. To
+find where the rest goes: `scripts/validation/cuda_selection_profile.py`.
 
 ### Parallelism
 

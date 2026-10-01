@@ -293,10 +293,22 @@ def _prepare(linelist: LineList) -> _PreparedLines:
     return prepared
 
 
+#: Q(T) per (molecule, isotopologues, T): every spectral chunk of a run
+#: selects lines for the same layers (9500 table lookups, ~0.1 s, per full band).
+_Q_CACHE: dict = {}
+_Q_CACHE_SIZE = 1 << 16
+
+
 def _partition_ratio(prepared: _PreparedLines, temperature_k: float) -> np.ndarray:
     """``Q(296)/Q(T)`` per isotopologue of ``prepared.unique_isos``."""
-    q_t = np.array([partition_function(prepared.molecule_id, iso, temperature_k)
-                    for iso in prepared.unique_isos])
+    key = (prepared.molecule_id, prepared.unique_isos, float(temperature_k))
+    q_t = _Q_CACHE.get(key)
+    if q_t is None:
+        q_t = np.array([partition_function(prepared.molecule_id, iso, temperature_k)
+                        for iso in prepared.unique_isos])
+        if len(_Q_CACHE) >= _Q_CACHE_SIZE:
+            _Q_CACHE.clear()
+        _Q_CACHE[key] = q_t
     return prepared.q_ref / q_t
 
 
@@ -1068,47 +1080,72 @@ def _select_packed(xp, prepared: _PreparedLines, tasks: Sequence[_SelectionTask]
     cutoff = np.array([t.cutoff for t in tasks], dtype=np.float64)
     has_pedestal = np.array([t.pedestal for t in tasks], dtype=np.int32)
 
-    def per_task(values, dtype=np.float64):
-        return xp.asarray(np.asarray(values, dtype=dtype))
+    # Every per-task scalar in one upload: a host-to-device copy from pageable
+    # memory waits for the work already queued (the previous group's kernels).
+    columns = {
+        "first_minus_offset": np.array([t.first for t in tasks], dtype=np.float64) - (ends - counts),
+        "end": ends, "temperature": [t.temperature_k for t in tasks],
+        "inverse_delta": [1.0 / t.temperature_k - 1.0 / _T_REF_K for t in tasks],
+        "p_total": [t.p_total_atm for t in tasks], "cutoff": cutoff,
+        "strength_threshold": [t.strength_threshold or 0.0 for t in tasks],
+        "strength_applies": [t.strength_threshold is not None for t in tasks],
+        "doppler": [2.0 * _LN2 * GAS_CONSTANT_R * t.temperature_k for t in tasks],
+        "p_air": [t.p_air_atm for t in tasks], "p_self": [t.p_self_atm for t in tasks],
+        "ratio": [_T_REF_K / t.temperature_k for t in tasks],
+        "column": [t.column_cm2 for t in tasks],
+        "peak_minimum": [t.min_peak_optical_depth or 0.0 for t in tasks],
+        "peak_applies": [t.min_peak_optical_depth is not None for t in tasks],
+        "pedestal": has_pedestal,
+    }
+    n_iso = len(prepared.unique_isos)
+    q_ratio = np.concatenate([t.q_ratio for t in tasks]) if n_tasks else np.zeros(0)
+    table = np.empty(len(columns) * n_tasks + q_ratio.size, dtype=np.float64)
+    for k, values in enumerate(columns.values()):
+        table[k * n_tasks:(k + 1) * n_tasks] = values
+    table[len(columns) * n_tasks:] = q_ratio
+    table = xp.asarray(table)
+    index = {name: k for k, name in enumerate(columns)}
+
+    def per_task(name, dtype=np.float64):
+        k = index[name]
+        values = table[k * n_tasks:(k + 1) * n_tasks]
+        return values if dtype is np.float64 else values.astype(dtype)
 
     lines = _device_lines(xp, prepared)
     pair = xp.arange(total, dtype=np.int64)
-    owner = xp.searchsorted(per_task(ends, np.int64), pair, side="right")
-    first = np.array([t.first for t in tasks], dtype=np.int64)
-    line = pair + per_task(first - (ends - counts), np.int64)[owner]
+    owner = xp.searchsorted(per_task("end", np.int64), pair, side="right")
+    line = pair + per_task("first_minus_offset", np.int64)[owner]
     del pair
 
-    temperature = per_task([t.temperature_k for t in tasks])[owner]
+    temperature = per_task("temperature")[owner]
     nu = lines["nu"][line]
-    n_iso = len(prepared.unique_isos)
-    q_table = per_task(np.concatenate([t.q_ratio for t in tasks]) if n_tasks else [])
-    q_ratio = q_table[owner * n_iso + lines["iso_index"][line]]
+    q_ratio = table[len(columns) * n_tasks + owner * n_iso + lines["iso_index"][line]]
     # _intensity: S(296) * Q ratio * Boltzmann * stimulated emission.
-    inverse_delta = per_task([1.0 / t.temperature_k - 1.0 / _T_REF_K for t in tasks])[owner]
+    inverse_delta = per_task("inverse_delta")[owner]
     boltzmann = xp.exp(-C2_RAD * lines["e_lower"][line] * inverse_delta)
     stim = xp.expm1(-C2_RAD * nu / temperature) / lines["stim_ref"][line]
     s_t = lines["s296"][line] * q_ratio * boltzmann * stim
     del q_ratio, boltzmann, stim, inverse_delta
 
-    nu_shifted = nu + lines["delta_air"][line] * per_task([t.p_total_atm for t in tasks])[owner]
-    keep = xp.abs(nu_shifted - xp.clip(nu_shifted, grid_lo, grid_hi)) <= per_task(cutoff)[owner]
+    nu_shifted = nu + lines["delta_air"][line] * per_task("p_total")[owner]
+    keep = xp.abs(nu_shifted - xp.clip(nu_shifted, grid_lo, grid_hi)) <= per_task("cutoff")[owner]
     if any(t.strength_threshold is not None for t in tasks):
-        threshold = per_task([t.strength_threshold or 0.0 for t in tasks])[owner]
-        applies = per_task([t.strength_threshold is not None for t in tasks], bool)[owner]
+        threshold = per_task("strength_threshold")[owner]
+        applies = per_task("strength_applies", bool)[owner]
         keep &= ~applies | (s_t >= threshold)
         del threshold, applies
 
-    doppler = per_task([2.0 * _LN2 * GAS_CONSTANT_R * t.temperature_k for t in tasks])[owner]
+    doppler = per_task("doppler")[owner]
     alpha_d = nu * xp.sqrt(doppler / (lines["m_kg_mol"][line] * LIGHT_C**2))
     del doppler, nu, temperature
-    gamma_l = (lines["gamma_air"][line] * per_task([t.p_air_atm for t in tasks])[owner]
-               + lines["gamma_self"][line] * per_task([t.p_self_atm for t in tasks])[owner]) * (
-        per_task([_T_REF_K / t.temperature_k for t in tasks])[owner] ** lines["n_air"][line])
-    column = per_task([t.column_cm2 for t in tasks])[owner]
+    gamma_l = (lines["gamma_air"][line] * per_task("p_air")[owner]
+               + lines["gamma_self"][line] * per_task("p_self")[owner]) * (
+        per_task("ratio")[owner] ** lines["n_air"][line])
+    column = per_task("column")[owner]
     if any(t.min_peak_optical_depth is not None for t in tasks):
         peak = _SQRT_LN2_OVER_PI / alpha_d * _erfcx(xp)(_SQRT_LN2 * gamma_l / alpha_d)
-        minimum = per_task([t.min_peak_optical_depth or 0.0 for t in tasks])[owner]
-        applies = per_task([t.min_peak_optical_depth is not None for t in tasks], bool)[owner]
+        minimum = per_task("peak_minimum")[owner]
+        applies = per_task("peak_applies", bool)[owner]
         keep &= ~applies | (s_t * column * peak >= minimum)
         del peak, minimum, applies
 
@@ -1124,7 +1161,7 @@ def _select_packed(xp, prepared: _PreparedLines, tasks: Sequence[_SelectionTask]
     gamma = gamma_l[kept]
     scale = column[kept] * s_t[kept]
     pedestal = gamma / (np.pi * (_MT_CKD_CUTOFF_CM1**2 + gamma * gamma))
-    pedestal = xp.where(per_task(has_pedestal, bool)[owner], scale * pedestal, 0.0)
+    pedestal = xp.where(per_task("pedestal", bool)[owner], scale * pedestal, 0.0)
 
     n_kept = (xp.bincount(owner, minlength=n_tasks) if owner.size
               else xp.zeros(n_tasks, dtype=np.int64))
