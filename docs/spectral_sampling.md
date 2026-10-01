@@ -313,6 +313,30 @@ first is slow (1.18-1.23 s: clocks also drop while idle). The library keeps
 machine); moving selection to the GPU removes this CPU work. See
 [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
 
+#### GPU line selection (opt-in, not yet measured on a GPU)
+
+`MWIR_CUDA_SELECTION=gpu` selects lines on the GPU
+(`lbl._gpu_selected_groups` / `lbl._select_packed`). Per line list, every
+(task, window line) pair of up to 2^23 pairs is one element of a flat array
+(the default full band: 76 layers x 6 line lists, ~66 M pairs, ~10 passes);
+the per-element operations are `_select_lines`' and `pack_task`'s, in the
+same order, written once for NumPy and CuPy. Lines are kept, sorted by
+(task, shifted centre) with two stable argsorts, and the packed arrays go to
+the kernel without leaving the GPU. The CPU only finds each task's window
+(`searchsorted`) and partition-function ratios. The peak pre-filter is
+skipped: it removes only lines the exact test drops.
+
+Run in NumPy, the code gives bit-identical packed arrays to the CPU path on
+every task of the default scenario: a 2140-2145 cm^-1 slice (456 tasks, 241k
+lines) and the full 1800-4300 cm^-1 band at 0.5 cm^-1 (6.79 M lines), and
+also with `min_strength_fraction` and a list split over several passes
+(`test_selection_in_numpy_equals_the_cpu_selection`). On the GPU every basic
+operation is one correctly rounded CuPy kernel, so only `exp`, `expm1`, `pow`
+and `erfcx` may differ by an ulp; a line within that of the 3e-6 threshold
+can flip, changing tau by < 3e-6. The `gpu` tests check that at most 1e-5 of
+the kept lines flip, and `cuda_check.py` times five runs per case with
+both selections. To do: those numbers.
+
 ### Parallelism
 
 Resolved runs of at least 2^21 fine-point x layer elements are split into at

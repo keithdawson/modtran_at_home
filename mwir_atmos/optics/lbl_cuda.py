@@ -2,9 +2,10 @@
 
 Line-by-line Voigt summation is ~98% of a resolved run's time, and every
 (line, grid point) pair is independent, so it maps directly onto a GPU. The
-CPU still selects lines (:func:`mwir_atmos.optics.lbl._select_lines`, which
-applies the peak-optical-depth cutoff and pressure shift/broadening); this
-module evaluates the selected lines of a spectral chunk's (layer, species)
+CPU selects lines (:func:`mwir_atmos.optics.lbl._select_lines`, which
+applies the peak-optical-depth cutoff and pressure shift/broadening), or with
+``MWIR_CUDA_SELECTION=gpu`` the GPU does the same arithmetic in CuPy
+(:func:`mwir_atmos.optics.lbl._select_packed`); this module evaluates the selected lines of a spectral chunk's (layer, species)
 tasks in a few kernel launches (:func:`evaluate_groups`: the CPU selects the
 next group of tasks while the GPU evaluates the current one), each task
 writing its own row of one ``(species x layer, grid point)`` device array.
@@ -327,6 +328,11 @@ def _cupy():
     return cupy
 
 
+def selection_module():
+    """The array module GPU line selection runs in (CuPy; tests substitute NumPy)."""
+    return _cupy()
+
+
 def available() -> bool:
     """True when CuPy imports and sees at least one CUDA device."""
     try:
@@ -440,6 +446,9 @@ def release_memory() -> None:
         cp = _cupy()
     except ImportError:
         return
+    from . import lbl
+    with lbl._DEVICE_LINES_LOCK:
+        lbl._DEVICE_LINES.clear()     # line lists uploaded for GPU selection
     cp.get_default_memory_pool().free_all_blocks()
     cp.get_default_pinned_memory_pool().free_all_blocks()
 

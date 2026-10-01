@@ -111,6 +111,74 @@ def test_task_groups_fill_their_rows_and_leave_others_zero(monkeypatch):
     assert np.all(got[9:] == 0.0)
 
 
+def _selection_pairs(grid, scenario: Scenario, min_strength_fraction=0.0):
+    """Every (layer, species) task of ``scenario`` as ``molecular_optical_depth`` builds it,
+    with the GPU selection's groups (run in NumPy) and the CPU-selected packing of each."""
+    path = build_scenario_path(scenario, build_profile(scenario))
+    linelists = ensure_linelists()
+    species = list(lbl.REQUIRED_SPECIES)
+    row0 = {sp: k * len(path.layers) for k, sp in enumerate(species)}
+    tasks, arguments = [], {}
+    for row, layer in enumerate(path.layers):
+        for sp in species:
+            column = layer.column_cm2.get(sp, 0.0)
+            if column > 0.0 and sp in linelists:
+                p = layer.p_eff_mbar.get(sp, layer.p_mbar)
+                tasks.append((row, sp, column, linelists[sp]))
+                arguments[row, sp] = dict(
+                    pressure_mbar=p, temperature_k=layer.t_eff_k.get(sp, layer.t_k),
+                    partial_pressure_mbar=p * column / layer.air_column_cm2,
+                    wing_cutoff_cm1=25.0, subtract_pedestal=sp == Species.H2O,
+                    min_strength_fraction=min_strength_fraction, strength_reference=None,
+                    column_cm2=column, min_peak_optical_depth=3e-6)
+    by_row = {row0[sp] + row: (row, sp, column, ll) for row, sp, column, ll in tasks}
+    for packed, rows in lbl._gpu_selected_groups(np, tasks, lambda t: arguments[t[0], t[1]],
+                                                 grid, row0):
+        expected = []
+        for r in rows:
+            row, sp, column, linelist = by_row[r]
+            a = arguments[row, sp]
+            lines = lbl._select_lines(
+                lbl._prepare(linelist), grid, a["pressure_mbar"], a["temperature_k"],
+                a["partial_pressure_mbar"], 25.0, a["subtract_pedestal"], min_strength_fraction,
+                None, column, 3e-6)
+            expected.append(lbl_cuda.pack_task(lines, 25.0, column))
+        yield packed, lbl_cuda.concatenate(expected)
+
+
+@pytest.mark.parametrize("min_strength_fraction", [0.0, 1e-4])
+def test_selection_in_numpy_equals_the_cpu_selection(monkeypatch, min_strength_fraction):
+    """The GPU selection's arithmetic, run in NumPy, keeps the same lines with
+    bit-identical packed parameters as ``_select_lines`` + ``pack_task``, also
+    when a line list is split over several passes."""
+    monkeypatch.setattr(lbl, "_SELECT_PAIRS", 20_000)
+    grid = make_grid(2140.0, 2145.0, 0.05)
+    groups = 0
+    for packed, expected in _selection_pairs(grid, Scenario(), min_strength_fraction):
+        groups += 1
+        for field in dataclasses.fields(lbl_cuda.Packed):
+            np.testing.assert_array_equal(getattr(packed, field.name),
+                                          getattr(expected, field.name), err_msg=field.name)
+    assert groups > len(lbl.REQUIRED_SPECIES)
+
+
+def test_cuda_path_with_numpy_selection_matches_cpu_selection(monkeypatch):
+    """``MWIR_CUDA_SELECTION=gpu`` through ``molecular_optical_depth`` (row mapping,
+    grouping by line list), with NumPy for CuPy and the kernel's NumPy twin."""
+    monkeypatch.setattr(lbl_cuda, "available", lambda: True)
+    monkeypatch.setattr(lbl_cuda, "evaluate_groups", lbl_cuda.evaluate_groups_emulated)
+    monkeypatch.setattr(lbl_cuda, "selection_module", lambda: np)
+    scenario = Scenario()
+    path = build_scenario_path(scenario, build_profile(scenario))
+    grid = make_grid(2140.0, 2142.0, 0.01)
+    cpu_total, cpu_species = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")
+    monkeypatch.setenv("MWIR_CUDA_SELECTION", "gpu")
+    gpu_total, gpu_species = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")
+    np.testing.assert_array_equal(gpu_total, cpu_total)
+    for sp in cpu_species:
+        np.testing.assert_array_equal(gpu_species[sp], cpu_species[sp])
+
+
 def test_cuda_backend_is_refused_without_a_device(monkeypatch):
     monkeypatch.setattr(lbl_cuda, "available", lambda: False)
     with pytest.raises(RuntimeError, match="cuda"):
@@ -188,3 +256,55 @@ def test_resolved_run_on_cuda_matches_cpu():
     # The CPU uses multigrid far wings (<= 1e-4 of each wing); the GPU sums directly.
     np.testing.assert_allclose(gpu_result.transmittance.total, cpu.transmittance.total, atol=1e-4)
     np.testing.assert_allclose(gpu_result.radiance.total, cpu.radiance.total, rtol=5e-4)
+
+
+@gpu
+def test_gpu_selection_matches_the_numpy_selection():
+    """CuPy selection against the same arithmetic in NumPy: only exp, expm1,
+    pow and erfcx may round differently, so a line right at a threshold may
+    flip; everything kept by both has the same parameters to rounding."""
+    import cupy
+
+    grid = make_grid(2000.0, 2100.0, 0.01)
+    kept = flipped = 0
+    scenario = Scenario()
+    path = build_scenario_path(scenario, build_profile(scenario))
+    linelists = ensure_linelists()
+    for sp in (sp for sp in lbl.REQUIRED_SPECIES if sp in linelists):
+        prepared = lbl._prepare(linelists[sp])
+        specs = []
+        for layer in path.layers:
+            column = layer.column_cm2.get(sp, 0.0)
+            if column <= 0.0:
+                continue
+            p = layer.p_eff_mbar.get(sp, layer.p_mbar)
+            specs.append(lbl._selection_task(
+                prepared, grid.wavenumber_cm1[0], grid.wavenumber_cm1[-1], p,
+                layer.t_eff_k.get(sp, layer.t_k), p * column / layer.air_column_cm2, 25.0,
+                sp == Species.H2O, 0.0, None, column, 3e-6))
+        lo, hi = grid.wavenumber_cm1[0], grid.wavenumber_cm1[-1]
+        host = lbl._select_packed(np, prepared, specs, lo, hi)
+        device = lbl._select_packed(cupy, prepared, specs, lo, hi)
+        d = {f.name: cupy.asnumpy(cupy.asarray(getattr(device, f.name)))
+             for f in dataclasses.fields(lbl_cuda.Packed)}
+        kept += host.center.size
+        if np.array_equal(d["stop"], host.stop):
+            np.testing.assert_array_equal(d["center"], host.center)
+            for name in ("inv_alpha", "y", "amp", "pedestal"):
+                np.testing.assert_allclose(d[name], getattr(host, name), rtol=3e-7, atol=0.0,
+                                           err_msg=f"{sp}: {name}")
+        else:
+            flipped += int(np.abs(d["stop"] - d["start"] - (host.stop - host.start)).sum())
+    assert flipped <= 1e-5 * kept
+
+
+@gpu
+def test_gpu_selection_path_matches_cpu_selection_path(monkeypatch):
+    scenario = Scenario()
+    grid = make_grid(2000.0, 2100.0, 0.01)
+    path = build_scenario_path(scenario, build_profile(scenario))
+    cpu_selected, _ = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")
+    monkeypatch.setenv("MWIR_CUDA_SELECTION", "gpu")
+    gpu_selected, _ = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")
+    # A line flipped at the 3e-6 peak-optical-depth threshold moves tau by < 3e-6.
+    np.testing.assert_allclose(gpu_selected, cpu_selected, rtol=1e-6, atol=3e-6)
