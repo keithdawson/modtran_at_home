@@ -313,9 +313,10 @@ first is slow (1.18-1.23 s: clocks also drop while idle). The library keeps
 machine); moving selection to the GPU removes this CPU work. See
 [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
 
-#### GPU line selection (opt-in)
+#### GPU line selection (default)
 
-`MWIR_CUDA_SELECTION=gpu` selects lines on the GPU
+The CUDA backend selects lines on the GPU (`MWIR_CUDA_SELECTION=cpu` for
+the threaded CPU selection)
 (`lbl._gpu_selected_groups` / `lbl._select_packed`). Per line list, every
 (task, window line) pair of up to 2^23 pairs is one element of a flat array
 (the default full band: 76 layers x 6 line lists, ~66 M pairs, ~10 passes);
@@ -352,8 +353,30 @@ No drift across the five GPU-selection runs. Host-side setup is ~0.15 s for
 the 2280 selections (9500 partition-function lookups, now cached per
 temperature). Each pass also made ~15 small host-to-device copies, and a copy
 from pageable memory waits for the kernels already queued, so selection and
-kernels ran one after the other. These now go in one copy per pass. To
-find where the rest goes: `scripts/validation/cuda_selection_profile.py`.
+kernels ran one after the other. These now go in one copy per pass.
+
+With that (`158872d`; `validation/cuda_selection_profile_DESKTOP-RLDQTSU.json`,
+full default band, the two selections alternated, five runs each):
+
+| Selection | Runs | Best |
+|---|---|---:|
+| CPU (4 threads) | 0.923 0.886 0.904 0.893 0.887 | 0.886 s |
+| GPU | 0.550 0.592 0.548 0.555 0.548 | **0.548 s** |
+
+One run each with the GPU synchronised around every stage (no overlap):
+
+| Stage | GPU selection | CPU selection |
+|---|---:|---:|
+| Task setup on the CPU (windows, cached Q ratios) | 0.010 s | -- |
+| Selection: 30 passes, 71.0 M pairs -> 7.39 M lines | 0.148 s | (CPU, 2280 `_select_lines` calls) |
+| Voigt kernels | 0.303 s | 0.326 s |
+| Whole run | 0.594 s | 1.203 s |
+
+The selection passes run at ~2 ns per pair (largest: O3, 8.0 M pairs,
+25 ms), several times what memory traffic needs: each pass is ~40 separate
+CuPy kernels with float64 temporaries. GPU selection is the default since
+`MWIR_CUDA_SELECTION` defaults to `gpu`; the results are the same, 1.6x
+faster, and there is no run-to-run drift.
 
 ### Parallelism
 

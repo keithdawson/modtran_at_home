@@ -81,6 +81,7 @@ def test_pack_sorts_lines_and_keeps_task_boundaries():
 def test_cuda_path_with_the_numpy_twin_matches_cpu(monkeypatch):
     """Whole ``backend="cuda"`` path (selection threads, packing, row mapping)
     with the kernel replaced by its NumPy twin: every layer and species."""
+    monkeypatch.setenv("MWIR_CUDA_SELECTION", "cpu")
     monkeypatch.setattr(lbl_cuda, "available", lambda: True)
     monkeypatch.setattr(lbl_cuda, "evaluate_groups", lbl_cuda.evaluate_groups_emulated)
     scenario = Scenario()
@@ -93,6 +94,14 @@ def test_cuda_path_with_the_numpy_twin_matches_cpu(monkeypatch):
     np.testing.assert_allclose(gpu_total, cpu_total, rtol=2e-6, atol=1e-12)
     for sp in cpu_species:
         np.testing.assert_allclose(gpu_species[sp], cpu_species[sp], rtol=2e-6, atol=1e-12)
+
+
+def test_selection_switch_rejects_unknown_values(monkeypatch):
+    monkeypatch.setenv("MWIR_CUDA_SELECTION", "fpga")
+    with pytest.raises(ValueError, match="MWIR_CUDA_SELECTION"):
+        lbl._gpu_selection_enabled()
+    monkeypatch.delenv("MWIR_CUDA_SELECTION")
+    assert lbl._gpu_selection_enabled()
 
 
 def test_task_groups_fill_their_rows_and_leave_others_zero(monkeypatch):
@@ -163,7 +172,7 @@ def test_selection_in_numpy_equals_the_cpu_selection(monkeypatch, min_strength_f
 
 
 def test_cuda_path_with_numpy_selection_matches_cpu_selection(monkeypatch):
-    """``MWIR_CUDA_SELECTION=gpu`` through ``molecular_optical_depth`` (row mapping,
+    """GPU selection (the default) through ``molecular_optical_depth`` (row mapping,
     grouping by line list), with NumPy for CuPy and the kernel's NumPy twin."""
     monkeypatch.setattr(lbl_cuda, "available", lambda: True)
     monkeypatch.setattr(lbl_cuda, "evaluate_groups", lbl_cuda.evaluate_groups_emulated)
@@ -171,8 +180,9 @@ def test_cuda_path_with_numpy_selection_matches_cpu_selection(monkeypatch):
     scenario = Scenario()
     path = build_scenario_path(scenario, build_profile(scenario))
     grid = make_grid(2140.0, 2142.0, 0.01)
+    monkeypatch.setenv("MWIR_CUDA_SELECTION", "cpu")
     cpu_total, cpu_species = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")
-    monkeypatch.setenv("MWIR_CUDA_SELECTION", "gpu")
+    monkeypatch.delenv("MWIR_CUDA_SELECTION")
     gpu_total, gpu_species = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")
     np.testing.assert_array_equal(gpu_total, cpu_total)
     for sp in cpu_species:
@@ -303,6 +313,7 @@ def test_gpu_selection_path_matches_cpu_selection_path(monkeypatch):
     scenario = Scenario()
     grid = make_grid(2000.0, 2100.0, 0.01)
     path = build_scenario_path(scenario, build_profile(scenario))
+    monkeypatch.setenv("MWIR_CUDA_SELECTION", "cpu")
     cpu_selected, _ = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")
     monkeypatch.setenv("MWIR_CUDA_SELECTION", "gpu")
     gpu_selected, _ = lbl.molecular_optical_depth(path.layers, grid, backend="cuda")

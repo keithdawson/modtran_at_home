@@ -51,47 +51,28 @@ Round 2 and the RTX 4090 check are done (commit `026f4ad`; results in
 [spectral_sampling.md](spectral_sampling.md#validation-results)): corrected
 binning <= 0.49% worst bin on every path, fine step confirmed.
 
-The GPU path's CPU side is done: the full default band takes 0.95 s on the
-RTX 4090 (was 6.6-7.6 s), 35x the 16-thread CPU backend (was 4.8x); a
-200 cm^-1 slice 0.20 s, 41x. Profile, before and after, in
-[spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental). The
-old time went to the MT_CKD continuum (2.0 s), CPU-side transmittance and
-radiance (1.2 s), line selection (1.1 s) and copying/stacking the per-(layer,
-species) results (1.2 s); the kernels were 0.75 s.
+The GPU path's CPU side is done, and lines are selected on the GPU: the full
+default band takes 0.55 s on the RTX 4090 (was 6.6-7.6 s originally, 0.89-0.95
+s with CPU selection), ~70x the 16-thread CPU backend (38.3 s); a 200 cm^-1 slice
+0.18 s. Profiles, before and after, in
+[spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental) and
+[GPU line selection](spectral_sampling.md#gpu-line-selection-default).
+CPU selection (`MWIR_CUDA_SELECTION=cpu`) was GIL-bound (~0.8 s) and slowed
+after two runs on Windows (selection threads sharing physical cores); GPU
+selection has no drift.
 
-1. **GPU line selection** (now the bottleneck of a full-band GPU run).
-   The kernel no longer does float64 work per (line, point) pair (hi/lo
-   float32 offsets from a per-block reference, per-line cutoff ranges found
-   once per tile, compensated float32 tile sums): full-band kernel time
-   0.85 s -> 0.33 s (same-process A/B, RTX 4090), accuracy against the CPU
-   float64 sums unchanged (worst 1.3e-6 vs 1.2e-6 relative). The full band
-   gained much less, because CPU line selection (~0.8 s, GIL-bound: 1 thread
-   0.88 s, 4 threads 0.80 s, 16 threads 0.93 s) no longer hides behind the
-   kernels, and it slows after the first two full-band runs in a process:
-   0.79 s for runs 1-2, then ~0.95 s (`cuda_check.py`, best of two after
-   the slice runs: 0.93 s). Cause: on Windows the selection threads end up
-   sharing physical cores (SMT siblings) -- the same selection work costs
-   1.04 thread-CPU-s in runs 1-2 and 1.33 after; one thread needs 0.62. With
-   the process limited to one logical CPU per core (mask 0x5555) 4 threads
-   stay at 0.76-0.83 s over ten runs; the selection threads alone limited,
-   0.82-0.87 s. Ruled out: the kernel (old code and no-kernel runs drift the
-   same), freeing the CuPy pools, memory growth, page faults, GC, reusing one
-   thread pool, ideal-processor hints (no effect), core parking (High
-   performance plan). 1 thread: median 0.89 s, no drift. Not fixed in the
-   library (affinity is Windows-only and a hard limit on a shared machine);
-   GPU selection removes the CPU work. Probes and numbers:
-   [spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental).
-   **GPU selection is written and opt-in (`MWIR_CUDA_SELECTION=gpu`).** It
-   passes its GPU tests on the RTX 4090 and gives results identical to CPU
-   selection, but the full band still takes 0.94 s (numbers in
-   [spectral_sampling.md](spectral_sampling.md#gpu-line-selection-opt-in)).
-   Since then: one host-to-device copy per selection pass, not ~15 that
-   each waited for the queued kernels, and cached partition ratios. Next:
-   `python scripts/validation/cuda_selection_profile.py` on the desktop
-   (alternated timings, then stage times with the GPU synchronised: task
-   setup, every selection pass, kernels). Make GPU selection the default
-   once it is faster. Needed before multi-GPU is
-   worth doing.
+1. **Faster GPU selection and the rest of a CUDA run** (full band, GPU
+   synchronised per stage: kernels 0.30 s, selection 0.15 s, task setup
+   0.01 s, the rest ~0.13 s).
+   - Selection: ~40 CuPy kernels per pass, float64 temporaries, ~2 ns per
+     (task, line) pair. One `ElementwiseKernel` for the keep test and one
+     for the packed values would cut the memory traffic several times
+     (expected ~0.03 s). Compile with `--fmad=false` to keep the CPU
+     rounding, and check against `_select_packed` in NumPy.
+   - Selection waits for the previous group's kernels at each pass's
+     `flatnonzero` (one synchronisation per pass): a second stream for
+     selection would overlap the two.
+   - Kernels (0.30 s) are now the largest part.
 2. **Other CUDA follow-ups**:
    - Multi-GPU (work server: 4 x Blackwell 6000 on CPU 0, 1 x Ada 6000 on
      CPU 1): one worker process per GPU, **spawned** (never fork after CUDA

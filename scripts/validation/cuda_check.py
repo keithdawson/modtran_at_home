@@ -8,10 +8,9 @@
 2. Times the default resolved run (full 1800-4300 cm^-1 band, ground-to-space)
    and a 2000-2200 cm^-1 slice on the CPU (all cores) and on the GPU, and
    records the largest transmittance and radiance differences.
-3. Repeats the GPU runs with line selection on the GPU
-   (``MWIR_CUDA_SELECTION=gpu``, opt-in): five runs each, to show whether the
-   later-run slowdown of CPU selection is gone, and the differences from the
-   CPU-selected GPU result.
+3. Repeats the GPU runs with line selection on the CPU
+   (``MWIR_CUDA_SELECTION=cpu``; the default selects on the GPU): five runs
+   each, and the differences from the default GPU result.
 
 Writes docs/validation/cuda_check_<hostname>.json.
 """
@@ -48,10 +47,10 @@ def _timed(scenario, backend: str, repeat: int = 1, times: list | None = None):
     return best, result
 
 
-def _gpu_selection(scenario, reference, repeat: int = 5) -> dict:
-    """GPU runs with ``MWIR_CUDA_SELECTION=gpu``, compared with ``reference``."""
+def _cpu_selection(scenario, reference, repeat: int = 5) -> dict:
+    """GPU runs with ``MWIR_CUDA_SELECTION=cpu``, compared with ``reference``."""
     previous = os.environ.get("MWIR_CUDA_SELECTION")
-    os.environ["MWIR_CUDA_SELECTION"] = "gpu"
+    os.environ["MWIR_CUDA_SELECTION"] = "cpu"
     try:
         times = []
         best, result = _timed(scenario, "cuda", repeat=repeat, times=times)
@@ -101,11 +100,11 @@ def main() -> int:
         g_seconds, g = _timed(scenario, "cuda", repeat=2)
         row["cuda_seconds"] = g_seconds
         print(f"{name:18s} cuda {g_seconds:8.2f} s", flush=True)
-        row["gpu_selection"] = sel = _gpu_selection(scenario, g)
-        print(f"{name:18s} cuda, GPU selection {sel['seconds']:8.2f} s  runs "
+        row["cpu_selection"] = sel = _cpu_selection(scenario, g)
+        print(f"{name:18s} cuda, CPU selection {sel['seconds']:8.2f} s  runs "
               + " ".join(f"{t:.2f}" for t in sel["run_seconds"])
               + f"  dT {sel['max_abs_transmittance_diff']:.1e}"
-              f"  dL {sel['max_rel_radiance_diff']:.1e} (vs CPU selection)", flush=True)
+              f"  dL {sel['max_rel_radiance_diff']:.1e} (vs GPU selection)", flush=True)
         if not (a.skip_cpu_full and name == "default_full_band"):
             c_seconds, cpu = _timed(scenario, "cpu")
             row.update(cpu_seconds=c_seconds, speedup=c_seconds / g_seconds,

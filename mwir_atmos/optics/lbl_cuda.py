@@ -2,10 +2,10 @@
 
 Line-by-line Voigt summation is ~98% of a resolved run's time, and every
 (line, grid point) pair is independent, so it maps directly onto a GPU. The
-CPU selects lines (:func:`mwir_atmos.optics.lbl._select_lines`, which
-applies the peak-optical-depth cutoff and pressure shift/broadening), or with
-``MWIR_CUDA_SELECTION=gpu`` the GPU does the same arithmetic in CuPy
-(:func:`mwir_atmos.optics.lbl._select_packed`); this module evaluates the selected lines of a spectral chunk's (layer, species)
+GPU selects lines with the arithmetic of
+:func:`mwir_atmos.optics.lbl._select_lines` (peak-optical-depth cutoff,
+pressure shift/broadening) in CuPy (:func:`mwir_atmos.optics.lbl._select_packed`),
+or with ``MWIR_CUDA_SELECTION=cpu`` the CPU does; this module evaluates the selected lines of a spectral chunk's (layer, species)
 tasks in a few kernel launches (:func:`evaluate_groups`: the CPU selects the
 next group of tasks while the GPU evaluates the current one), each task
 writing its own row of one ``(species x layer, grid point)`` device array.
