@@ -1,0 +1,99 @@
+{
+ "host": "DESKTOP-RLDQTSU",
+ "device": "NVIDIA GeForce RTX 4090 (device 0, compute 8.9, 24 GiB)",
+ "full_band_seconds": {
+  "cpu": [
+   0.9233769999991637,
+   0.8862230999948224,
+   0.9035125999944285,
+   0.8926320000027772,
+   0.8871023999963654
+  ],
+  "gpu": [
+   0.5496454000094673,
+   0.5921267999947304,
+   0.5477757000044221,
+   0.5552463999920292,
+   0.5479874000011478
+  ]
+ },
+ "instrumented_gpu_selection": {
+  "task_setup_s": 0.010469399887369946,
+  "select_s": 0.14834969995717984,
+  "kernel_s": 0.3029588000208605,
+  "cpu_select_calls": 0,
+  "total_s": 0.5936398000048939,
+  "pairs": 71006181,
+  "kept": 7393320,
+  "slowest_passes": [
+   {
+    "molecule": 3,
+    "tasks": 76,
+    "pairs": 7993376,
+    "kept": 1077757,
+    "seconds": 0.02540230000158772
+   },
+   {
+    "molecule": 2,
+    "tasks": 76,
+    "pairs": 5832557,
+    "kept": 679896,
+    "seconds": 0.017830099997809157
+   },
+   {
+    "molecule": 4,
+    "tasks": 76,
+    "pairs": 5585971,
+    "kept": 210498,
+    "seconds": 0.01015410000400152
+   },
+   {
+    "molecule": 4,
+    "tasks": 76,
+    "pairs": 5507130,
+    "kept": 267595,
+    "seconds": 0.009759599997778423
+   },
+   {
+    "molecule": 2,
+    "tasks": 76,
+    "pairs": 5674616,
+    "kept": 626032,
+    "seconds": 0.008788999999524094
+   },
+   {
+    "molecule": 4,
+    "tasks": 76,
+    "pairs": 5044908,
+    "kept": 177860,
+    "seconds": 0.007476799990399741
+   },
+   {
+    "molecule": 6,
+    "tasks": 76,
+    "pairs": 4366816,
+    "kept": 782237,
+    "seconds": 0.006522299998323433
+   },
+   {
+    "molecule": 6,
+    "tasks": 76,
+    "pairs": 3115133,
+    "kept": 637227,
+    "seconds": 0.005242499988526106
+   }
+  ],
+  "n_passes": 30
+ },
+ "instrumented_cpu_selection": {
+  "task_setup_s": 0.0,
+  "select_s": 0.0,
+  "kernel_s": 0.3259905000159051,
+  "cpu_select_calls": 2280,
+  "total_s": 1.2028035999974236,
+  "pairs": 0,
+  "kept": 0,
+  "slowest_passes": [],
+  "n_passes": 0
+ }
+}
