@@ -25,7 +25,7 @@ WORKDIR /app
 # Copy offline wheels, data, and application source
 COPY wheels /app/wheels
 COPY data /app/data
-COPY pyproject.toml README.md CONTRACT.md /app/
+COPY pyproject.toml README.md /app/
 COPY mwir_atmos /app/mwir_atmos
 COPY scenarios /app/scenarios
 COPY tests /app/tests

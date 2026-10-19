@@ -7,9 +7,8 @@ Physics is exercised two ways:
    limits (pure Doppler/Gaussian at zero pressure, pure Lorentzian at high
    pressure, pressure shift), which pin down the Voigt implementation
    itself independent of real HITRAN data.
-2. Against the real cached line lists on hand-built, contract-correct
-   ``PathLayer``/``PathGeometry`` objects (dev-beta's real geometry does not
-   exist yet -- see CONTRACT.md "Working without the other worker"), which
+2. Against the real cached line lists on hand-built ``PathLayer`` /
+   ``PathGeometry`` objects (independent of the real path geometry), which
    is where the required physically-meaningful assertions live (CO2 band
    opacity, window transparency, whole-atmosphere transmittance).
 """
@@ -99,7 +98,7 @@ def _sea_level_horizontal_layer(ds_km: float) -> PathLayer:
 
 
 def test_line_strength_equals_s296_at_296k():
-    """CONTRACT.md requirement: line strength scaling must reproduce
+    """docs/build_contract.md requirement: line strength scaling must reproduce
     S(296 K) == s296 when T == 296 K."""
     linelist = LINELISTS[Species.CO2]
     s_at_ref = _line_intensity_at_t(linelist, 296.0)
@@ -204,7 +203,7 @@ def test_absorption_cross_section_rejects_nonpositive_temperature():
 
 
 # =========================================================================
-# Physically meaningful assertions (CONTRACT.md "Definition of done")
+# Physically meaningful assertions (docs/build_contract.md "Definition of done")
 # =========================================================================
 
 
@@ -235,7 +234,7 @@ def test_1km_sea_level_path_co2_band_edge_documented():
     with real, physical (not numerical-artifact) transmission windows
     between them. Confirmed independent of the min_strength_fraction
     performance cutoff (identical structure with it disabled) during
-    development -- see the dev-alpha report. This test pins the *looser*
+    development. This test pins the *looser*
     but still physically meaningful bound for the literal edge-to-edge
     band; test_1km_sea_level_path_opaque_in_co2_band_core above pins the
     strict <1e-3 bound where it unambiguously holds.

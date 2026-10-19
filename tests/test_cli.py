@@ -28,7 +28,7 @@ import numpy as np
 import pytest
 import yaml
 
-from mwir_atmos import cli
+from mwir_atmos import cli, report, run_cost
 from mwir_atmos.constants import BANDS_CM1
 from mwir_atmos.types import (
     AerosolModel,
@@ -166,8 +166,8 @@ def test_unreachable_source_altitude_returns_runtime_error(capsys):
 
 
 def test_confirm_gate_blocks_without_yes_and_still_saves_config(tmp_path, capsys, monkeypatch):
-    monkeypatch.setattr(cli, "_CONFIRM_BYTES_THRESHOLD", 1)
-    monkeypatch.setattr(cli, "_CONFIRM_SECONDS_THRESHOLD", 0.0)
+    monkeypatch.setattr(run_cost, "CONFIRM_BYTES_THRESHOLD", 1)
+    monkeypatch.setattr(run_cost, "CONFIRM_SECONDS_THRESHOLD", 0.0)
     saved = tmp_path / "resolved.yaml"
 
     rc = cli.main([
@@ -189,8 +189,8 @@ def test_confirm_gate_blocks_without_yes_and_still_saves_config(tmp_path, capsys
 
 
 def test_confirm_gate_bypassed_with_yes_runs_successfully(capsys, monkeypatch):
-    monkeypatch.setattr(cli, "_CONFIRM_BYTES_THRESHOLD", 1)
-    monkeypatch.setattr(cli, "_CONFIRM_SECONDS_THRESHOLD", 0.0)
+    monkeypatch.setattr(run_cost, "CONFIRM_BYTES_THRESHOLD", 1)
+    monkeypatch.setattr(run_cost, "CONFIRM_SECONDS_THRESHOLD", 0.0)
 
     rc = cli.main([*_FAST_ARGV, "--yes", "--format", "table"])
 
@@ -279,7 +279,7 @@ def test_format_json_has_full_spectral_arrays_and_radiance(capsys):
     assert set(payload["transmittance"]["by_species"]) == {"H2O", "CO2", "O3", "N2O", "CO", "CH4"}
     # default --bands is "every named band" -- all of BANDS_CM1 should appear
     # as keys, even ones that don't overlap this narrow window (those are
-    # just skipped with a warning by _band_rows, not an error).
+    # just skipped with a warning by report.band_rows, not an error).
     assert set(payload["bands"]).issubset(set(BANDS_CM1))
     assert "CO2_4_3um" in payload["bands"]
     assert payload["bands"]["CO2_4_3um"]["radiance"] is not None
@@ -389,28 +389,28 @@ def test_load_scenario_yaml_missing_file_raises():
     ],
 )
 def test_parse_band_token(token, expected_label, expected_spec):
-    label, spec = cli._parse_band_token(token)
+    label, spec = report.parse_band_token(token)
     assert label == expected_label
     assert spec == expected_spec
 
 
 def test_parse_band_token_invalid_range_raises():
     with pytest.raises(ValueError, match="MAX must exceed MIN"):
-        cli._parse_band_token("2650:2600")
+        report.parse_band_token("2650:2600")
 
 
 def test_parse_band_token_unknown_name_raises():
     with pytest.raises(ValueError, match="unknown band"):
-        cli._parse_band_token("not_a_real_band_name")
+        report.parse_band_token("not_a_real_band_name")
 
 
 def test_resolve_band_specs_default_is_every_named_band():
-    specs = cli._resolve_band_specs(None)
+    specs = report.resolve_band_specs(None)
     assert {name for name, _ in specs} == set(BANDS_CM1)
 
 
 def test_resolve_band_specs_empty_list_is_no_bands():
-    assert cli._resolve_band_specs([]) == []
+    assert report.resolve_band_specs([]) == []
 
 
 def test_build_parser_exposes_every_scenario_field():
@@ -442,8 +442,8 @@ def test_estimate_run_cost_scales_with_resolution():
     coarse = Scenario(spectral_sampling=SpectralSampling.POINT, wavenumber_min_cm1=2300.0, wavenumber_max_cm1=2310.0, resolution_cm1=2.0)
     fine = dataclasses.replace(coarse, resolution_cm1=0.5)
 
-    coarse_cost = cli._estimate_run_cost(coarse)
-    fine_cost = cli._estimate_run_cost(fine)
+    coarse_cost = run_cost.estimate_run_cost(coarse)
+    fine_cost = run_cost.estimate_run_cost(fine)
 
     assert fine_cost.n_points > coarse_cost.n_points
     assert fine_cost.est_bytes > coarse_cost.est_bytes
@@ -461,17 +461,17 @@ def test_estimate_run_cost_reflects_wing_cutoff_at_fine_resolution():
     )
     narrow_wing = dataclasses.replace(base, line_wing_cutoff_cm1=3.0)
 
-    assert cli._estimate_run_cost(narrow_wing).est_seconds < cli._estimate_run_cost(base).est_seconds
+    assert run_cost.estimate_run_cost(narrow_wing).est_seconds < run_cost.estimate_run_cost(base).est_seconds
 
 
 def test_format_bytes_and_duration():
-    assert cli._format_bytes(500) == "500 B"
-    assert "KB" in cli._format_bytes(2048)
-    assert "MB" in cli._format_bytes(5 * 1024**2)
-    assert "GB" in cli._format_bytes(2 * 1024**3)
-    assert cli._format_duration(30) == "30.0 s"
-    assert "min" in cli._format_duration(150)
-    assert "h" in cli._format_duration(4000)
+    assert run_cost.format_bytes(500) == "500 B"
+    assert "KB" in run_cost.format_bytes(2048)
+    assert "MB" in run_cost.format_bytes(5 * 1024**2)
+    assert "GB" in run_cost.format_bytes(2 * 1024**3)
+    assert run_cost.format_duration(30) == "30.0 s"
+    assert "min" in run_cost.format_duration(150)
+    assert "h" in run_cost.format_duration(4000)
 
 
 def test_spectral_sampling_and_line_selection_flags_reach_the_scenario():
@@ -501,6 +501,6 @@ def test_threads_flag_rejects_non_positive_integers(value, capsys):
 def test_cost_estimate_counts_the_fine_grid_for_resolved_sampling():
     point = Scenario(spectral_sampling=SpectralSampling.POINT, wavenumber_min_cm1=2300.0, wavenumber_max_cm1=2310.0, resolution_cm1=1.0)
     fine = dataclasses.replace(point, spectral_sampling=SpectralSampling.RESOLVED, fine_step_cm1=0.01)
-    a, b = cli._estimate_run_cost(point), cli._estimate_run_cost(fine)
+    a, b = run_cost.estimate_run_cost(point), run_cost.estimate_run_cost(fine)
     assert a.n_points == b.n_points == 11
     assert b.est_seconds > a.est_seconds

@@ -1,6 +1,6 @@
 """Tests for mwir_atmos.turbulence (Cn2 profile models and compute_turbulence).
 
-Physically meaningful checks per CONTRACT.md's turbulence spec: HV5/7's own
+Physically meaningful checks per docs/build_contract.md's turbulence spec: HV5/7's own
 "r0~5cm / theta0~7urad at 0.5um, vertical path to space" namesake as the
 anchor validation (the single best self-checking validation available here),
 wavelength scaling (r0 ~ lambda^(6/5)), zenith-angle dependence, Cn2
@@ -9,12 +9,12 @@ variance cross-check, scintillation-index saturation, the
 ``TurbulenceModel.NONE`` guard already implemented in api.py, and
 finiteness/sign of every ``TurbulenceResult`` field.
 
-Per CONTRACT.md's cost-discipline note, turbulence needs only path geometry
+Per docs/build_contract.md's cost-discipline note, turbulence needs only path geometry
 and the profile, not the spectral line-by-line engine -- every test here
 builds a ``PathGeometry`` directly via ``build_path`` (near-instant) except
 ``test_run_scenario_populates_and_guards_turbulence``, which uses the
 sanctioned narrow 2300-2400 cm^-1 band at 8 cm^-1 resolution to exercise the
-real ``run_scenario`` -> ``api._attach_turbulence`` -> ``compute_turbulence``
+real ``run_scenario`` -> ``compute_turbulence``
 wiring end to end (two calls, not a loop; a few seconds total).
 """
 
@@ -59,7 +59,7 @@ def vertical_path(profile):
 
 
 def test_hv57_vertical_path_reproduces_namesake_r0_and_theta0(profile, vertical_path):
-    """The single best validation available here, per CONTRACT.md: HV5/7 is
+    """The single best validation available here, per docs/build_contract.md: HV5/7 is
     *defined* so that a vertical path to space gives r0~5cm, theta0~7urad at
     0.5um. If this fails, the HV5/7 constants are wrong."""
     height_agl_m, ds_m, s_mid_m = layer_geometry_m(vertical_path, profile)
@@ -123,7 +123,7 @@ def test_isoplanatic_angle_also_scales_as_lambda_to_the_6_5ths(profile, vertical
 
 def test_r0_decreases_with_zenith_angle(profile):
     """More airmass at higher zenith angle -> more integrated turbulence ->
-    smaller r0 (CONTRACT.md's explicit required check)."""
+    smaller r0 (docs/build_contract.md's explicit required check)."""
     r0_by_zenith = []
     for zen in (0.0, 30.0, 60.0):
         path = build_path(profile, sensor_alt_km=0.0, zenith_deg=zen, max_layers=100)
@@ -149,7 +149,7 @@ def test_hv57_cn2_monotonic_above_boundary_layer():
     the well-known jet-stream turbulence enhancement the Hufnagel-Valley
     model is specifically built to reproduce (see e.g. the balloon/radiosonde
     Cn2 profiles this term is fit to) -- confirmed numerically during
-    development and not a bug. CONTRACT.md's monotonicity check is validated
+    development and not a bug. docs/build_contract.md's monotonicity check is validated
     here in the region immediately above the boundary layer, before that
     bump, rather than across the whole profile where it would be false.
     """
@@ -237,7 +237,7 @@ def test_cn2_profile_constant_requires_ground_value():
 
 def test_hv57_ground_cn2_override_changes_result():
     """Scenario.turbulence_cn2_ground overrides HV5/7's ground term "where it
-    makes sense" per CONTRACT.md -- confirm it actually takes effect."""
+    makes sense" per docs/build_contract.md -- confirm it actually takes effect."""
     h = np.array([0.0, 10.0, 50.0])
     default = cn2.cn2_profile(TurbulenceModel.HV57, h)
     overridden = cn2.cn2_profile(TurbulenceModel.HV57, h, ground_cn2_m23=1.0e-13)
@@ -316,7 +316,7 @@ def test_run_scenario_populates_and_guards_turbulence():
     """Exercises the real api.run_scenario -> _attach_turbulence ->
     compute_turbulence wiring (not just the standalone formulas), and
     confirms the TurbulenceModel.NONE guard already implemented in api.py.
-    Two calls at a narrow, coarse band per CONTRACT.md's cost-discipline
+    Two calls at a narrow, coarse band per docs/build_contract.md's cost-discipline
     note -- not a loop, and not a full-band/high-resolution scenario."""
     from mwir_atmos.api import run_scenario
 

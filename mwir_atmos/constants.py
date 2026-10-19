@@ -1,8 +1,5 @@
 """Physical constants and band definitions.
 
-OVERSEER-OWNED. Worker agents must not edit this file. If you need a constant
-that is missing, add it to your own module and flag it in your report.
-
 Unit conventions used throughout ``mwir_atmos``:
   * wavenumber      cm^-1
   * wavelength      micrometres (um)

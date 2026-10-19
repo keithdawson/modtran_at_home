@@ -36,7 +36,7 @@ Both continuum coefficients multiply the H2O column, in molecules/cm^2.
 
 The local H2O line calculation must subtract the Lorentz pedestal at
 +/-25 cm^-1, which is already included in these continuum coefficients.
-See https://hitran.org/mtckd/ and PHYSICS_VALIDATION.md.
+See https://hitran.org/mtckd/ and docs/physics_validation.md.
 
 Copyright (c) Atmospheric and Environmental Research, Inc., 2022.
 The translated interpolation and radiation routines are subject to the

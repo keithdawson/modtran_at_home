@@ -31,7 +31,7 @@ own emission).
   locally, see `mwir_atmos/optics/continuum.py`). This matters a lot in the
   3.7–4.0 µm and 4.5–5.0 µm atmospheric windows — the line-by-line engine
   alone is not enough there. Local water lines use the matching +/-25 cm^-1
-  pedestal subtraction. See [reference checks](PHYSICS_VALIDATION.md).
+  pedestal subtraction. See [reference checks](docs/physics_validation.md).
 - **Model atmospheres**: the six standard AFGL/LOWTRAN/MODTRAN profiles
   (tropical, mid-latitude summer/winter, subarctic summer/winter, US
   Standard), transcribed from AFGL-TR-86-0110. See
@@ -146,12 +146,12 @@ see [docs/spectral_sampling.md](docs/spectral_sampling.md#gpu-backend-experiment
   command line overrides that field. **`--save-config out.yaml`** writes the
   fully-resolved scenario (config file + overrides) back out — useful for
   capturing exactly what a run used. See `scenarios/*.yaml` for worked
-  examples, and `mwir_atmos.cli.scenario_to_dict`/`scenario_from_dict` if
-  you want to build scenario files programmatically.
+  examples, and `mwir_atmos.scenario_io.scenario_to_dict`/`scenario_from_dict`
+  if you want to build scenario files programmatically.
 - **`--format {table,csv,json,npz}`**. `table` is a human-readable summary.
   `csv`/`json`/`npz` all carry the **full spectral arrays** — wavenumber,
   wavelength, transmittance (total/molecular/aerosol/Rayleigh and every
-  species), and every radiance component once available — not just band
+  species), and every radiance component — not just band
   summaries, so you can pipe a run straight into your own analysis.
 - **`--bands NAME_OR_MIN:MAX ...`** reports band-averaged transmittance and
   band-integrated radiance over named bands from `constants.BANDS_CM1`
@@ -200,7 +200,7 @@ streamlit run mwir_atmos/webgui/app.py
 The sidebar builds a `Scenario` (same grouping as the CLI); the main panel
 shows a scenario summary, transmittance vs. wavelength with a toggleable
 total/molecular/aerosol/Rayleigh breakdown, a per-species breakdown,
-radiance vs. wavelength (stacked by component, once available), the
+radiance vs. wavelength (stacked by component), the
 atmospheric temperature and water-vapor profile, and a band summary table —
 each chart has a CSV and/or PNG download button. The x-axis defaults to
 wavelength in µm (a wavenumber toggle is next to it) over the package's
@@ -310,8 +310,8 @@ full band. Reducing the wing cutoff changes the absorption model for other
 gases; use convergence checks before relying on a smaller cutoff.
 
 Both estimates are calibrated directly against measurements on this
-codebase (see `mwir_atmos/cli.py`'s `_estimate_run_cost` docstring for the
-exact calibration and its data points) and are explicitly an
+codebase (see the calibration notes in `mwir_atmos/run_cost.py` for the
+exact data points) and are explicitly an
 order-of-magnitude guide, not a scheduler — real cost also depends on how
 many HITRAN lines happen to populate the requested window, which is not
 knowable without loading the line data (the expensive step the estimate is
@@ -386,7 +386,7 @@ physics modules' own docstrings:
 - **The MT_CKD continuum** follows AER 4.3 native-grid scaling, radiation
   factors and cubic-Hermite interpolation. Numerical agreement with AER's
   Fortran kernel does not validate the complete radiative-transfer model.
-  See [Physics validation](PHYSICS_VALIDATION.md) for external reference
+  See [Physics validation](docs/physics_validation.md) for external reference
   data, tolerances, reproducible calculations and remaining priorities.
 - **Turbulence** (`mwir_atmos/turbulence/`) is an explicit wave-3 stretch
   goal and is not built — `TurbulenceModel` exists in `types.py` and
@@ -436,13 +436,15 @@ fine-grid run.
 
 ## Project layout
 
-See `CONTRACT.md` for the full package layout, file ownership, and the
-binding interfaces between the physics core, the CLI, and the GUI. In
-short: `mwir_atmos/{hitran,optics,atmosphere,geometry}` are the physics
-core; `mwir_atmos/{radiometry,ephemeris}` are the radiance layer;
-`mwir_atmos/{types,spectral,api}.py` are the shared contracts every other
-module is built against; `mwir_atmos/cli.py` and `mwir_atmos/webgui/` are
-the two front ends, both calling nothing but `mwir_atmos.api.run_scenario`.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data flow, a map
+of every module, and where to make common changes. In short:
+`mwir_atmos/{hitran,optics,atmosphere,geometry}` are the physics core;
+`mwir_atmos/{radiometry,ephemeris,turbulence}` the radiance and diagnostics
+layer; `mwir_atmos/{types,spectral,api}.py` the shared types and the single
+entry point; `scenario_io.py`, `run_cost.py` and `report.py` the scenario
+files, cost estimate and output writers shared by the two front ends,
+`mwir_atmos/cli.py` and `mwir_atmos/webgui/`, which both call
+`mwir_atmos.api.run_scenario`.
 
 ## Saved setups and distance sweeps
 

@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterable
 import math
 
 from . import api
-from .cli import load_scenario_yaml, save_scenario_yaml, scenario_from_dict, scenario_to_dict
+from .scenario_io import load_scenario_yaml, save_scenario_yaml, scenario_from_dict, scenario_to_dict
 from .types import Scenario, ScenarioResult
 
 __all__ = ['load_setup', 'save_setup', 'with_overrides', 'run_setup',

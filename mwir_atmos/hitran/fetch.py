@@ -4,7 +4,7 @@ Uses the HITRAN "lbl/api" HTTP endpoint (``https://hitran.org/lbl/api``),
 queried by *global* isotopologue ID (not molecule ID) so isotopologue
 coverage is explicit rather than relying on the endpoint's own defaults.
 
-CONTRACT.md invariant 5: the finished package must run with no network.
+docs/build_contract.md invariant 5: the finished package must run with no network.
 :func:`ensure_linelists` is the ONLY function in :mod:`mwir_atmos` permitted
 to touch the network when explicitly requested -- it loads ``data/hitran/<species>.npz`` if present
 and only calls :func:`fetch_linelist` (which also hits the network) when the
@@ -274,7 +274,7 @@ def ensure_linelists(
     Missing files raise ``FileNotFoundError``. Set ``allow_download=True``
     explicitly to populate a cache; ``force=True`` explicitly refreshes it.
 
-    The ONLY function permitted to touch the network (CONTRACT.md invariant
+    The ONLY function permitted to touch the network (docs/build_contract.md invariant
     5). Fetches are sequential, one HTTP request per species (all of that
     species' isotopologues in one request), with a politeness pause between
     requests, and never re-fetch a species whose cache file already exists

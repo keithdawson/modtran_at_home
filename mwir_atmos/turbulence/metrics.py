@@ -1,7 +1,7 @@
 """Optical turbulence metrics integrated along a slant :class:`PathGeometry`.
 
-Entry point: :func:`compute_turbulence`, called lazily and by exact keyword
-signature from ``mwir_atmos.api._attach_turbulence``.
+Entry point: :func:`compute_turbulence`, called by keyword from
+:func:`mwir_atmos.api.run_scenario`.
 
 Path-integral convention (read this before any individual function)
 ---------------------------------------------------------------------
@@ -9,7 +9,7 @@ Every classic formula used here (Fried's r0, Fried's theta0, the plane-wave
 Rytov variance) is normally written as an integral over *vertical altitude*
 ``h`` with an explicit ``sec(zeta)`` airmass factor pulled out front, on the
 assumption of a plane-parallel atmosphere at a single, path-wide zenith angle
-``zeta``. CONTRACT.md instead asks these to be integrated along the actual
+``zeta``. docs/build_contract.md instead asks these to be integrated along the actual
 resolved slant path, using ``PathLayer.ds_km`` for path length. This module
 therefore re-expresses each formula in terms of the physical slant-path
 coordinate directly, which has two consequences worth being explicit about:
@@ -69,7 +69,7 @@ sees dramatically better numbers than the visible-light figures usually
 quoted for a given Cn2 profile. ``compute_turbulence`` reports everything at
 :data:`MWIR_REFERENCE_WAVELENGTH_UM` (4.0 um, the centre of
 ``constants.BANDS_CM1["MWIR_3_5um"]``, i.e. 3-5 um) by default, per
-CONTRACT.md. Every metric function below is wavelength-parameterised so the
+docs/build_contract.md. Every metric function below is wavelength-parameterised so the
 0.5 um figures (needed to validate against literature, e.g. HV5/7's own "5
 cm/7 urad" namesake) can be reproduced with the same code -- see
 tests/test_turbulence.py, which computes and asserts both.
@@ -101,7 +101,7 @@ from .cn2 import bufton_wind_speed, cn2_profile
 __all__ = ["compute_turbulence", "MWIR_REFERENCE_WAVELENGTH_UM", "VISIBLE_REFERENCE_WAVELENGTH_UM"]
 
 #: Default reporting wavelength: centre of constants.BANDS_CM1["MWIR_3_5um"]
-#: (2000-3333.33 cm^-1 == 3-5 um), per CONTRACT.md's turbulence spec.
+#: (2000-3333.33 cm^-1 == 3-5 um), per docs/build_contract.md's turbulence spec.
 MWIR_REFERENCE_WAVELENGTH_UM = 4.0
 
 #: The conventional wavelength turbulence numbers are quoted at (used only to
@@ -109,12 +109,9 @@ MWIR_REFERENCE_WAVELENGTH_UM = 4.0
 #: namesake; not the value ``compute_turbulence`` reports by default).
 VISIBLE_REFERENCE_WAVELENGTH_UM = 0.5
 
-#: Assumed sensor aperture diameter for :func:`strehl_ratio_marechal`, since
-#: ``Scenario`` has no aperture-diameter field (out of this module's scope to
-#: add -- see the dev-alpha report). 10 cm is a representative entrance-pupil
-#: size for a MWIR imaging sensor; callers needing a different aperture
-#: should call :func:`strehl_ratio_marechal` directly rather than relying on
-#: this default.
+#: Representative MWIR entrance-pupil diameter (10 cm, the default of
+#: ``Scenario.sensor_aperture_diameter_m``), for callers of
+#: :func:`strehl_ratio_marechal` without a scenario.
 ASSUMED_APERTURE_DIAMETER_M = 0.10
 
 #: Numerical floor so a zero-turbulence path (or a single layer with exactly
@@ -266,7 +263,7 @@ def strehl_ratio_marechal(r0_m: float, aperture_diameter_m: float) -> float:
     interpolation, which stays better-behaved for ``D >> r0`` (the Marechal
     exponential underestimates the already-tiny Strehl there). Adequate for
     the ``D ~ r0`` regime this tool otherwise targets; documented per
-    CONTRACT.md's instruction to say which approximation was used.
+    docs/build_contract.md's instruction to say which approximation was used.
     """
     ratio = float(aperture_diameter_m) / max(r0_m, 1.0e-9)
     return float(np.exp(-(ratio ** (5.0 / 3.0))))
@@ -278,10 +275,10 @@ def compute_turbulence(
     """Optical turbulence metrics along ``path``, reported at
     :data:`MWIR_REFERENCE_WAVELENGTH_UM`.
 
-    Binding signature -- called lazily by ``api._attach_turbulence``. Uses
+    Called by keyword from :func:`mwir_atmos.api.run_scenario`. Uses
     ``profile`` only for ``profile.surface_altitude_km`` (the height-above-
     ground datum every Cn2(h) model needs); the Cn2 models themselves are
-    the standard empirical altitude-only fits named by CONTRACT.md
+    the standard empirical altitude-only fits named by docs/build_contract.md
     (HV5/7, SLC Day/Night, constant), not derived from the thermodynamic
     profile.
     """

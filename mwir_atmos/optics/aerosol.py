@@ -10,8 +10,8 @@ here). It is built to have the right physical shape and the right order of
 magnitude, with every functional form drawn from the cited literature; the
 per-type numeric endpoints (Angstrom exponent, single-scattering albedo,
 asymmetry parameter) are representative values consistent with those
-references rather than digitized table lookups -- flagged explicitly here (and
-in the dev-beta report) rather than presented as exact LOWTRAN output.
+references rather than digitized table lookups -- flagged explicitly here
+rather than presented as exact LOWTRAN output.
 
 Building blocks
 ----------------

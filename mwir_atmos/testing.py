@@ -1,10 +1,8 @@
-"""Synthetic fixtures so each worker can test without the other's code.
-
-OVERSEER-OWNED. Worker agents must not edit this file.
+"""Synthetic fixtures for tests that need a path without the real geometry.
 
 The path built here uses a deliberately crude exponential atmosphere. It exists
-only so that the line-by-line / optics code can be exercised before the real
-model atmospheres and spherical path geometry land. It is NOT a physics
+only so that the line-by-line / optics code can be exercised independently
+of the real model atmospheres and spherical path geometry. It is NOT a physics
 reference and must never be imported by production code paths -- only by tests.
 """
 

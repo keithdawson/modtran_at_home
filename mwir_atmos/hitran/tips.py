@@ -18,7 +18,7 @@ CO2-626 (global id 7) 286.094, matching the commonly-cited reference values
 for those isotopologues, which is good evidence the fetched table is sound.
 
 This module **never touches the network** -- it only reads the shipped
-``.npz``, satisfying CONTRACT.md's offline-runtime invariant. To regenerate
+``.npz``, satisfying docs/build_contract.md's offline-runtime invariant. To regenerate
 the cache, re-download each ``q<global_id>.txt`` above for the IDs in
 :data:`mwir_atmos.hitran.fetch.GLOBAL_ISOTOPOLOGUES` and rebuild the arrays
 described above (there is deliberately no fetch code path in this module).

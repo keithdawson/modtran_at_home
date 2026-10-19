@@ -3,7 +3,7 @@
 Status: **implemented and validated** (September 2026). The defaults below
 were chosen from the studies in [Validation results](#validation-results);
 their scripts, raw results and runbook are in [validation/](validation/README.md).
-See also [PHYSICS_VALIDATION.md](../PHYSICS_VALIDATION.md).
+See also [physics_validation.md](physics_validation.md).
 
 ## Two accuracy problems
 

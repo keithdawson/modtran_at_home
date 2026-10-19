@@ -6,7 +6,7 @@ Physically meaningful checks, not just shape checks:
   hypsometric relation (a per-layer check, tolerant enough for the AFGL
   table's own rounding -- see the module docstring in profiles.py for the
   constant-g0-vs-variable-g(z) investigation that set these tolerances).
-* Precipitable water columns against the numeric ranges CONTRACT.md calls
+* Precipitable water columns against the numeric ranges docs/build_contract.md calls
   out (midlatitude summer ~2-3 cm, subarctic winter ~0.4 cm).
 * Known surface checkpoints (tropical ~300 K & very moist, subarctic winter
   ~257 K & very dry, US Standard ~288 K/1013 mbar).
@@ -102,13 +102,13 @@ def test_profile_shape_and_monotonicity(model):
 
 def test_tropical_surface_hot_and_moist():
     prof = get_profile(ModelAtmosphere.TROPICAL)
-    assert 295.0 < prof.temperature_k[0] < 305.0  # CONTRACT.md: "~300 K"
+    assert 295.0 < prof.temperature_k[0] < 305.0  # docs/build_contract.md: "~300 K"
     assert prof.vmr_ppmv[Species.H2O][0] > 20000.0  # "very moist"
 
 
 def test_subarctic_winter_surface_cold_and_dry():
     prof = get_profile(ModelAtmosphere.SUBARCTIC_WINTER)
-    assert 252.0 < prof.temperature_k[0] < 262.0  # CONTRACT.md: "~257 K"
+    assert 252.0 < prof.temperature_k[0] < 262.0  # docs/build_contract.md: "~257 K"
     assert prof.vmr_ppmv[Species.H2O][0] < 2000.0  # "very dry"
 
 

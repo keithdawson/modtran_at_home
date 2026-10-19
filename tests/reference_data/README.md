@@ -5,7 +5,7 @@ computed by mwir_atmos. `mt_ckd_4_3_aer_example.npz` is the AER-distributed
 example, converted losslessly from NetCDF. `mt_ckd_4_3_fortran.npz` contains
 five cases from the unmodified Fortran kernel and our explicit driver.
 
-See ../../PHYSICS_VALIDATION.md for the pinned source revision, original-file
+See ../../docs/physics_validation.md for the pinned source revision, original-file
 hashes, test conditions and regeneration instructions. The AER attribution
 and redistribution conditions are reproduced in AER_LICENSE.md.
 

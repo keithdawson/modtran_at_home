@@ -14,7 +14,8 @@ sys.path.insert(0, str(ROOT))
 
 import numpy as np
 from mwir_atmos.api import run_scenario
-from mwir_atmos.cli import load_scenario_yaml, _band_rows, _Logger, _write_json, _write_csv
+from mwir_atmos.report import band_rows, write_csv, write_json
+from mwir_atmos.scenario_io import load_scenario_yaml
 from mwir_atmos.spectral import radiance_to_per_um
 from mwir_atmos.webgui.plots import line_chart_png
 
@@ -37,12 +38,12 @@ def main():
                       if f.name not in ("total", "grid")]
         assert np.all(np.isfinite(radiance.total)) and np.all(radiance.total >= 0)
         np.testing.assert_allclose(radiance.total, np.sum(components, axis=0), atol=1e-18)
-        rows = _band_rows(result, [("computed_window", (result.grid.wavenumber_cm1[0],
-                          result.grid.wavenumber_cm1[-1]))], _Logger(quiet=True, verbose=False))
+        rows = band_rows(result, [("computed_window", (result.grid.wavenumber_cm1[0],
+                         result.grid.wavenumber_cm1[-1]))])
         with (destination / f"{config.stem}.json").open("w", encoding="utf-8") as fh:
-            _write_json(result, rows, fh)
+            write_json(result, rows, fh)
         with (destination / f"{config.stem}.csv").open("w", encoding="utf-8", newline="") as fh:
-            _write_csv(result, fh)
+            write_csv(result, fh)
         for label, series, unit in [
             ("transmittance", {"total": t.total, "molecular": t.molecular, "aerosol": t.aerosol}, "Transmittance"),
             ("radiance", {"total": radiance_to_per_um(radiance.total, result.grid.wavenumber_cm1)},

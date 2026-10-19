@@ -109,7 +109,7 @@ def test_ensure_linelists_loads_all_species_offline():
 
 @pytest.mark.parametrize("species", ALL_SPECIES)
 def test_cached_linelist_within_fetch_margin(species):
-    """CONTRACT.md invariant 1: HITRAN fetches must span 1775-4325 cm^-1 --
+    """docs/build_contract.md invariant 1: HITRAN fetches must span 1775-4325 cm^-1 --
     i.e. no line was fetched from outside the requested query range. This
     does NOT require every species to have lines populating the entire
     range: CO, for instance, genuinely has no HITRAN lines between its

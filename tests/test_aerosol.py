@@ -1,6 +1,6 @@
 """Tests for mwir_atmos.optics.aerosol and .rayleigh.
 
-Physically meaningful checks per CONTRACT.md: visibility-driven optical
+Physically meaningful checks per docs/build_contract.md: visibility-driven optical
 depth via the Koschmieder relation, wavelength dependence across 3-5 um,
 RH-driven hygroscopic growth, the navy-maritime wind-speed dependence,
 absorption/scattering correctly separated with absorption dominant in the

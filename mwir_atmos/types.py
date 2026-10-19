@@ -1,9 +1,9 @@
 """Shared data contracts between the physics core and the radiometry/UI layer.
 
-OVERSEER-OWNED. Worker agents must NOT edit this file. Every cross-module value
-flows through the dataclasses defined here; if you believe a field is missing or
-wrong, implement around it and say so in your report -- do not change it
-unilaterally, because the other worker is coding against it concurrently.
+Every cross-module value flows through the dataclasses defined here. A new
+Scenario field also needs a CLI flag (``tests/test_cli.py`` checks), a GUI
+control if users should set it, and a range check in :mod:`mwir_atmos.validation`
+if it has one (types and nullability are checked automatically).
 
 All arrays are ``numpy.ndarray`` of dtype float64. Spectral arrays are indexed
 on the *same* wavenumber grid (``SpectralGrid.wavenumber_cm1``) everywhere.
@@ -375,8 +375,26 @@ class RadianceResult:
         return self.grid.wavelength_um
 
 
+#: Every spectral radiance component of :class:`RadianceResult`, ``total``
+#: last: the order output writers and tables walk them in.
+RADIANCE_COMPONENTS: tuple[str, ...] = (
+    "path_thermal",
+    "surface_emitted",
+    "surface_reflected_solar",
+    "surface_reflected_lunar",
+    "solar_single_scatter",
+    "lunar_single_scatter",
+    "direct_solar",
+    "direct_lunar",
+    "source_emitted",
+    "solar_multiple_scatter",
+    "lunar_multiple_scatter",
+    "total",
+)
+
+
 # =========================================================================
-# Turbulence result (stretch goal)
+# Turbulence result
 # =========================================================================
 
 
@@ -542,8 +560,7 @@ class ScenarioResult:
     profile: AtmosphereProfile
     path: PathGeometry
     transmittance: TransmittanceResult
-    #: None when radiance was not requested, or before the radiometry layer
-    #: exists (wave 1 produces transmittance only).
+    #: None when radiance was not requested (``include_radiance=False``).
     radiance: Optional[RadianceResult] = None
     sun: Optional[SkyPosition] = None
     moon: Optional[SkyPosition] = None

@@ -5,7 +5,7 @@ atmosphere (``constants.EARTH_RADIUS_KM``). This is the LOWTRAN/MODTRAN
 "no refractive ray bending" simplification -- real rays curve slightly toward
 the surface (refraction adds on the order of a percent to airmass near the
 horizon), which this module does not model. Flagged here explicitly per
-CONTRACT.md's requirement to document the omission.
+docs/build_contract.md's requirement to document the omission.
 
 Geometry
 --------
@@ -18,7 +18,7 @@ geocentric radius
 
 (law of cosines in the plane containing the ray and the Earth's center). This
 single relation -- not a plane-parallel secant -- covers every case
-CONTRACT.md requires, because it is exact for a straight line through
+docs/build_contract.md requires, because it is exact for a straight line through
 concentric spherical shells:
 
 * ``zenith < 90``: cos(zenith) > 0, so r(s) increases monotonically with s
@@ -66,8 +66,7 @@ def _number_density_cm3(p_mbar: np.ndarray, t_k: np.ndarray) -> np.ndarray:
     """Ideal-gas total number density, molecules cm^-3.
 
     Same formula as ``testing._number_density_cm3``, reimplemented here
-    (rather than imported) because ``testing.py`` is overseer-owned and
-    explicitly "must never be imported by production code paths".
+    because :mod:`mwir_atmos.testing` is for tests only.
     """
     return LOSCHMIDT_CM3 * (p_mbar / STD_PRESSURE_MBAR) * (STD_TEMP_K / t_k)
 

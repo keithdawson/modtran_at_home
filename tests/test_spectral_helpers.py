@@ -47,7 +47,7 @@ def test_grid_is_strictly_increasing():
 
 
 def test_default_grid_covers_the_full_mwir_band():
-    """CONTRACT.md invariant: the default must contain 3-5 um with margin."""
+    """docs/build_contract.md invariant: the default must contain 3-5 um with margin."""
     g = make_grid()
     assert g.wavenumber_cm1[0] <= 2000.0        # 5 um
     assert g.wavenumber_cm1[-1] >= 3333.34      # 3 um

@@ -38,7 +38,7 @@ Test suite: 619 passed, 0 skipped on the RTX 4090 desktop (`pytest -n auto`,
 | Binned DISORT/MC radiance + exact single-scatter correction | uncorrected binning: 40-47% worst bin, 2-4.5% window on nadir/limb; corrected worst nadir case 0.055% / -0.012% | `validation/correlated_k_accuracy.json`; full re-check is round 2 |
 | Processes, not threads, for resolved runs | 5.4x at 8 workers vs threads getting *slower* (GIL) | `validation/scaling_benchmark.json` |
 | Window-test thresholds (subarctic > 0.80, look-down > 0.88) | independent HAPI line-by-line reference; model agrees to 0.001 T, 0.38% L | `tests/reference_data/hapi_window_reference.json` |
-| Cost estimate: 0.15 M elements/s/worker, speedup workers**0.7 | desktop measured 0.23 M at the *old* step | `mwir_atmos/cli.py` `_COST_*` |
+| Cost estimate: 0.15 M elements/s/worker, speedup workers**0.7 | desktop measured 0.23 M at the *old* step | `mwir_atmos/run_cost.py` `_COST_*` |
 | GPU: float32 wings, float64 cores/offsets/sums | GPUs run fp64 at 1/64 rate; profile within 4.7e-7 of wofz | `optics/voigt_gpu.py` |
 | Peak pre-filter before exact line selection | 16% of (line, layer) pairs pass the bound, 10.3% are kept; selection 11.1 s -> 2.0 s single-threaded, bit-identical | `lbl._peak_candidates`, `test_peak_prefilter_does_not_change_line_selection` |
 | Resolved CUDA chunks stay on the GPU (single scatter) | full band 2.8 s on the host path vs 0.95 s device-resident, equal to 1.4e-15 | `api._device_resident`, [spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental) |
@@ -97,7 +97,7 @@ selection has no drift.
    estimate (`_COST_RESOLVED_RATE_PER_WORKER = 150_000`) says ~68 s on 8, so it
    errs slow by ~2x. Recalibrate from `validation/scaling_round2.json`.
 5. **Smaller items**
-   - The 1 GB memory gate (`cli._CONFIRM_BYTES_THRESHOLD`) trips for the
+   - The 1 GB memory gate (`run_cost.CONFIRM_BYTES_THRESHOLD`) trips for the
      default resolved run at >= 8 workers (one chunk per worker is resident),
      so the GUI asks for confirmation on the desktop. Raise the gate or cap
      per-worker chunk memory.

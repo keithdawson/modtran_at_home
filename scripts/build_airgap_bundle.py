@@ -8,7 +8,7 @@ Packages:
 - tests/ full verification test suite
 - install_offline.sh, install_offline.bat, install_offline.ps1
 - Dockerfile.rocky9, Dockerfile.ubuntu, docker-compose.yml
-- Documentation (README.md, CONTRACT.md, OFFLINE_DEPLOYMENT.md, pyproject.toml)
+- Documentation (README.md, OFFLINE_DEPLOYMENT.md, docs/, pyproject.toml)
 """
 
 from __future__ import annotations
@@ -37,9 +37,7 @@ INCLUDE_PATTERNS = [
     "install_offline.ps1",
     "pyproject.toml",
     "README.md",
-    "PHYSICS_VALIDATION.md",
     "docs",
-    "CONTRACT.md",
     "OFFLINE_DEPLOYMENT.md",
     "SERVER CONFIGURATION.txt",
 ]

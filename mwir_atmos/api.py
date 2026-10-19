@@ -1,27 +1,39 @@
 """Top-level orchestration: a :class:`Scenario` in, a :class:`ScenarioResult` out.
 
-OVERSEER-OWNED. This is the single entry point the CLI and the web GUI both call,
-so that they cannot drift apart in behaviour.
+The single entry point the CLI, the web GUI and :mod:`mwir_atmos.setups` all
+call, so they cannot drift apart in behaviour.
 
-Pipeline:
-    model atmosphere -> surface overrides -> slant path -> layer optics
-    -> transmittance -> (radiance, once the radiometry layer exists)
+Pipeline (:func:`run_scenario`):
+    model atmosphere + surface overrides  (:func:`build_profile`)
+    -> path geometry for the radiance solver  (:func:`build_solver_geometry`)
+    -> layer optics and transmittance on a spectral grid  (:class:`_SpectralPass`)
+    -> radiance  (:func:`_solve_radiance`)
+    -> turbulence diagnostics
+
+Point sampling runs one spectral pass on the output grid. Resolved sampling
+(:func:`_run_resolved`) runs it on fine-grid chunks, in worker processes or
+on the GPU, and reduces each chunk through the instrument function.
 """
 
 from __future__ import annotations
 
 import copy
 import os
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Sequence
 
 import numpy as np
 
 from .atmosphere.humidity import apply_surface_conditions
 from .atmosphere.profiles import get_profile
+from .ephemeris.moon import lunar_position
+from .ephemeris.sun import solar_position
 from .geometry.path import build_path
 from .optics.lbl import resolve_backend, resolve_thread_count
 from .optics.transmittance import compute_layer_optics, path_transmittance
+from .radiometry.radiance import compute_radiance
 from .spectral import make_grid
+from .turbulence.metrics import compute_turbulence
 from .validation import validate_scenario
 from .types import (
     AtmosphereProfile,
@@ -33,9 +45,11 @@ from .types import (
     RadianceSolver,
     SpectralGrid,
     SpectralSampling,
+    TurbulenceModel,
 )
 
-__all__ = ["build_profile", "build_scenario_path", "run_scenario"]
+__all__ = ["SolverGeometry", "build_profile", "build_scenario_path", "build_solver_geometry",
+           "run_scenario"]
 
 
 def build_profile(scenario: Scenario) -> AtmosphereProfile:
@@ -58,22 +72,50 @@ def build_profile(scenario: Scenario) -> AtmosphereProfile:
     )
 
 
-def build_scenario_path(scenario: Scenario, profile: AtmosphereProfile) -> PathGeometry:
-    """Slant path implied by the scenario's sensor and source placement."""
+@dataclass
+class SolverGeometry:
+    """Where a scenario's physics is evaluated.
+
+    ``path`` is always the sensor's sightline. The single-scatter solver
+    evaluates optics directly on it. DISORT and the spherical Monte Carlo
+    solver evaluate optics on a separate vertical ``column`` and map them
+    onto the sightline: sightline layer ``j`` is ``factors[j]`` times column
+    layer ``indices[j]``.
+    """
+
+    path: PathGeometry
+    column: Optional[PathGeometry] = None
+    indices: Optional[Sequence[int]] = None
+    factors: Optional[Sequence[float]] = None
+
+    @property
+    def optics_path(self) -> PathGeometry:
+        """The geometry layer optics are computed on (column, else sightline)."""
+        return self.column if self.column is not None else self.path
+
+
+def build_solver_geometry(scenario: Scenario, profile: AtmosphereProfile) -> SolverGeometry:
+    """Sightline (and, for multiple scattering, vertical column) for ``scenario``."""
     if scenario.radiance_solver == RadianceSolver.DISORT:
         from .geometry.plane_parallel import geometry
-        return geometry(scenario, profile)[1]
-    if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
+    elif scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
         from .geometry.spherical_shells import geometry
-        return geometry(scenario, profile)[1]
-    return build_path(
-        profile,
-        sensor_alt_km=scenario.sensor_alt_km,
-        zenith_deg=scenario.sensor_zenith_deg,
-        azimuth_deg=scenario.sensor_azimuth_deg,
-        source_alt_km=scenario.source_alt_km,
-        source_range_km=scenario.source_range_km,
-    )
+    else:
+        return SolverGeometry(path=build_path(
+            profile,
+            sensor_alt_km=scenario.sensor_alt_km,
+            zenith_deg=scenario.sensor_zenith_deg,
+            azimuth_deg=scenario.sensor_azimuth_deg,
+            source_alt_km=scenario.source_alt_km,
+            source_range_km=scenario.source_range_km,
+        ))
+    column, path, indices, factors = geometry(scenario, profile)
+    return SolverGeometry(path=path, column=column, indices=indices, factors=factors)
+
+
+def build_scenario_path(scenario: Scenario, profile: AtmosphereProfile) -> PathGeometry:
+    """Slant path implied by the scenario's sensor and source placement."""
+    return build_solver_geometry(scenario, profile).path
 
 
 def run_scenario(
@@ -87,10 +129,10 @@ def run_scenario(
 ) -> ScenarioResult:
     """Run a full scenario.
 
-    ``include_radiance`` and ``include_turbulence`` degrade gracefully: if the
-    corresponding module has not been built yet, the matching field of the
-    result is left as ``None`` rather than raising. Transmittance is always
-    computed.
+    Transmittance is always computed. ``include_radiance=False`` leaves
+    ``result.radiance`` (and the sun/moon positions) as ``None``;
+    ``include_turbulence`` adds turbulence diagnostics when the scenario
+    selects a Cn^2 model.
 
     ``grid`` overrides the output grid (uniform spacing). ``n_threads`` sets
     the line-by-line worker threads (default: ``MWIR_THREADS`` or every CPU);
@@ -111,25 +153,13 @@ def run_scenario(
         )
 
     profile = build_profile(scenario)
-    column = indices = factors = None
-    if scenario.radiance_solver == RadianceSolver.DISORT:
-        from .geometry.plane_parallel import geometry
-        column, path, indices, factors = geometry(scenario, profile)
-    elif scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
-        from .geometry.spherical_shells import geometry
-        column, path, indices, factors = geometry(scenario, profile)
-    else:
-        path = build_scenario_path(scenario, profile)
-
+    geometry = build_solver_geometry(scenario, profile)
     sun = moon = None
     if include_radiance:
-        sky = _sky_positions(scenario)
-        if sky is None:
-            include_radiance = False  # radiometry layer absent: transmittance only
-        else:
-            sun, moon = sky
+        sun = solar_position(scenario)
+        moon = lunar_position(scenario, sun)
 
-    spectral_pass = _SpectralPass(scenario, profile, path, column, indices, factors, sun, moon,
+    spectral_pass = _SpectralPass(scenario, profile, geometry, sun, moon,
                                   include_radiance, n_threads, backend=backend)
     fine_step = None
     try:
@@ -146,46 +176,41 @@ def run_scenario(
         scenario=scenario,
         grid=grid,
         profile=profile,
-        path=path,
+        path=geometry.path,
         transmittance=transmittance,
         radiance=radiance,
         sun=sun,
         moon=moon,
         fine_step_cm1=fine_step,
     )
-    if include_turbulence and scenario.turbulence.value != "none":
-        _attach_turbulence(result)
-
+    if include_turbulence and scenario.turbulence != TurbulenceModel.NONE:
+        result.turbulence = compute_turbulence(
+            scenario=scenario, path=result.path, profile=profile)
     return result
 
 
-def _sky_positions(scenario: Scenario):
-    """``(sun, moon)``, or None if the radiometry/ephemeris layer is absent."""
-    try:
-        from .ephemeris.moon import lunar_position
-        from .ephemeris.sun import solar_position
-        from .radiometry.radiance import compute_radiance  # noqa: F401 (availability)
-    except ImportError:
-        return None  # wave 2 not built yet; transmittance-only result is still valid
-    sun = solar_position(scenario)
-    return sun, lunar_position(scenario, sun)
+# =========================================================================
+# One spectral pass: layer optics -> transmittance -> radiance on one grid
+# =========================================================================
 
 
 class _SpectralPass:
     """Layer optics, transmittance and radiance for one spectral grid.
 
     Point sampling runs this once on the output grid; resolved sampling runs
-    it on each fine-grid chunk.
+    it on each fine-grid chunk (possibly in worker processes, so it must
+    stay picklable).
     """
 
-    def __init__(self, scenario, profile, path, column, indices, factors, sun, moon,
-                 include_radiance, n_threads, strength_references=None, backend="cpu"):
+    def __init__(self, scenario: Scenario, profile: AtmosphereProfile, geometry: SolverGeometry,
+                 sun, moon, include_radiance: bool, n_threads: Optional[int],
+                 strength_references=None, backend: str = "cpu"):
         self.scenario = scenario
         self.profile = profile
-        self.path = path
-        self.column = column
-        self.indices = indices
-        self.factors = factors
+        self.path = geometry.path
+        self.column = geometry.column
+        self.indices = geometry.indices
+        self.factors = geometry.factors
         self.sun = sun
         self.moon = moon
         self.include_radiance = include_radiance
@@ -218,13 +243,17 @@ class _SpectralPass:
         )
         if scenario.aerosol_polarization == "mie_sphere":
             from .radiometry.spherical_scattering import apply_mie_optics
-            optics=apply_mie_optics(scenario,column,optics,grid)
-        column_optics = optics if column is not None else None
-        if column is not None:
-            from .geometry.plane_parallel import sightline_optics
-            for j, i in enumerate(self.indices):
-                self.path.layers[j].aerosol_od_550nm = column.layers[i].aerosol_od_550nm * self.factors[j]
-            optics = sightline_optics(column_optics, self.path, self.indices, self.factors)
+            optics = apply_mie_optics(scenario, column, optics, grid)
+        if column is None:
+            return optics, None, path_transmittance(optics)
+
+        # Multiple scattering: optics were computed on the column; map them
+        # (and the aerosol loading the radiometry reports) onto the sightline.
+        from .geometry.plane_parallel import sightline_optics
+        column_optics = optics
+        for j, i in enumerate(self.indices):
+            self.path.layers[j].aerosol_od_550nm = column.layers[i].aerosol_od_550nm * self.factors[j]
+        optics = sightline_optics(column_optics, self.path, self.indices, self.factors)
         return optics, column_optics, path_transmittance(optics)
 
     def radiance(self, grid, optics, column_optics, transmittance) -> RadianceResult:
@@ -236,6 +265,34 @@ class _SpectralPass:
         radiance = (self.radiance(grid, optics, column_optics, transmittance)
                     if self.include_radiance else None)
         return optics, column_optics, transmittance, radiance
+
+
+# =========================================================================
+# Resolved sampling: fine-grid chunks, worker processes, GPU residency
+# =========================================================================
+
+
+#: Fine point x layer elements per resolved chunk on the CUDA backend. Chunks
+#: are large, because each one repeats line selection over its 25 cm^-1
+#: cutoff margins. Full default band on an RTX 4090 (device-resident):
+#: 2**22 -> 1.30 s, 0.5 GiB of GPU memory; 2**23 -> 0.95 s, 1.0 GiB;
+#: 2**24 -> 0.92 s, 2.0 GiB. The GPU may be shared, so the middle one.
+_CUDA_CHUNK_ELEMENTS = 1 << 23
+#: Resolved chunks on the CUDA backend keep every fine-grid array on the GPU
+#: and copy back only the instrument-reduced output (see _device_resident).
+#: Off only for comparisons with the host path.
+_CUDA_DEVICE_RESIDENT = True
+#: Resolved runs smaller than this many (fine point x layer) elements stay in
+#: one process: worker start-up (~1 s) would cost more than it saves.
+_PROCESS_MIN_ELEMENTS = 1 << 21
+#: Parallel resolved runs are split into at least this many chunks per
+#: worker, so uneven chunk costs (line density varies across the band) balance.
+_CHUNKS_PER_WORKER = 3
+#: Correct correlated-k binned DISORT / Monte Carlo radiance with the exact
+#: fine-grid single-scatter result (resolved.binned_radiance). Off only for
+#: validation of the uncorrected binning.
+_CK_SINGLE_SCATTER_CORRECTION = True
+_SINGLE_THREAD_ENV = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
 def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
@@ -286,29 +343,6 @@ def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
     radiances = [r for _, r in parts if r is not None]
     radiance = resolved.concatenate_radiance(radiances, grid) if radiances else None
     return transmittance, radiance, plan.step_cm1
-
-
-#: Fine point x layer elements per resolved chunk on the CUDA backend. Chunks
-#: are large, because each one repeats line selection over its 25 cm^-1
-#: cutoff margins. Full default band on an RTX 4090 (device-resident):
-#: 2**22 -> 1.30 s, 0.5 GiB of GPU memory; 2**23 -> 0.95 s, 1.0 GiB;
-#: 2**24 -> 0.92 s, 2.0 GiB. The GPU may be shared, so the middle one.
-_CUDA_CHUNK_ELEMENTS = 1 << 23
-#: Resolved chunks on the CUDA backend keep every fine-grid array on the GPU
-#: and copy back only the instrument-reduced output (see _device_resident).
-#: Off only for comparisons with the host path.
-_CUDA_DEVICE_RESIDENT = True
-#: Resolved runs smaller than this many (fine point x layer) elements stay in
-#: one process: worker start-up (~1 s) would cost more than it saves.
-_PROCESS_MIN_ELEMENTS = 1 << 21
-#: Parallel resolved runs are split into at least this many chunks per
-#: worker, so uneven chunk costs (line density varies across the band) balance.
-_CHUNKS_PER_WORKER = 3
-#: Correct correlated-k binned DISORT / Monte Carlo radiance with the exact
-#: fine-grid single-scatter result (resolved.binned_radiance). Off only for
-#: validation of the uncorrected binning.
-_CK_SINGLE_SCATTER_CORRECTION = True
-_SINGLE_THREAD_ENV = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
 def _parallel_mode() -> str:
@@ -451,6 +485,11 @@ def _run_chunks_in_processes(spectral_pass: "_SpectralPass", jobs: list, workers
                 os.environ[k] = v
 
 
+# =========================================================================
+# Radiance solvers
+# =========================================================================
+
+
 def _binned_solve(spectral_pass: _SpectralPass, grid: SpectralGrid, column_optics: LayerOptics,
                   single_scatter: bool = False):
     from .geometry.plane_parallel import sightline_optics
@@ -465,7 +504,6 @@ def _binned_solve(spectral_pass: _SpectralPass, grid: SpectralGrid, column_optic
 def _single_scatter(spectral_pass: _SpectralPass, grid: SpectralGrid, optics: LayerOptics,
                     transmittance) -> RadianceResult:
     """Single-scattering radiance along the scenario's sightline."""
-    from .radiometry.radiance import compute_radiance
     return compute_radiance(scenario=spectral_pass.scenario, grid=grid,
                             profile=spectral_pass.profile, path=spectral_pass.path,
                             optics=optics, transmittance=transmittance,
@@ -487,7 +525,6 @@ def _solve_radiance(scenario, grid, profile, path, optics, column, column_optics
             scenario=scenario, grid=grid, profile=profile, path=path,
             optics=optics, column=column, column_optics=column_optics,
             transmittance=transmittance, sun=sun, moon=moon)
-    from .radiometry.radiance import compute_radiance
     return compute_radiance(
         scenario=scenario,
         grid=grid,
@@ -497,16 +534,4 @@ def _solve_radiance(scenario, grid, profile, path, optics, column, column_optics
         transmittance=transmittance,
         sun=sun,
         moon=moon,
-    )
-
-
-def _attach_turbulence(result: ScenarioResult) -> None:
-    """Populate turbulence metrics if the turbulence layer is present."""
-    try:
-        from .turbulence.metrics import compute_turbulence
-    except ImportError:
-        return  # wave 3 stretch goal not built yet
-
-    result.turbulence = compute_turbulence(
-        scenario=result.scenario, path=result.path, profile=result.profile
     )

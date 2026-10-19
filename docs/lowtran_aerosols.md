@@ -107,7 +107,7 @@ Henyey–Greenstein aerosol phase function from table g, rather than the full
 LOWTRAN phase tables. Direct-beam transmittance includes
 both absorption and scattering losses. Refraction remains omitted.
 
-See [existing Rayleigh reference checks](../PHYSICS_VALIDATION.md#rayleigh) and
+See [existing Rayleigh reference checks](physics_validation.md#rayleigh) and
 [MODTRAN's documented aerosol and scattering capabilities](https://modtran.spectral.com/modtran_features)
 for the distinction between this component implementation and the full model.
 

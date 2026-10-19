@@ -21,7 +21,7 @@ Peck, E.R. & Reeder, K. (1972), "Dispersion of air," J. Opt. Soc. Am. 62,
 
 The refractive index is referenced to 288.15 K, so its matching molecular
 density is 2.54743e19 cm^-3 (Bodhaine et al.), not the 273.15 K Loschmidt
-number. Published cross-section comparisons: PHYSICS_VALIDATION.md.
+number. Published cross-section comparisons: docs/physics_validation.md.
 """
 
 from __future__ import annotations

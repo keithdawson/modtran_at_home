@@ -2,7 +2,7 @@
 
 Fetches (:mod:`mwir_atmos.hitran.fetch`) and caches (:mod:`mwir_atmos.hitran.cache`)
 line-by-line spectroscopic parameters from hitran.org, plus total internal
-partition sums (:mod:`mwir_atmos.hitran.tips`). See CONTRACT.md invariant 5:
+partition sums (:mod:`mwir_atmos.hitran.tips`). See docs/build_contract.md invariant 5:
 :func:`ensure_linelists` is the only function anywhere in ``mwir_atmos`` that
 is permitted to touch the network; everything downstream loads the
 ``data/hitran/*.npz`` cache this package ships with.

@@ -1,6 +1,6 @@
 """Assembly of per-layer optical depths into path transmittance.
 
-OVERSEER-OWNED. This is the seam between the two halves of the physics: the
+This is the seam between the two halves of the physics: the
 line-by-line molecular engine (``optics.lbl`` + ``optics.continuum``) and the
 particulate/molecular scattering models (``optics.aerosol``, ``optics.rayleigh``).
 

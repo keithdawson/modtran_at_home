@@ -1,10 +1,8 @@
 """Chart rendering for the Streamlit GUI.
 
-DEV-BETA owned (CONTRACT.md "Wave 2 interfaces"). Every function here takes
-already-computed numpy arrays and a Streamlit container to draw into -- none
-of them import :mod:`mwir_atmos.api` or touch a physics module, so
-:mod:`mwir_atmos.webgui.app` stays the only place in this package that calls
-:func:`mwir_atmos.api.run_scenario`.
+Every function here takes already-computed numpy arrays and a Streamlit
+container to draw into -- none of them import :mod:`mwir_atmos.api` or touch
+a physics module.
 
 Backend selection (checked at import time, never assumed): plotly if
 installed (richer interactivity -- zoom, per-trace legend toggling, unified
@@ -319,8 +317,8 @@ def profile_chart(
 #
 # Server-side PNG export from a plotly figure needs the optional `kaleido`
 # package, which is not installed in this environment and is deliberately
-# not being added -- see README.md "limitations" and the job brief's "do
-# not add heavy new dependencies". matplotlib renders PNG natively with no
+# not being added (the airgapped install keeps dependencies light; see
+# README.md "limitations"). matplotlib renders PNG natively with no
 # extra package, so these three helpers reuse it purely as a headless PNG
 # backend for the download buttons regardless of which library is drawing
 # the on-screen chart above them. Each returns None (the caller shows a

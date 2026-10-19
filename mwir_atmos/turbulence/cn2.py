@@ -183,7 +183,7 @@ def cn2_profile(
     """Dispatch to the Cn2(h) model named by ``model``, m^-2/3.
 
     ``ground_cn2_m23`` is ``Scenario.turbulence_cn2_ground``: required for
-    CONSTANT, and -- "where it makes sense" per CONTRACT.md's spec for this
+    CONSTANT, and -- "where it makes sense" per docs/build_contract.md's spec for this
     module -- used as the HV5/7 ground-anchor term ``A`` (replacing the
     default 1.7e-14) when supplied, since HV5/7 is explicitly parameterised
     by a free ground constant. It does *not* apply to SLC Day/Night, which

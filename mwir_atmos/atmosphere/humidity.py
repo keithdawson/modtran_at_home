@@ -13,7 +13,7 @@ with respect to ice for T < 0 C.
 
 ``apply_surface_conditions`` rescales the boundary layer to user-specified
 surface temperature/RH and relaxes back to the unmodified model atmosphere
-over ``_BLEND_HEIGHT_KM`` (2.5 km, inside CONTRACT.md's suggested 2-3 km).
+over ``_BLEND_HEIGHT_KM`` (2.5 km, inside docs/build_contract.md's suggested 2-3 km).
 Pressure is re-derived by hydrostatic integration of the (possibly modified)
 temperature profile rather than simply blended, so the result stays
 hydrostatically consistent by construction rather than by luck. The
@@ -40,7 +40,7 @@ __all__ = [
     "hydrostatic_pressure_mbar",
 ]
 
-#: Boundary-layer relaxation depth for apply_surface_conditions (CONTRACT.md: ~2-3 km).
+#: Boundary-layer relaxation depth for apply_surface_conditions (docs/build_contract.md: ~2-3 km).
 _BLEND_HEIGHT_KM = 2.5
 
 

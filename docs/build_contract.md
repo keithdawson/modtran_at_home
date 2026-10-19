@@ -1,10 +1,17 @@
 # mwir_atmos — build contract
 
+> **Historical specification.** This is the contract the first version of the
+> package was built against by an overseer and two parallel coding workers
+> (formerly `CONTRACT.md` at the repository root). The physics requirements,
+> invariants 1, 2, 3 and 5, and the definition of done still describe the
+> package, and docstrings cite them. The file-ownership rules, invariants 4
+> and 6, the "waves" and the layout below do **not** apply any more: the
+> current layout is in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 MODTRAN-at-home: a mid-wave infrared atmospheric transmittance and radiance
 calculator with a scriptable CLI and a Streamlit web GUI.
 
-This file is the coordination point for parallel work. **Read it fully before
-editing anything.** Two coding workers run concurrently against it.
+This file was the coordination point for parallel work.
 
 ---
 

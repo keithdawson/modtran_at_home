@@ -1,8 +1,4 @@
 """Spectral grid construction, Planck functions and band integration.
-
-OVERSEER-OWNED. Worker agents must not edit this file -- both workers depend on
-these helpers and a concurrent edit would break the other one. Missing helper?
-Say so in your report.
 """
 
 from __future__ import annotations

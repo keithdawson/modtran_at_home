@@ -4,9 +4,10 @@ A MODTRAN-flavoured line-by-line MWIR calculator. The default spectral grid
 spans 1800-4300 cm^-1 (2.33-5.56 um), which fully contains the 3-5 um MWIR
 band with margin for the CO2 4.3 um and H2O 2.7 um band wings.
 
-Only the stable, overseer-owned surface is re-exported here. Physics modules
-are imported directly (``from mwir_atmos.optics.lbl import ...``) so that a
-module still under construction cannot break ``import mwir_atmos``.
+Only the shared data types and spectral helpers are re-exported here. Run a
+calculation with :func:`mwir_atmos.api.run_scenario`; physics modules are
+imported directly (``from mwir_atmos.optics.lbl import ...``). See
+``docs/ARCHITECTURE.md`` for the package layout.
 """
 
 from __future__ import annotations

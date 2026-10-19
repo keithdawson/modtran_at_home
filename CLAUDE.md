@@ -7,7 +7,8 @@ Monte Carlo radiance; CLI (`mwir`), Streamlit GUI, Python API
 when a change improves the model and tests pass.
 
 **Start here:** [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)
-(current state, open work, traps), then
+(current state, open work, traps), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+(data flow, module map, where to make common changes), then
 [docs/spectral_sampling.md](docs/spectral_sampling.md) (line selection,
 resolved sampling, validation results, GPU backend) and
 [docs/validation/README.md](docs/validation/README.md) (runbook).

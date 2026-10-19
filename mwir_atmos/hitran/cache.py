@@ -3,7 +3,7 @@
 A :class:`LineList` holds one molecule's spectral lines, pooled across the
 isotopologues selected in :mod:`mwir_atmos.hitran.fetch`. On disk it is one
 compressed ``.npz`` per species under ``data/hitran/`` -- the format the
-finished, offline package ships and loads at runtime (CONTRACT.md invariant
+finished, offline package ships and loads at runtime (docs/build_contract.md invariant
 5: the final package must run with no network).
 """
 

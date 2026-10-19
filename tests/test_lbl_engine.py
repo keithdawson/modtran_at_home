@@ -1,6 +1,6 @@
 """Line-by-line engine internals: the fast paths are exact, and line selection is physical.
 
-Pins the September 2026 engine changes (see PHYSICS_VALIDATION.md, "Line
+Pins the September 2026 engine changes (see docs/physics_validation.md, "Line
 selection and spectral sampling"):
 
 * the ragged direct evaluation equals a naive per-line Voigt sum;

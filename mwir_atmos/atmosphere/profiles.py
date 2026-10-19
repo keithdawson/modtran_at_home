@@ -16,7 +16,7 @@ significant figures as the original report). Every level tabulated here
 row of the source table, so no interpolation was needed to build the
 canonical arrays below -- they are direct transcriptions.
 
-Per CONTRACT.md, CO2/N2O/CO/CH4 are NOT taken from the AFGL tables (which
+Per docs/build_contract.md, CO2/N2O/CO/CH4 are NOT taken from the AFGL tables (which
 reflect ~1986 background levels); they are filled from
 ``constants.BACKGROUND_VMR_PPMV`` (current-era well-mixed values), broadcast
 uniformly with altitude. O2 is likewise filled from the same table for
@@ -25,18 +25,18 @@ completeness (not in ``REQUIRED_SPECIES`` but present in ``Species`` and in
 
 Sanity checks against the report / well-known values (see tests/test_profiles.py):
   * Tropical surface: T=299.7 K, H2O=25900 ppmv (~300 K, very moist) -- matches
-    CONTRACT.md's stated expectation.
+    docs/build_contract.md's stated expectation.
   * Subarctic winter surface: T=257.2 K, H2O=1410 ppmv (~257 K, very dry) --
-    matches CONTRACT.md's stated expectation.
+    matches docs/build_contract.md's stated expectation.
   * US Standard surface: T=288.2 K, P=1013 mbar -- matches US Standard
     Atmosphere 1976 sea-level values (288.15 K, 1013.25 mbar) to the report's
     rounding.
   * Precipitable water computed from the tabulated P/H2O columns: midlatitude
     summer ~2.95 cm, subarctic winter ~0.42 cm -- both inside the ranges
-    CONTRACT.md calls out (2-3 cm and ~0.4 cm respectively).
+    docs/build_contract.md calls out (2-3 cm and ~0.4 cm respectively).
 
 Desert and sea (maritime) conditions are deliberately NOT separate vertical
-profiles here -- per CONTRACT.md they are handled by ``SurfaceType`` and
+profiles here -- per docs/build_contract.md they are handled by ``SurfaceType`` and
 ``AerosolModel`` instead, layered on top of one of these six atmospheres.
 """
 
@@ -341,7 +341,7 @@ def get_profile(model: ModelAtmosphere, *, n_levels: int | None = None) -> Atmos
     re-derive P by hydrostatic integration.)
 
     CO2/N2O/CO/CH4 are filled from ``constants.BACKGROUND_VMR_PPMV``, constant
-    with altitude, per CONTRACT.md (the AFGL 1986 report's own values for
+    with altitude, per docs/build_contract.md (the AFGL 1986 report's own values for
     these are ~40 years stale). O2 is filled the same way for completeness.
 
     ``profile.relative_humidity_pct`` is populated from the tabulated T/P/H2O.

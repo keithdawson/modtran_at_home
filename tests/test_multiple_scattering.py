@@ -11,7 +11,7 @@ from mwir_atmos.types import Scenario, RadianceSolver, AerosolModel, SurfaceType
 from mwir_atmos.api import build_profile, run_scenario
 from mwir_atmos.geometry.plane_parallel import geometry
 from mwir_atmos.setups import save_setup, load_setup
-from mwir_atmos.cli import RADIANCE_COMPONENTS
+from mwir_atmos.types import RADIANCE_COMPONENTS
 
 
 def toy_radiance(*, sensor=1., angle=180., distance=1., target=None, solar=True):

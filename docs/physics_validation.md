@@ -8,7 +8,7 @@ they do not establish agreement of the complete application with MODTRAN.
 ## Line selection and spectral sampling (late September 2026, validation in progress)
 
 Two further inconsistencies were measured and corrected; full method and
-status are in [docs/spectral_sampling.md](docs/spectral_sampling.md).
+status are in [docs/spectral_sampling.md](spectral_sampling.md).
 
 **Line selection.** The former default kept only lines stronger than 1e-4 of
 their species' strongest line. For water that threshold (2.5e-23 cm/molecule
@@ -126,7 +126,7 @@ All 12 tabulated comparisons from 0.5 to 4 micrometers agree within 0.213%.
 The previous calculation was approximately 10% low. Rayleigh remains a small
 contribution in the application's MWIR band.
 
-![External component checks](docs/physics_reference_checks.png)
+![External component checks](physics_reference_checks.png)
 
 ## End-to-end output changes
 
@@ -193,18 +193,18 @@ and in `mwir_atmos/optics/AER_LICENSE.txt`, which is included in built wheels.
   bound band-edge error. No empirical correction was fitted to the plots.
 - Original LOWTRAN 7 aerosol optical tables and background profiles are now
   available alongside the legacy parameterizations. See
-  [aerosol validation](docs/lowtran_aerosols.md). Modern aerosol datasets and
+  [aerosol validation](lowtran_aerosols.md). Modern aerosol datasets and
   full phase tables remain future work.
 - Point sampling, line pruning and path discretization still require
   convergence checks for each quantitative application. Gaussian smoothing
   cannot recover spectral structure missed by the underlying grid; use
   `spectral_sampling: resolved`, whose fine-step rule is itself pending the
-  convergence study in [docs/spectral_sampling.md](docs/spectral_sampling.md).
+  convergence study in [docs/spectral_sampling.md](spectral_sampling.md).
 - N2 collision-induced absorption (the 2000-2800 cm^-1 fundamental band) is
   not modelled. It affects long paths near the 4 um window edge and needs a
   published coefficient set (e.g. HITRAN CIA) with its own validation.
 - Optional DISORT multiple scattering is now available; see
-  [its validation and geometry limits](docs/multiple_scattering.md). Refraction
+  [its validation and geometry limits](multiple_scattering.md). Refraction
   remains omitted. Component checks are not full LBLRTM/MODTRAN validation.
 
 ## Spherical multiple scattering
@@ -212,4 +212,4 @@ and in `mwir_atmos/optics/AER_LICENSE.txt`, which is included in built wheels.
 The experimental `spherical_mc` option follows full spherical-shell photon paths,
 including Earth shadow and repeated surface reflection. Analytic geometry/thermal
 checks and the large-radius DISORT limit pass. This is not yet a full-spherical
-external-code validation. See [method, uncertainty, and limits](docs/spherical_scattering.md).
+external-code validation. See [method, uncertainty, and limits](spherical_scattering.md).

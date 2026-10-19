@@ -15,7 +15,7 @@ import pytest
 
 from mwir_atmos import resolved
 from mwir_atmos.api import run_scenario
-from mwir_atmos.cli import RADIANCE_COMPONENTS
+from mwir_atmos.types import RADIANCE_COMPONENTS
 from mwir_atmos.constants import GAS_CONSTANT_R, LIGHT_C, STD_PRESSURE_MBAR
 from mwir_atmos.types import (
     InstrumentFunction,

@@ -87,7 +87,8 @@ def test_real_scenario_setup_finite_target_and_exports(tmp_path):
     from mwir_atmos.types import Scenario,RadianceSolver,AerosolModel,SpectralSampling
     from mwir_atmos.api import run_scenario
     from mwir_atmos.setups import save_setup,load_setup
-    from mwir_atmos.cli import _write_json,_write_csv,_write_npz,RADIANCE_COMPONENTS
+    from mwir_atmos.report import write_json as _write_json, write_csv as _write_csv, write_npz as _write_npz
+    from mwir_atmos.types import RADIANCE_COMPONENTS
     from mwir_atmos.spectral import planck
     sc=Scenario(spectral_sampling=SpectralSampling.POINT, radiance_solver=RadianceSolver.SPHERICAL_MC,spherical_photons=128,
                 sensor_alt_km=.1,sensor_zenith_deg=90.,source_range_km=1.,source_temp_k=400.,

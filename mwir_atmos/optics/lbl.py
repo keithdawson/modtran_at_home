@@ -6,7 +6,7 @@ path (:class:`~mwir_atmos.types.PathLayer` sequence, e.g. from
 :class:`~mwir_atmos.types.SpectralGrid`, it returns per-layer, per-species
 optical depth from HITRAN line data plus the H2O continuum.
 
-Physics, all per CONTRACT.md's "dev-alpha" physics requirements:
+Physics (requirements in ``docs/build_contract.md``):
 
 * **Line shape**: Voigt, via ``scipy.special.wofz`` (the Faddeeva function).
   Not Lorentz-only -- above ~20 km the air pressure collapses and the
@@ -614,6 +614,10 @@ def _multigrid_sum(grid: SpectralGrid, lines: _Lines, cutoff: float, plan: _Plan
     return out
 
 
+# =========================================================================
+# Line selection
+# =========================================================================
+
 #: Skip lines whose peak optical depth provably stays below the cutoff before
 #: evaluating their widths and exact Voigt peak (see _peak_candidates). Off
 #: only to check that the pre-filter changes nothing.
@@ -675,21 +679,29 @@ def _peak_candidates(prepared: _PreparedLines, first: int, last: int, temperatur
     return first + np.flatnonzero(keep)
 
 
+def _pressures_and_window(prepared: _PreparedLines, grid_lo: float, grid_hi: float,
+                          pressure_mbar: float, partial_pressure_mbar: float,
+                          cutoff: float) -> tuple[float, float, float, int, int]:
+    """``(p_total, p_self, p_air)`` in atm, and the ``[first, last)`` range of
+    ``prepared`` lines whose shifted, truncated wings can reach ``[grid_lo, grid_hi]``."""
+    p_total_atm = pressure_mbar / STD_PRESSURE_MBAR
+    p_self_atm = max(partial_pressure_mbar, 0.0) / STD_PRESSURE_MBAR
+    p_air_atm = max(p_total_atm - p_self_atm, 0.0)
+    reach = cutoff + prepared.max_abs_shift * p_total_atm + 1.0e-9
+    first = int(np.searchsorted(prepared.nu, grid_lo - reach, side="left"))
+    last = int(np.searchsorted(prepared.nu, grid_hi + reach, side="right"))
+    return p_total_atm, p_self_atm, p_air_atm, first, last
+
+
 def _select_lines(prepared: _PreparedLines, grid: SpectralGrid, pressure_mbar: float,
                   temperature_k: float, partial_pressure_mbar: float, cutoff: float,
                   subtract_pedestal: bool, min_strength_fraction: float,
                   s_max: Optional[float], column_cm2: Optional[float],
                   min_peak_optical_depth: float) -> _Lines:
     """Lines whose truncated wings can reach ``grid``, with their profile parameters."""
-    p_total_atm = pressure_mbar / STD_PRESSURE_MBAR
-    p_self_atm = max(partial_pressure_mbar, 0.0) / STD_PRESSURE_MBAR
-    p_air_atm = max(p_total_atm - p_self_atm, 0.0)
-
-    reach = cutoff + prepared.max_abs_shift * p_total_atm + 1.0e-9
-    nu_lo = grid.wavenumber_cm1[0] - reach
-    nu_hi = grid.wavenumber_cm1[-1] + reach
-    first = int(np.searchsorted(prepared.nu, nu_lo, side="left"))
-    last = int(np.searchsorted(prepared.nu, nu_hi, side="right"))
+    p_total_atm, p_self_atm, p_air_atm, first, last = _pressures_and_window(
+        prepared, grid.wavenumber_cm1[0], grid.wavenumber_cm1[-1], pressure_mbar,
+        partial_pressure_mbar, cutoff)
     q_ratio = _partition_ratio(prepared, temperature_k)
     window: slice | np.ndarray = slice(first, last)
     prefiltered = False
@@ -736,6 +748,11 @@ def _select_lines(prepared: _PreparedLines, grid: SpectralGrid, pressure_mbar: f
     plan_hwhm = float(0.5346 * gamma_ref + np.sqrt(0.2166 * gamma_ref**2 + alpha_ref**2))
     return _Lines(center=nu_shifted[idx], strength=s_t[idx],
                   alpha_d=alpha_d[idx], gamma_l=gamma_l, pedestal=pedestal, plan_hwhm=plan_hwhm)
+
+
+# =========================================================================
+# Public entry points
+# =========================================================================
 
 
 def absorption_cross_section(
@@ -911,34 +928,22 @@ def molecular_optical_depth(
             min_peak_optical_depth=min_peak_optical_depth,
         )
 
+    # One (species, layer, point) block; each species' array is a view into it.
     if backend == "cuda":
         block = _cuda_optical_depth(tasks, arguments, grid, len(species) * n_layers,
                                     {sp: k * n_layers for k, sp in enumerate(species)}, n_threads)
         block = block.reshape(len(species), n_layers, grid.n)
+        tau_by_species = {sp: block[k] for k, sp in enumerate(species)}
     else:
         block = np.zeros((len(species), n_layers, grid.n), dtype=np.float64)
-    # One (species, layer, point) block; each species' array is a view into it.
-    tau_by_species: dict[Species, np.ndarray] = {sp: block[k] for k, sp in enumerate(species)}
+        tau_by_species = {sp: block[k] for k, sp in enumerate(species)}
 
-    def evaluate(task) -> None:
-        row, sp, column, linelist = task
-        xsec = absorption_cross_section(linelist, grid, method=method, **arguments(task))
-        tau_by_species[sp][row] = xsec * column
+        def evaluate(task) -> None:
+            row, sp, column, linelist = task
+            xsec = absorption_cross_section(linelist, grid, method=method, **arguments(task))
+            tau_by_species[sp][row] = xsec * column
 
-    if backend == "cuda":
-        tasks = []
-    workers = min(resolve_thread_count(n_threads), len(tasks))
-    if not tasks:
-        pass
-    elif workers > 1:
-        # Largest line lists first, so no long task starts last.
-        tasks.sort(key=lambda task: -len(task[3]))
-        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mwir-lbl") as pool:
-            for _ in pool.map(evaluate, tasks):
-                pass
-    else:
-        for task in tasks:
-            evaluate(task)
+        _run_on_threads(evaluate, tasks, n_threads)
 
     if include_continuum:
         if Species.H2O in tau_by_species:
@@ -950,6 +955,24 @@ def molecular_optical_depth(
     tau_total = block.sum(axis=0)
     return tau_total, tau_by_species
 
+
+def _run_on_threads(evaluate, tasks: list, n_threads: Optional[int]) -> None:
+    """``evaluate(task)`` for every ``(row, species, column, linelist)`` task."""
+    workers = min(resolve_thread_count(n_threads), len(tasks))
+    if workers <= 1:
+        for task in tasks:
+            evaluate(task)
+        return
+    # Largest line lists first, so no long task starts last.
+    tasks = sorted(tasks, key=lambda task: -len(task[3]))
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mwir-lbl") as pool:
+        for _ in pool.map(evaluate, tasks):
+            pass
+
+
+# =========================================================================
+# CUDA backend: lines selected on the CPU (or the GPU), evaluated on the GPU
+# =========================================================================
 
 #: The (layer, species) tasks of one CUDA evaluation are split into this many
 #: groups: the CPU selects lines for group k+1 while the GPU evaluates group k,
@@ -1031,12 +1054,8 @@ def _selection_task(prepared: _PreparedLines, grid_lo, grid_hi, pressure_mbar: f
                     s_max: Optional[float], column_cm2: float,
                     min_peak_optical_depth: float) -> _SelectionTask:
     """The per-task part of :func:`_select_lines` (same arguments, same arithmetic)."""
-    p_total_atm = pressure_mbar / STD_PRESSURE_MBAR
-    p_self_atm = max(partial_pressure_mbar, 0.0) / STD_PRESSURE_MBAR
-    p_air_atm = max(p_total_atm - p_self_atm, 0.0)
-    reach = cutoff + prepared.max_abs_shift * p_total_atm + 1.0e-9
-    first = int(np.searchsorted(prepared.nu, grid_lo - reach, side="left"))
-    last = int(np.searchsorted(prepared.nu, grid_hi + reach, side="right"))
+    p_total_atm, p_self_atm, p_air_atm, first, last = _pressures_and_window(
+        prepared, grid_lo, grid_hi, pressure_mbar, partial_pressure_mbar, cutoff)
     q_ratio = _partition_ratio(prepared, temperature_k)
     threshold = None
     if min_strength_fraction > 0.0:

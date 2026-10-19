@@ -1,6 +1,6 @@
 """Tests for mwir_atmos.geometry.path.build_path.
 
-Physically meaningful checks per CONTRACT.md: upward/downward/horizontal/
+Physically meaningful checks per docs/build_contract.md: upward/downward/horizontal/
 limb/finite-range paths, the airmass limits at 60 and 90 degrees (the
 "catches a plane-parallel bug" test), ground-intersection flags, tangent-path
 flags, and column-density conservation under re-layering.
@@ -49,7 +49,7 @@ def test_airmass_zenith_90_is_finite_and_large(profile):
     horizontal = build_path(profile, sensor_alt_km=0.0, zenith_deg=90.0, max_layers=60)
     airmass = _total_air_column(horizontal) / _total_air_column(vertical)
     assert np.isfinite(airmass)
-    assert 30.0 < airmass < 45.0  # CONTRACT.md: "~35-40"
+    assert 30.0 < airmass < 45.0  # docs/build_contract.md: "~35-40"
 
 
 def test_airmass_increases_monotonically_with_zenith(profile):
@@ -204,7 +204,7 @@ def test_curtis_godson_h2o_pressure_biased_toward_surface(profile):
     """H2O is concentrated near the ground, so its column-weighted (Curtis-
     Godson) effective pressure in a thick low-altitude layer should exceed
     the layer's simple midpoint pressure -- the whole point of populating
-    p_eff_mbar/t_eff_k separately per CONTRACT.md."""
+    p_eff_mbar/t_eff_k separately per docs/build_contract.md."""
     path = build_path(profile, sensor_alt_km=0.0, zenith_deg=0.0, max_layers=8)
     layer0 = path.layers[0]
     assert layer0.p_eff_mbar[Species.H2O] > layer0.p_mbar
