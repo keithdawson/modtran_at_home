@@ -317,7 +317,7 @@ machine); moving selection to the GPU removes this CPU work. See
 
 The CUDA backend selects lines on the GPU (`MWIR_CUDA_SELECTION=cpu` for
 the threaded CPU selection)
-(`lbl._gpu_selected_groups` / `lbl._select_packed`). Per line list, every
+(`lbl_cuda_dispatch._gpu_selected_groups` / `_select_packed`). Per line list, every
 (task, window line) pair of up to 2^23 pairs is one element of a flat array
 (the default full band: 76 layers x 6 line lists, ~66 M pairs, ~10 passes);
 the per-element operations are `_select_lines`' and `pack_task`'s, in the

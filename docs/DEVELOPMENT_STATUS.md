@@ -43,7 +43,7 @@ Test suite: 619 passed, 0 skipped on the RTX 4090 desktop (`pytest -n auto`,
 | Peak pre-filter before exact line selection | 16% of (line, layer) pairs pass the bound, 10.3% are kept; selection 11.1 s -> 2.0 s single-threaded, bit-identical | `lbl._peak_candidates`, `test_peak_prefilter_does_not_change_line_selection` |
 | Resolved CUDA chunks stay on the GPU (single scatter) | full band 2.8 s on the host path vs 0.95 s device-resident, equal to 1.4e-15 | `api._device_resident`, [spectral_sampling.md](spectral_sampling.md#gpu-backend-experimental) |
 | CUDA chunks of 2^23 elements | 0.95 s / 1.0 GiB, vs 0.92 s / 2.0 GiB at 2^24 and 1.30 s at 2^22 | `api._CUDA_CHUNK_ELEMENTS` |
-| 4 selection threads on the CUDA backend | resolved full band 0.96 s on 1 thread, 0.97 s on 16; point sampling 0.34 s on 4, 0.32 s on 16 | `lbl._CUDA_SELECTION_THREADS` |
+| 4 selection threads on the CUDA backend | resolved full band 0.96 s on 1 thread, 0.97 s on 16; point sampling 0.34 s on 4, 0.32 s on 16 | `lbl_cuda_dispatch._CUDA_SELECTION_THREADS` |
 
 ## Open work, in order
 

@@ -38,11 +38,12 @@ def _run(scenario, selection: str) -> float:
 def _instrumented(scenario, selection: str) -> dict:
     """One run with the GPU synchronised around selection and kernel launches."""
     import cupy
-    from mwir_atmos.optics import lbl, lbl_cuda
+    from mwir_atmos.optics import lbl_cuda, lbl_cuda_dispatch as dispatch
 
     sync = cupy.cuda.Device().synchronize
     stats = dict(task_setup_s=0.0, select_s=0.0, kernel_s=0.0, passes=[], cpu_select_calls=0)
-    originals = (lbl._selection_task, lbl._select_packed, lbl_cuda.launch, lbl._select_lines)
+    originals = (dispatch._selection_task, dispatch._select_packed, lbl_cuda.launch,
+                 dispatch._select_lines)
 
     def selection_task(*args, **kwargs):
         t0 = time.perf_counter()
@@ -74,12 +75,13 @@ def _instrumented(scenario, selection: str) -> dict:
         stats["cpu_select_calls"] += 1
         return originals[3](*args, **kwargs)
 
-    lbl._selection_task, lbl._select_packed, lbl_cuda.launch, lbl._select_lines = (
+    dispatch._selection_task, dispatch._select_packed, lbl_cuda.launch, dispatch._select_lines = (
         selection_task, select_packed, launch, select_lines)
     try:
         stats["total_s"] = _run(scenario, selection)
     finally:
-        lbl._selection_task, lbl._select_packed, lbl_cuda.launch, lbl._select_lines = originals
+        (dispatch._selection_task, dispatch._select_packed, lbl_cuda.launch,
+         dispatch._select_lines) = originals
     passes = stats["passes"]
     stats["pairs"] = sum(p["pairs"] for p in passes)
     stats["kept"] = sum(p["kept"] for p in passes)

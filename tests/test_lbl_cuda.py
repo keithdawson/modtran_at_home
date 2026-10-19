@@ -16,7 +16,7 @@ from scipy.special import wofz
 
 from mwir_atmos.api import build_profile, build_scenario_path, run_scenario
 from mwir_atmos.hitran.fetch import ensure_linelists
-from mwir_atmos.optics import lbl, lbl_cuda
+from mwir_atmos.optics import lbl, lbl_cuda, lbl_cuda_dispatch
 from mwir_atmos.optics.voigt_gpu import re_faddeeva
 from mwir_atmos.spectral import make_grid
 from mwir_atmos.types import AerosolModel, ModelAtmosphere, Scenario, Species, SpectralSampling
@@ -99,9 +99,9 @@ def test_cuda_path_with_the_numpy_twin_matches_cpu(monkeypatch):
 def test_selection_switch_rejects_unknown_values(monkeypatch):
     monkeypatch.setenv("MWIR_CUDA_SELECTION", "fpga")
     with pytest.raises(ValueError, match="MWIR_CUDA_SELECTION"):
-        lbl._gpu_selection_enabled()
+        lbl_cuda_dispatch._gpu_selection_enabled()
     monkeypatch.delenv("MWIR_CUDA_SELECTION")
-    assert lbl._gpu_selection_enabled()
+    assert lbl_cuda_dispatch._gpu_selection_enabled()
 
 
 def test_task_groups_fill_their_rows_and_leave_others_zero(monkeypatch):
@@ -141,7 +141,7 @@ def _selection_pairs(grid, scenario: Scenario, min_strength_fraction=0.0):
                     min_strength_fraction=min_strength_fraction, strength_reference=None,
                     column_cm2=column, min_peak_optical_depth=3e-6)
     by_row = {row0[sp] + row: (row, sp, column, ll) for row, sp, column, ll in tasks}
-    for packed, rows in lbl._gpu_selected_groups(np, tasks, lambda t: arguments[t[0], t[1]],
+    for packed, rows in lbl_cuda_dispatch._gpu_selected_groups(np, tasks, lambda t: arguments[t[0], t[1]],
                                                  grid, row0):
         expected = []
         for r in rows:
@@ -160,7 +160,7 @@ def test_selection_in_numpy_equals_the_cpu_selection(monkeypatch, min_strength_f
     """The GPU selection's arithmetic, run in NumPy, keeps the same lines with
     bit-identical packed parameters as ``_select_lines`` + ``pack_task``, also
     when a line list is split over several passes."""
-    monkeypatch.setattr(lbl, "_SELECT_PAIRS", 20_000)
+    monkeypatch.setattr(lbl_cuda_dispatch, "_SELECT_PAIRS", 20_000)
     grid = make_grid(2140.0, 2145.0, 0.05)
     groups = 0
     for packed, expected in _selection_pairs(grid, Scenario(), min_strength_fraction):
@@ -288,13 +288,13 @@ def test_gpu_selection_matches_the_numpy_selection():
             if column <= 0.0:
                 continue
             p = layer.p_eff_mbar.get(sp, layer.p_mbar)
-            specs.append(lbl._selection_task(
+            specs.append(lbl_cuda_dispatch._selection_task(
                 prepared, grid.wavenumber_cm1[0], grid.wavenumber_cm1[-1], p,
                 layer.t_eff_k.get(sp, layer.t_k), p * column / layer.air_column_cm2, 25.0,
                 sp == Species.H2O, 0.0, None, column, 3e-6))
         lo, hi = grid.wavenumber_cm1[0], grid.wavenumber_cm1[-1]
-        host = lbl._select_packed(np, prepared, specs, lo, hi)
-        device = lbl._select_packed(cupy, prepared, specs, lo, hi)
+        host = lbl_cuda_dispatch._select_packed(np, prepared, specs, lo, hi)
+        device = lbl_cuda_dispatch._select_packed(cupy, prepared, specs, lo, hi)
         d = {f.name: cupy.asnumpy(cupy.asarray(getattr(device, f.name)))
              for f in dataclasses.fields(lbl_cuda.Packed)}
         kept += host.center.size

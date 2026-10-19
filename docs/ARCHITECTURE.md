@@ -40,7 +40,8 @@ through the instrument function (`resolved.py`, `api._run_resolved`).
 | `resolved.py` | Fine-grid plan, instrument functions, chunking, correlated-k binning |
 | `hitran/` | Line lists (`cache.py`), the only network code (`fetch.py`), partition sums (`tips.py`) |
 | `optics/lbl.py` | Voigt line-by-line engine: line preparation, selection, direct and multigrid sums |
-| `optics/lbl_cuda.py`, `optics/voigt_gpu.py` | Optional CUDA kernel (CuPy) and its NumPy emulation |
+| `optics/lbl_cuda_dispatch.py` | CUDA backend orchestration: GPU line selection (default) or grouped CPU selection overlapping the kernels |
+| `optics/lbl_cuda.py`, `optics/voigt_gpu.py` | Optional CUDA kernel (CuPy) and its NumPy emulation; the kernel's Voigt profile |
 | `optics/continuum.py`, `aerosol.py`, `lowtran_aerosol.py`, `rayleigh.py` | Continuum, aerosol and Rayleigh optics |
 | `optics/transmittance.py` | Assembles layer optics; path transmittance |
 | `atmosphere/` | Six AFGL model atmospheres; surface temperature/humidity overrides |

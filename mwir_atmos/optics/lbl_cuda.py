@@ -4,8 +4,10 @@ Line-by-line Voigt summation is ~98% of a resolved run's time, and every
 (line, grid point) pair is independent, so it maps directly onto a GPU. The
 GPU selects lines with the arithmetic of
 :func:`mwir_atmos.optics.lbl._select_lines` (peak-optical-depth cutoff,
-pressure shift/broadening) in CuPy (:func:`mwir_atmos.optics.lbl._select_packed`),
-or with ``MWIR_CUDA_SELECTION=cpu`` the CPU does; this module evaluates the selected lines of a spectral chunk's (layer, species)
+pressure shift/broadening) in CuPy
+(:func:`mwir_atmos.optics.lbl_cuda_dispatch._select_packed`, which also
+orchestrates the backend), or with ``MWIR_CUDA_SELECTION=cpu`` the CPU does;
+this module evaluates the selected lines of a spectral chunk's (layer, species)
 tasks in a few kernel launches (:func:`evaluate_groups`: the CPU selects the
 next group of tasks while the GPU evaluates the current one), each task
 writing its own row of one ``(species x layer, grid point)`` device array.
@@ -394,7 +396,7 @@ def evaluate_groups(nu, groups: Iterable[tuple], n_rows: int):
     ``groups`` yields ``(packed, rows)``: task ``t`` of ``packed`` goes to row
     ``rows[t]``; rows no task names stay zero. Each group's kernel is queued
     before the next group is requested, so a lazy ``groups`` (the CPU line
-    selection in :func:`mwir_atmos.optics.lbl.molecular_optical_depth`)
+    selection in :func:`mwir_atmos.optics.lbl_cuda_dispatch.cuda_optical_depth`)
     prepares group ``k+1`` while the GPU evaluates group ``k``. A CuPy ``nu``
     gives a CuPy result that stays on the device; a NumPy ``nu`` a NumPy copy.
     """
@@ -446,9 +448,8 @@ def release_memory() -> None:
         cp = _cupy()
     except ImportError:
         return
-    from . import lbl
-    with lbl._DEVICE_LINES_LOCK:
-        lbl._DEVICE_LINES.clear()     # line lists uploaded for GPU selection
+    from .lbl_cuda_dispatch import release_selection_memory
+    release_selection_memory()        # line lists uploaded for GPU selection
     cp.get_default_memory_pool().free_all_blocks()
     cp.get_default_pinned_memory_pool().free_all_blocks()
 
