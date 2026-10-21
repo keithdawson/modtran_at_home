@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile.ubuntu
     image: modtran-at-home:ubuntu
     container_name: modtran-ubuntu
-    command: pytest tests/ -v
+    command: python3 -m pytest tests/ -v
 
   # 3. Interactive Streamlit Web GUI (Accessible on http://localhost:8501)
   modtran-gui:
