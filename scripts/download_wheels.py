@@ -20,6 +20,7 @@ REQUIREMENTS = [
     "plotly>=5.18.0",
     "matplotlib>=3.7.0",
     "pytest>=7.4.0",
+    "pytest-xdist>=3.5",
     "setuptools>=68.0.0",
     "wheel",
     "pip",
