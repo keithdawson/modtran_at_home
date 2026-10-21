@@ -24,10 +24,17 @@ dev = [
     "pytest>=7.4",
     "pytest-xdist>=3.5",
 ]
-# GPU line-by-line backend (NVIDIA). Use cupy-cuda13x instead to match a
-# CUDA 13 driver; Blackwell (sm_120) needs CUDA 12.8 or newer.
+# GPU line-by-line backend (NVIDIA). Blackwell (sm_120) needs CUDA 12.8 or
+# newer. `cuda` matches a CUDA 12 driver (the desktop); `cuda13` a CUDA 13
+# driver (the work server) and brings its own CUDA runtime, NVRTC and cuBLAS
+# wheels -- the only CUDA libraries mwir_atmos uses -- so it does not depend
+# on a system toolkit.
 cuda = [
     "cupy-cuda12x>=13.4",
+]
+cuda13 = [
+    "cupy-cuda13x>=14.2",
+    "cuda-toolkit[cublas,cudart,nvrtc]==13.*",
 ]
 
 [project.scripts]

@@ -32,6 +32,25 @@ This guide details how to deploy, run, and optimize `mwir_atmos` (MODTRAN-at-hom
    mwir --help
    ```
 
+#### GPU backend (CUDA 13)
+
+When `nvidia-smi` is present, `install_offline.sh` also installs the
+`cuda13` extra from the bundled wheels: `cupy-cuda13x` plus NVIDIA's CUDA 13
+runtime, NVRTC and cuBLAS wheels (the only CUDA libraries mwir_atmos uses),
+so no system CUDA toolkit is needed — only an NVIDIA driver that supports
+CUDA 13. The installer prints whether CuPy sees a GPU.
+
+```bash
+nvidia-smi -L                          # find a Blackwell's index; the Ada 6000 is a different GPU
+export MWIR_CUDA_DEVICE=0              # GPU for mwir (or restrict with CUDA_VISIBLE_DEVICES)
+mwir --backend cuda --help             # or MWIR_BACKEND=cuda for the API and GUI
+python scripts/validation/nvrtc_compile_check.py   # kernel compiles for sm_89 / sm_120
+python scripts/validation/cuda_check.py            # GPU tests + CPU vs GPU timing
+```
+
+One process uses one GPU; lines are selected on the GPU by default
+(`MWIR_CUDA_SELECTION=cpu` for the CPU selection).
+
 ### B. Ubuntu 22.04 / 24.04 LTS
 
 1. Extract and install:

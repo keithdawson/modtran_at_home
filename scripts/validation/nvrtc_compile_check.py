@@ -23,10 +23,13 @@ ARCHES = ("compute_89", "compute_120")
 
 def _library() -> ctypes.CDLL:
     names = ("libnvrtc.so*", "nvrtc64_*.dll")
+    # CUDA 12 wheels: nvidia/cuda_nvrtc/{lib,bin}; CUDA 13: nvidia/cu13/{lib,bin/x86_64}.
+    folders = (("cuda_nvrtc", "lib"), ("cuda_nvrtc", "bin"),
+               ("cu13", "lib"), ("cu13", "bin", "x86_64"))
     for root in site.getsitepackages() + [site.getusersitepackages()]:
-        for folder in ("lib", "bin"):
+        for folder in folders:
             for name in names:
-                found = sorted(glob.glob(os.path.join(root, "nvidia", "cuda_nvrtc", folder, name)))
+                found = sorted(glob.glob(os.path.join(root, "nvidia", *folder, name)))
                 # Windows wheels also ship nvrtc64_*.alt.dll, which needs a
                 # builtins DLL they do not include; it sorts first.
                 found = [path for path in found if ".alt." not in os.path.basename(path)]
@@ -37,7 +40,7 @@ def _library() -> ctypes.CDLL:
                         os.add_dll_directory(folder_path)
                         os.environ["PATH"] = folder_path + os.pathsep + os.environ.get("PATH", "")
                     return ctypes.CDLL(found[0])
-    raise SystemExit("NVRTC not found: pip install nvidia-cuda-nvrtc-cu12")
+    raise SystemExit("NVRTC not found: pip install nvidia-cuda-nvrtc-cu12 (or the cuda13 extra)")
 
 
 def main() -> int:

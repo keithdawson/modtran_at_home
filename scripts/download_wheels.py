@@ -26,6 +26,29 @@ REQUIREMENTS = [
     "pip",
 ]
 
+#: GPU backend for the work server (Linux, CUDA 13 driver): the
+#: pyproject "cuda13" extra. Only the CUDA libraries mwir_atmos uses (runtime,
+#: NVRTC, cuBLAS) -- cupy's own [ctk] extra adds ~600 MB of cuFFT, cuRAND,
+#: cuSOLVER and cuSPARSE that nothing here calls.
+GPU_REQUIREMENTS = [
+    "cupy-cuda13x>=14.2",
+    "cuda-toolkit[cublas,cudart,nvrtc]==13.*",
+]
+#: Rocky Linux 9 has glibc 2.34; the NVIDIA wheels are tagged up to manylinux_2_27.
+GPU_PLATFORMS = ["manylinux2014_x86_64", "manylinux_2_27_x86_64", "manylinux_2_28_x86_64",
+                 "manylinux_2_34_x86_64"]
+
+
+def download_gpu_wheels(target_dir: Path, py_version: str) -> None:
+    print(f"\n[+] Fetching CUDA 13 GPU wheels for Linux, Python {py_version}")
+    cmd = [sys.executable, "-m", "pip", "download", "--dest", str(target_dir),
+           "--python-version", py_version, "--only-binary=:all:",
+           "--implementation", "cp", "--abi", f"cp{py_version}"]
+    for plat in GPU_PLATFORMS:
+        cmd += ["--platform", plat]
+    print("Executing:", " ".join(cmd + GPU_REQUIREMENTS))
+    subprocess.run(cmd + GPU_REQUIREMENTS, check=True)
+
 
 def download_wheels(target_dir: Path, platforms: list[str], py_version: str = "311"):
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -88,6 +111,8 @@ def main():
         platforms.append("win_amd64")
 
     download_wheels(args.dest, platforms, args.py_version)
+    if args.all_platforms:
+        download_gpu_wheels(args.dest, args.py_version)
     print(f"\n[OK] Finished downloading wheels. Total files in {args.dest}: {len(list(args.dest.glob('*.whl')))}")
 
 
