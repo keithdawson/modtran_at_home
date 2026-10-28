@@ -134,7 +134,7 @@ def estimate_run_cost(scenario: Scenario, n_threads: Optional[int] = None,
     resident_points = size.resident_points
     speedup = 1.0
     if resolve_backend(backend) == "cuda":
-        # One process; DISORT and Monte Carlo below run on its CPU, unparallelised.
+        # One process (DISORT and Monte Carlo below use solver_pool's CPU processes).
         fixed = (_COST_CUDA_FIXED_S if scenario.spectral_sampling == SpectralSampling.RESOLVED
                  else _COST_CUDA_POINT_FIXED_S)
         gpus = 1
@@ -152,6 +152,13 @@ def estimate_run_cost(scenario: Scenario, n_threads: Optional[int] = None,
     else:
         est_seconds = _COST_FIXED_OVERHEAD_S + elements / _COST_RATE_ELEMENTS_PER_S
     est_bytes = int(resident_points * n_layers * _COST_BYTES_PER_ELEMENT * _COST_N_LAYER_ARRAYS)
+    # DISORT / Monte Carlo points spread over CPU processes (solver_pool) when
+    # nothing else runs in parallel: point sampling and the CUDA backend.
+    from . import solver_pool
+    solver_speedup = speedup
+    workers = resolve_thread_count(n_threads)
+    if speedup == 1.0 and solver_pool.use_pool(scenario, size.solver_points, workers):
+        solver_speedup = workers ** _COST_SPEEDUP_EXPONENT
 
     if scenario.radiance_solver == RadianceSolver.DISORT:
         # Additional full-column arrays and sequential angular solves. Rough:
@@ -159,10 +166,10 @@ def estimate_run_cost(scenario: Scenario, n_threads: Optional[int] = None,
         est_bytes *= 2
         sources = 2 + int(scenario.include_solar) + int(scenario.include_lunar)
         est_seconds += (size.solver_points * .005 * sources
-                        * (scenario.disort_streams / 16.)**4 / speedup)
+                        * (scenario.disort_streams / 16.)**4 / solver_speedup)
     if scenario.radiance_solver == RadianceSolver.SPHERICAL_MC:
         est_bytes += min(scenario.spherical_photons, 4096) * n_layers * 200
-        est_seconds += size.solver_points * (scenario.spherical_photons / 4096.) * 2. / speedup
+        est_seconds += size.solver_points * (scenario.spherical_photons / 4096.) * 2. / solver_speedup
 
     return CostEstimate(
         n_points=n_points,

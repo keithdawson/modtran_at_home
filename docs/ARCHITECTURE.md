@@ -43,6 +43,7 @@ through the instrument function (`resolved.py`, `api._run_resolved`).
 | `optics/lbl_cuda_dispatch.py` | CUDA backend orchestration: GPU line selection (default) or grouped CPU selection overlapping the kernels |
 | `optics/lbl_cuda.py`, `optics/voigt_gpu.py` | Optional CUDA kernel (CuPy) and its NumPy emulation; the kernel's Voigt profile |
 | `optics/lbl_cuda_select.py` | Fused CUDA kernels for GPU line selection (also compiled as host C++ in the tests) |
+| `solver_pool.py` | DISORT / Monte Carlo spectral points over persistent CPU worker processes |
 | `multi_gpu.py` | Resolved CUDA chunks over several GPUs (`MWIR_CUDA_DEVICES`): persistent spawned worker pool |
 | `optics/continuum.py`, `aerosol.py`, `lowtran_aerosol.py`, `rayleigh.py` | Continuum, aerosol and Rayleigh optics |
 | `optics/transmittance.py` | Assembles layer optics; path transmittance |

@@ -89,10 +89,20 @@ as one unparallelised CPU process, which is what the host path is).
      (and with the Ada 6000 included), then record the numbers.
    - CuPy warns "CUDA path could not be detected" on the desktop; harmless
      with `cupy-cuda12x[ctk]`, silence by setting `CUDA_PATH` if wanted.
-   - DISORT, Monte Carlo and Mie aerosol optics on the CUDA backend use the
-     host path: optical depths are copied back once and the rest runs on the
-     CPU (2.8 s for the full band with the single-scatter solver, against
-     0.95 s device-resident). Not profiled with those solvers.
+   - DISORT and Monte Carlo: profiled (line-by-line stubbed, one core): the
+     solver is 97% of a binned DISORT run, ~12 ms per point and source in
+     the vendored PythonicDISORT (eigensystem 3.1 s, banded solve 2.8 s,
+     sightline quadrature 7.6 s of 18.8 s for 2500-2550 cm^-1). The CUDA
+     backend ran it on one core (full band ~15 min, against ~1 min for the
+     CPU backend's 16 chunk workers), so `auto` made DISORT slower. Fixed
+     by `mwir_atmos/solver_pool.py`: a solver call's spectral points are
+     split over persistent spawned CPU workers (Monte Carlo seeds offset per
+     piece; results identical to one serial call). 2500-2550 cm^-1 on 4
+     cores: 15.0 s -> 4.2-4.6 s. Point sampling gains the same. A batched
+     GPU DISORT (all pseudo points at once: batched eigensystems, banded
+     solves and the sightline quadrature in CuPy) is the next step if the
+     solvers matter; it is a port of ~3600 lines and needs a GPU to check.
+   - Mie aerosol optics on the CUDA backend still use the host path.
    - Keep `lbl_cuda.evaluate_emulated` in step with the kernel source;
      `tests/test_lbl_cuda.py` relies on it.
 3. **Work server scaling**: `python scripts/validation/scaling_benchmark.py
@@ -114,8 +124,9 @@ as one unparallelised CPU process, which is what the host path is).
 ## Traps
 
 - **Windows spawns worker processes**: any script calling `run_scenario` on a
-  large resolved run needs `if __name__ == "__main__":`. `MWIR_PARALLEL=threads`
-  avoids processes.
+  large resolved run, a DISORT or Monte Carlo run of >= 64 points, or with
+  `MWIR_CUDA_DEVICES` needs `if __name__ == "__main__":`.
+  `MWIR_PARALLEL=threads` avoids processes.
 - **Tests**: physics tests pin `spectral_sampling=POINT` (their thresholds
   predate resolved sampling); GUI tests start via `_point_app()` because a
   resolved full-band first render takes minutes. New tests should follow suit

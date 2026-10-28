@@ -258,8 +258,17 @@ class _SpectralPass:
         return optics, column_optics, path_transmittance(optics)
 
     def radiance(self, grid, optics, column_optics, transmittance) -> RadianceResult:
-        return _solve_radiance(self.scenario, grid, self.profile, self.path, optics,
-                               self.column, column_optics, transmittance, self.sun, self.moon)
+        args = (self.scenario, grid, self.profile, self.path, optics, self.column,
+                column_optics, transmittance, self.sun, self.moon)
+        # DISORT / Monte Carlo solve point by point in Python: spread the points
+        # over CPU processes unless this already is a one-thread chunk worker.
+        from . import solver_pool
+        workers = resolve_thread_count(self.n_threads)
+        if solver_pool.use_pool(self.scenario, grid.n, workers):
+            result = solver_pool.solve(*args, workers=workers)
+            if result is not None:
+                return result
+        return _solve_radiance(*args)
 
     def run(self, grid: SpectralGrid):
         optics, column_optics, transmittance = self.optics(grid)

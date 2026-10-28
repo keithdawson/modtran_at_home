@@ -171,6 +171,16 @@ Not supported with resolved sampling: `sensor_response_file` (rejected by
 validation). The experimental Mie aerosol option recomputes Mie coefficients
 at every fine point, which is correct but slow.
 
+
+Both solvers work one spectral point at a time in Python. A call with at
+least 64 points (`solver_pool.MIN_POINTS`) that is not already inside a
+one-thread chunk worker splits its points over a persistent pool of spawned
+CPU workers (`mwir_atmos/solver_pool.py`): this is what parallelises them on
+the CUDA backend and with point sampling. Monte Carlo seeds are offset to
+each piece's first point, so results equal a serial call exactly
+(`tests/test_solver_pool.py`). Binned DISORT, 2500-2550 cm^-1, line-by-line
+stubbed, 4 cores: 15.0 s on one, 4.2-4.6 s split.
+
 ## Fast line-by-line engine
 
 `mwir_atmos/optics/lbl.py`:
