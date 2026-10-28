@@ -31,7 +31,7 @@ from scipy.special import erfcx
 from .._array import to_host
 from ..constants import C2_RAD, GAS_CONSTANT_R, LIGHT_C
 from ..types import Species, SpectralGrid
-from . import lbl_cuda
+from . import lbl_cuda, lbl_cuda_select
 from .lbl import (
     _LN2,
     _MT_CKD_CUTOFF_CM1,
@@ -84,6 +84,9 @@ def _gpu_selection_enabled() -> bool:
 #: Largest number of (task, window line) pairs selected in one pass of
 #: :func:`_select_packed`; its temporaries are 8 bytes per pair each.
 _SELECT_PAIRS = 1 << 23
+#: CuPy selection through the two fused kernels of :mod:`lbl_cuda_select`
+#: rather than ~40 array operations per pass. Off only for comparisons.
+_SELECT_FUSED = True
 #: Per-line arrays of _PreparedLines that _select_packed reads.
 _SELECT_FIELDS = ("nu", "delta_air", "s296", "gamma_air", "gamma_self", "e_lower", "n_air",
                   "m_kg_mol", "stim_ref", "iso_index")
@@ -161,6 +164,11 @@ def _erfcx(xp):
     return cupyx.scipy.special.erfcx
 
 
+def _use_fused(xp) -> bool:
+    """Whether :func:`_select_packed` uses the fused kernels (CuPy only; tests run them in C++)."""
+    return xp is not np and _SELECT_FUSED
+
+
 def _select_packed(xp, prepared: _PreparedLines, tasks: Sequence[_SelectionTask],
                    grid_lo: float, grid_hi: float):
     """:func:`_select_lines` then :func:`lbl_cuda.pack_task` for tasks of one line list, in ``xp``.
@@ -203,21 +211,42 @@ def _select_packed(xp, prepared: _PreparedLines, tasks: Sequence[_SelectionTask]
         "peak_applies": [t.min_peak_optical_depth is not None for t in tasks],
         "pedestal": has_pedestal,
     }
+    assert tuple(columns) == lbl_cuda_select.TASK_COLUMNS
+    constants = dict(c2=C2_RAD, light_c_squared=LIGHT_C**2, sqrt_ln2=_SQRT_LN2,
+                     sqrt_ln2_over_pi=_SQRT_LN2_OVER_PI, pi=np.pi,
+                     mt_ckd_cutoff_squared=_MT_CKD_CUTOFF_CM1**2)
+    assert tuple(constants) == lbl_cuda_select.CONSTANTS
     n_iso = len(prepared.unique_isos)
     q_ratio = np.concatenate([t.q_ratio for t in tasks]) if n_tasks else np.zeros(0)
-    table = np.empty(len(columns) * n_tasks + q_ratio.size, dtype=np.float64)
+    table = np.empty(len(columns) * n_tasks + q_ratio.size + len(constants), dtype=np.float64)
     for k, values in enumerate(columns.values()):
         table[k * n_tasks:(k + 1) * n_tasks] = values
-    table[len(columns) * n_tasks:] = q_ratio
+    table[len(columns) * n_tasks:len(columns) * n_tasks + q_ratio.size] = q_ratio
+    table[len(columns) * n_tasks + q_ratio.size:] = list(constants.values())
     table = xp.asarray(table)
     index = {name: k for k, name in enumerate(columns)}
+    lines = _device_lines(xp, prepared)
+    use_strength = any(t.strength_threshold is not None for t in tasks)
+    use_peak = any(t.min_peak_optical_depth is not None for t in tasks)
+
+    if _use_fused(xp):
+        center, owner, inv_alpha, y, amp, pedestal = lbl_cuda_select.select(
+            xp, table, n_tasks, n_iso, lines, total, grid_lo, grid_hi, use_strength, use_peak)
+        order = xp.argsort(center, kind="stable")
+        order = order[xp.argsort(owner[order], kind="stable")]
+        owner = owner[order]
+        n_kept = (xp.bincount(owner, minlength=n_tasks) if owner.size
+                  else xp.zeros(n_tasks, dtype=np.int64))
+        stop = xp.cumsum(n_kept).astype(np.int64)
+        return Packed(center=center[order], inv_alpha=inv_alpha[order], y=y[order],
+                      amp=amp[order], pedestal=pedestal[order],
+                      start=stop - n_kept, stop=stop, cutoff=cutoff, has_pedestal=has_pedestal)
 
     def per_task(name, dtype=np.float64):
         k = index[name]
         values = table[k * n_tasks:(k + 1) * n_tasks]
         return values if dtype is np.float64 else values.astype(dtype)
 
-    lines = _device_lines(xp, prepared)
     pair = xp.arange(total, dtype=np.int64)
     owner = xp.searchsorted(per_task("end", np.int64), pair, side="right")
     line = pair + per_task("first_minus_offset", np.int64)[owner]
@@ -235,7 +264,7 @@ def _select_packed(xp, prepared: _PreparedLines, tasks: Sequence[_SelectionTask]
 
     nu_shifted = nu + lines["delta_air"][line] * per_task("p_total")[owner]
     keep = xp.abs(nu_shifted - xp.clip(nu_shifted, grid_lo, grid_hi)) <= per_task("cutoff")[owner]
-    if any(t.strength_threshold is not None for t in tasks):
+    if use_strength:
         threshold = per_task("strength_threshold")[owner]
         applies = per_task("strength_applies", bool)[owner]
         keep &= ~applies | (s_t >= threshold)
@@ -248,7 +277,7 @@ def _select_packed(xp, prepared: _PreparedLines, tasks: Sequence[_SelectionTask]
                + lines["gamma_self"][line] * per_task("p_self")[owner]) * (
         per_task("ratio")[owner] ** lines["n_air"][line])
     column = per_task("column")[owner]
-    if any(t.min_peak_optical_depth is not None for t in tasks):
+    if use_peak:
         peak = _SQRT_LN2_OVER_PI / alpha_d * _erfcx(xp)(_SQRT_LN2 * gamma_l / alpha_d)
         minimum = per_task("peak_minimum")[owner]
         applies = per_task("peak_applies", bool)[owner]

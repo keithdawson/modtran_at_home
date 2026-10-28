@@ -69,11 +69,11 @@ as one unparallelised CPU process, which is what the host path is).
 1. **Faster GPU selection and the rest of a CUDA run** (full band, GPU
    synchronised per stage: kernels 0.30 s, selection 0.15 s, task setup
    0.01 s, the rest ~0.13 s).
-   - Selection: ~40 CuPy kernels per pass, float64 temporaries, ~2 ns per
-     (task, line) pair. One `ElementwiseKernel` for the keep test and one
-     for the packed values would cut the memory traffic several times
-     (expected ~0.03 s). Compile with `--fmad=false` to keep the CPU
-     rounding, and check against `_select_packed` in NumPy.
+   - Selection: now two fused kernels (`lbl_cuda_select.py`), checked
+     without a GPU (NVRTC compile; host-C++ run bit-identical to NumPy).
+     To do on the desktop: `python -m pytest tests/test_lbl_cuda.py` and
+     `python scripts/validation/cuda_selection_profile.py` (cpu /
+     gpu-arrays / gpu-fused); expected selection ~0.15 s -> ~0.03 s.
    - Selection waits for the previous group's kernels at each pass's
      `flatnonzero` (one synchronisation per pass): a second stream for
      selection would overlap the two.

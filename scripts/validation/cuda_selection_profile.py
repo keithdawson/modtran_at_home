@@ -2,15 +2,18 @@
 
     python scripts/validation/cuda_selection_profile.py
 
-1. Uninstrumented full default band (resolved, ground-to-space): CPU and GPU
-   line selection (``MWIR_CUDA_SELECTION``) alternated, five runs each.
-2. One instrumented run with GPU selection, the GPU synchronised around each
-   stage (this removes overlap, so the stages add up to more than step 1):
-   host-side task setup, each selection pass (pairs, kept lines, seconds),
-   and the Voigt kernels.
-3. The same for CPU selection: selection threads' time and the kernels.
+Three selections: ``cpu`` (``MWIR_CUDA_SELECTION=cpu``), ``gpu-arrays``
+(GPU, ~40 CuPy array operations per pass) and ``gpu-fused`` (GPU, the two
+fused kernels of ``lbl_cuda_select``; the default).
 
-Writes docs/validation/cuda_selection_profile_<hostname>.json.
+1. Uninstrumented full default band (resolved, ground-to-space): the three
+   alternated, five runs each.
+2. One instrumented run each, the GPU synchronised around each stage (this
+   removes overlap, so the stages add up to more than step 1): host-side task
+   setup, each selection pass (pairs, kept lines, seconds), and the Voigt
+   kernels.
+
+Writes docs/validation/cuda_selection_profile_<hostname>.json (``--out``).
 """
 from __future__ import annotations
 
@@ -27,9 +30,14 @@ import _common as c
 NO_DEVICE = 3
 
 
+SELECTIONS = ("cpu", "gpu-arrays", "gpu-fused")
+
+
 def _run(scenario, selection: str) -> float:
     from mwir_atmos.api import run_scenario
-    os.environ["MWIR_CUDA_SELECTION"] = selection
+    from mwir_atmos.optics import lbl_cuda_dispatch
+    os.environ["MWIR_CUDA_SELECTION"] = "cpu" if selection == "cpu" else "gpu"
+    lbl_cuda_dispatch._SELECT_FUSED = selection != "gpu-arrays"
     t0 = time.perf_counter()
     run_scenario(scenario, backend="cuda")
     return time.perf_counter() - t0
@@ -108,18 +116,18 @@ def main() -> int:
     base = dict(include_solar=False, include_lunar=False)
     full = Scenario(**base)
     warm = Scenario(wavenumber_min_cm1=2000.0, wavenumber_max_cm1=2010.0, **base)
-    for selection in ("cpu", "gpu"):     # CUDA context, NVRTC and CuPy kernel compilation
+    for selection in SELECTIONS:     # CUDA context, NVRTC and CuPy kernel compilation
         _run(warm, selection)
 
-    times = {"cpu": [], "gpu": []}
+    times = {selection: [] for selection in SELECTIONS}
     for _ in range(a.repeat):
-        for selection in ("cpu", "gpu"):
+        for selection in SELECTIONS:
             times[selection].append(_run(full, selection))
     report["full_band_seconds"] = times
     for selection, values in times.items():
         print(f"full band, {selection} selection: " + " ".join(f"{t:.3f}" for t in values), flush=True)
 
-    for selection in ("gpu", "cpu"):
+    for selection in SELECTIONS:
         stats = _instrumented(full, selection)
         report[f"instrumented_{selection}_selection"] = stats
         print(f"instrumented, {selection} selection: total {stats['total_s']:.3f} s, "
@@ -128,6 +136,8 @@ def main() -> int:
               f"{stats['kept'] / 1e6:.2f} M kept), kernels {stats['kernel_s']:.3f} s, "
               f"CPU _select_lines calls {stats['cpu_select_calls']}", flush=True)
     os.environ.pop("MWIR_CUDA_SELECTION", None)
+    from mwir_atmos.optics import lbl_cuda_dispatch
+    lbl_cuda_dispatch._SELECT_FUSED = True
 
     out = Path(a.out) if a.out else c.OUT_DIR / f"cuda_selection_profile_{socket.gethostname()}.json"
     c.write(out, report)

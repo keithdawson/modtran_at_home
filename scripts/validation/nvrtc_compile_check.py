@@ -3,8 +3,10 @@
     pip install nvidia-cuda-nvrtc-cu12
     python scripts/validation/nvrtc_compile_check.py
 
-Catches syntax and type errors in ``mwir_atmos/optics/lbl_cuda.py``'s kernel
-source for the RTX 4090 (sm_89) and Blackwell (sm_120) before a GPU run.
+Catches syntax and type errors in the kernel sources of
+``mwir_atmos/optics/lbl_cuda.py`` (Voigt sums) and ``lbl_cuda_select.py``
+(line selection) for the RTX 4090 (sm_89) and Blackwell (sm_120) before a
+GPU run.
 Correctness is covered separately by the kernel's NumPy twin
 (``tests/test_lbl_cuda.py``).
 """
@@ -16,7 +18,7 @@ import os
 import site
 import sys
 
-from mwir_atmos.optics import lbl_cuda
+from mwir_atmos.optics import lbl_cuda, lbl_cuda_select
 
 ARCHES = ("compute_89", "compute_120")
 
@@ -43,23 +45,29 @@ def _library() -> ctypes.CDLL:
     raise SystemExit("NVRTC not found: pip install nvidia-cuda-nvrtc-cu12 (or the cuda13 extra)")
 
 
+PROGRAMS = (("voigt.cu", lbl_cuda._source(), ("--std=c++14",)),
+            ("select.cu", lbl_cuda_select.source(), lbl_cuda_select.COMPILE_OPTIONS))
+
+
 def main() -> int:
     lib = _library()
-    source = lbl_cuda._source().encode()
     failures = 0
-    for arch in ARCHES:
-        program = ctypes.c_void_p()
-        lib.nvrtcCreateProgram(ctypes.byref(program), source, b"voigt.cu", 0, None, None)
-        options = (ctypes.c_char_p * 2)(f"--gpu-architecture={arch}".encode(), b"--std=c++14")
-        status = lib.nvrtcCompileProgram(program, 2, options)
-        size = ctypes.c_size_t()
-        lib.nvrtcGetProgramLogSize(program, ctypes.byref(size))
-        log = ctypes.create_string_buffer(size.value)
-        lib.nvrtcGetProgramLog(program, log)
-        print(f"{arch}: {'ok' if status == 0 else f'FAILED ({status})'}")
-        if log.value.strip():
-            print(log.value.decode())
-        failures += status != 0
+    for name, source, extra in PROGRAMS:
+        for arch in ARCHES:
+            program = ctypes.c_void_p()
+            lib.nvrtcCreateProgram(ctypes.byref(program), source.encode(), name.encode(), 0,
+                                   None, None)
+            flags = [f"--gpu-architecture={arch}".encode()] + [o.encode() for o in extra]
+            options = (ctypes.c_char_p * len(flags))(*flags)
+            status = lib.nvrtcCompileProgram(program, len(flags), options)
+            size = ctypes.c_size_t()
+            lib.nvrtcGetProgramLogSize(program, ctypes.byref(size))
+            log = ctypes.create_string_buffer(size.value)
+            lib.nvrtcGetProgramLog(program, log)
+            print(f"{name} {arch}: {'ok' if status == 0 else f'FAILED ({status})'}")
+            if log.value.strip():
+                print(log.value.decode())
+            failures += status != 0
     return 1 if failures else 0
 
 

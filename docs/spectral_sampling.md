@@ -378,6 +378,21 @@ CuPy kernels with float64 temporaries. GPU selection is the default since
 `MWIR_CUDA_SELECTION` defaults to `gpu`; the results are the same, 1.6x
 faster, and there is no run-to-run drift.
 
+Since then the CuPy selection is two fused kernels
+(`optics/lbl_cuda_select.py`, `_SELECT_FUSED`): `select_keep` (one thread
+per pair, one byte out) and `select_values` (one thread per kept pair, the
+packed float32 parameters), with compaction and the two stable sorts left
+to CuPy. Same operations in the same order as the NumPy expressions,
+compiled with `--fmad=false`. Without a GPU: the source compiles with NVRTC
+for sm_89 and sm_120 (`nvrtc_compile_check.py`), and compiled as host C++
+(`g++ -ffp-contract=off`) and run through `_select_packed` it gives
+bit-identical packed arrays to the NumPy path on three cases
+(`tests/test_lbl_cuda_select.py`; four deliberate source mutations --
+wrong pressure column, isotopologue index, pedestal flag, a dropped
+constant -- each fail it). Not yet timed on a GPU:
+`cuda_selection_profile.py` now compares `cpu`, `gpu-arrays` and
+`gpu-fused`.
+
 ### Parallelism
 
 Resolved runs of at least 2^21 fine-point x layer elements are split into at

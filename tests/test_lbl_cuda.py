@@ -291,11 +291,15 @@ def test_resolved_run_on_cuda_matches_cpu():
 
 
 @gpu
-def test_gpu_selection_matches_the_numpy_selection():
-    """CuPy selection against the same arithmetic in NumPy: only exp, expm1,
-    pow and erfcx may round differently, so a line right at a threshold may
-    flip; everything kept by both has the same parameters to rounding."""
+@pytest.mark.parametrize("fused", [True, False], ids=["fused-kernels", "array-ops"])
+def test_gpu_selection_matches_the_numpy_selection(monkeypatch, fused):
+    """CuPy selection (the fused kernels, and the array-operation version)
+    against the same arithmetic in NumPy: only exp, expm1, pow and erfcx may
+    round differently, so a line right at a threshold may flip; everything
+    kept by both has the same parameters to rounding."""
     import cupy
+
+    monkeypatch.setattr(lbl_cuda_dispatch, "_SELECT_FUSED", fused)
 
     grid = make_grid(2000.0, 2100.0, 0.01)
     kept = flipped = 0
