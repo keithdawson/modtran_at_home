@@ -38,6 +38,7 @@ import yaml
 
 from . import __version__, report, run_cost
 from .api import run_scenario
+from .optics.lbl import BACKEND_CHOICES
 from .scenario_io import (
     coerce_field,
     load_scenario_yaml,
@@ -391,9 +392,10 @@ def build_parser() -> argparse.ArgumentParser:
              "Results do not depend on this.",
     )
     perf.add_argument(
-        "--backend", choices=["cpu", "cuda"], default=None,
-        help="Line-by-line engine: cpu, or cuda (NVIDIA GPU via CuPy: pip install "
-             "cupy-cuda12x). Default: MWIR_BACKEND or cpu. Results agree to ~1e-6.",
+        "--backend", choices=list(BACKEND_CHOICES), default=None,
+        help="Line-by-line engine: auto (cuda if CuPy sees a GPU, else cpu), cpu, or cuda "
+             "(NVIDIA GPU via CuPy: pip install cupy-cuda12x). Default: MWIR_BACKEND or "
+             "auto. Results agree to ~1e-6.",
     )
 
     return parser
@@ -588,7 +590,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
 
     try:
-        cost = run_cost.estimate_run_cost(scenario, args.threads)
+        cost = run_cost.estimate_run_cost(scenario, args.threads, backend=args.backend)
     except Exception as exc:  # noqa: BLE001 - same boundary run_scenario() uses below
         _error(f"error resolving scenario geometry: {exc}", verbose=args.verbose)
         return EXIT_RUNTIME_ERROR

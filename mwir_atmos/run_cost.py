@@ -19,7 +19,7 @@ from typing import Optional
 import numpy as np
 
 from . import api, resolved
-from .optics.lbl import evaluations_per_line, resolve_thread_count
+from .optics.lbl import evaluations_per_line, resolve_backend, resolve_thread_count
 from .types import (
     REQUIRED_SPECIES,
     PathGeometry,
@@ -75,6 +75,15 @@ _COST_RESOLVED_RATE_PER_WORKER = 150_000.0
 #: Parallel speedup ~ workers ** this (measured 5.4x at 8 workers, 6.7x at 16
 #: SMT threads on 8 cores); errs slow on machines that scale better.
 _COST_SPEEDUP_EXPONENT = 0.7
+#: CUDA backend, resolved sampling: fixed seconds + fine points x layers per
+#: second, fitted to the RTX 4090 with GPU line selection (2026-10, commit
+#: 5f7b199): full default band, 41.2 M elements, 0.548 s; 2000-2200 cm^-1,
+#: 3.28 M elements, 0.18 s. The first run in a process adds CUDA context
+#: set-up and kernel compilation (~1 s), not counted.
+_COST_CUDA_FIXED_S = 0.15
+_COST_CUDA_RATE_ELEMENTS_PER_S = 1.0e8
+#: Point sampling on the CUDA backend (default point run: ~0.3 s).
+_COST_CUDA_POINT_FIXED_S = 0.3
 #: float64 (n_layers[+1], grid.n) arrays materialised per run: tau_molecular,
 #: one tau_by_species per REQUIRED_SPECIES, tau_aerosol_abs, tau_aerosol_sca,
 #: tau_rayleigh, aerosol_asymmetry, and TransmittanceResult.cumulative.
@@ -102,8 +111,11 @@ class _SpectralSize:
     plan: Optional[resolved.FineGridPlan] = None   # resolved sampling only
 
 
-def estimate_run_cost(scenario: Scenario, n_threads: Optional[int] = None) -> CostEstimate:
+def estimate_run_cost(scenario: Scenario, n_threads: Optional[int] = None,
+                      backend: Optional[str] = None) -> CostEstimate:
     """Points x layers, estimated memory, and estimated runtime for ``scenario``.
+
+    ``backend`` as for :func:`~mwir_atmos.api.run_scenario` (default: ``auto``).
 
     Raises whatever :func:`~mwir_atmos.api.run_scenario` would raise for an
     invalid or geometrically impossible scenario (e.g. an unreachable
@@ -121,7 +133,15 @@ def estimate_run_cost(scenario: Scenario, n_threads: Optional[int] = None) -> Co
 
     resident_points = size.resident_points
     speedup = 1.0
-    if scenario.spectral_sampling == SpectralSampling.RESOLVED:
+    if resolve_backend(backend) == "cuda":
+        # One process; DISORT and Monte Carlo below run on its CPU, unparallelised.
+        fixed = (_COST_CUDA_FIXED_S if scenario.spectral_sampling == SpectralSampling.RESOLVED
+                 else _COST_CUDA_POINT_FIXED_S)
+        est_seconds = fixed + elements / _COST_CUDA_RATE_ELEMENTS_PER_S
+        if scenario.spectral_sampling == SpectralSampling.RESOLVED:
+            resident_points = min(size.resident_points,
+                                  max(1, api._CUDA_CHUNK_ELEMENTS // max(n_layers, 1)))
+    elif scenario.spectral_sampling == SpectralSampling.RESOLVED:
         speedup, resident_points = _resolved_parallelism(size, elements, n_threads)
         est_seconds = _COST_FIXED_OVERHEAD_S + elements / (_COST_RESOLVED_RATE_PER_WORKER * speedup)
     else:

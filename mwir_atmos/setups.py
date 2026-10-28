@@ -69,6 +69,7 @@ def sweep_distance(
     include_radiance: bool = True,
     include_turbulence: bool = False,
     on_sample: Callable[[DistanceSample], None] | None = None,
+    backend: str | None = None,
 ) -> DistanceSweep:
     """Increase slant range until ``metric(result) < threshold`` or samples end.
 
@@ -82,6 +83,7 @@ def sweep_distance(
     Distances must be finite, positive and strictly increasing. A requested
     range beyond ground/top-of-atmosphere raises before that spectrum runs,
     rather than silently reporting a clipped path as the requested distance.
+    ``backend`` is passed to :func:`~mwir_atmos.api.run_scenario`.
     """
     if not math.isfinite(threshold):
         raise ValueError('threshold must be finite')
@@ -102,7 +104,7 @@ def sweep_distance(
             raise ValueError(f'Requested {distance:g} km exceeds the available path '
                              f'({path.total_length_km:g} km); reduce the sweep range or change the sensor direction')
         result = api.run_scenario(scenario, include_radiance=include_radiance,
-                                  include_turbulence=include_turbulence)
+                                  include_turbulence=include_turbulence, backend=backend)
         score = float(metric(result))
         if not math.isfinite(score):
             raise ValueError(f'metric returned a non-finite value at {distance:g} km')

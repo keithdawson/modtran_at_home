@@ -43,7 +43,7 @@ CUDA 13. The installer prints whether CuPy sees a GPU.
 ```bash
 nvidia-smi -L                          # find a Blackwell's index; the Ada 6000 is a different GPU
 export MWIR_CUDA_DEVICE=0              # GPU for mwir (or restrict with CUDA_VISIBLE_DEVICES)
-mwir --backend cuda --help             # or MWIR_BACKEND=cuda for the API and GUI
+mwir --backend cuda --help             # the default (auto) already uses a GPU CuPy can see
 python scripts/validation/nvrtc_compile_check.py   # kernel compiles for sm_89 / sm_120
 python scripts/validation/cuda_check.py            # GPU tests + CPU vs GPU timing
 ```

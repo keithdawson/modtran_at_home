@@ -133,3 +133,28 @@ def test_gui_line_resolved_sampling_controls_and_summary():
     assert not app.exception and not app.error
     assert app.selectbox(key='instrument_function').value == InstrumentFunction.BOX
     assert any('line-resolved at' in m.value for m in app.markdown)
+
+
+def test_gui_backend_control(monkeypatch):
+    """The Performance expander selects the compute backend; asking for the
+    GPU without one is reported, not run on the CPU behind the user's back."""
+    import streamlit as st
+    from mwir_atmos import api
+    from mwir_atmos.optics import lbl_cuda
+    monkeypatch.setattr(lbl_cuda, "available", lambda: False)
+    seen = []
+    original = api.run_scenario
+    def recorded(*args, **kwargs):
+        seen.append(kwargs.get("backend"))
+        return original(*args, **kwargs)
+    monkeypatch.setattr(api, "run_scenario", recorded)
+    st.cache_data.clear()
+    app = _point_app()
+    assert not app.exception
+    performance = next(e for e in app.sidebar.expander if e.label == "Performance")
+    assert any("Auto runs on the CPU" in c.value for c in performance.caption)
+    app.selectbox(key="compute_backend").set_value("cpu").run()
+    assert not app.exception
+    assert seen == ["auto", "cpu"]
+    app.selectbox(key="compute_backend").set_value("cuda").run()
+    assert any("not available" in e.value for e in app.error)

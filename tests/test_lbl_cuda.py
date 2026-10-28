@@ -96,6 +96,28 @@ def test_cuda_path_with_the_numpy_twin_matches_cpu(monkeypatch):
         np.testing.assert_allclose(gpu_species[sp], cpu_species[sp], rtol=2e-6, atol=1e-12)
 
 
+@pytest.mark.parametrize("gpu_present, expected", [(True, "cuda"), (False, "cpu")])
+def test_auto_backend_uses_the_gpu_when_present(monkeypatch, gpu_present, expected):
+    monkeypatch.setattr(lbl_cuda, "available", lambda: gpu_present)
+    assert lbl.resolve_backend("auto") == expected
+    monkeypatch.delenv("MWIR_BACKEND", raising=False)
+    assert lbl.resolve_backend() == expected
+    monkeypatch.setenv("MWIR_BACKEND", "cpu")
+    assert lbl.resolve_backend() == "cpu"
+
+
+def test_cost_estimate_follows_the_backend(monkeypatch):
+    from mwir_atmos import run_cost
+    monkeypatch.setattr(lbl_cuda, "available", lambda: True)
+    scenario = Scenario(include_solar=False, include_lunar=False)
+    cpu = run_cost.estimate_run_cost(scenario, 16, backend="cpu")
+    gpu = run_cost.estimate_run_cost(scenario, 16, backend="cuda")
+    # Measured on the desktop: 38 s on 16 CPU threads, 0.55 s on an RTX 4090.
+    assert 20.0 < cpu.est_seconds < 80.0
+    assert 0.3 < gpu.est_seconds < 1.5
+    assert run_cost.estimate_run_cost(scenario, 16, backend="auto").est_seconds == gpu.est_seconds
+
+
 def test_selection_switch_rejects_unknown_values(monkeypatch):
     monkeypatch.setenv("MWIR_CUDA_SELECTION", "fpga")
     with pytest.raises(ValueError, match="MWIR_CUDA_SELECTION"):

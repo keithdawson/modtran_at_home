@@ -28,7 +28,7 @@ pip install -e ".[dev]"                     # add [gui] for the GUI, [cuda] for 
 python -m pytest -n auto                    # needs pytest-xdist; ~1.5 min
 python scripts/validation/run_all.py        # validation studies (skip-if-done)
 python scripts/validation/cuda_check.py     # GPU tests + CPU vs GPU timing
-mwir --help                                 # CLI; --threads N, --backend cpu|cuda
+mwir --help                                 # CLI; --threads N, --backend auto|cpu|cuda
 ```
 
 ## Conventions

@@ -46,7 +46,7 @@ from mwir_atmos import api, run_cost
 from mwir_atmos.scenario_io import scenario_from_dict, scenario_to_dict
 from mwir_atmos.types import Scenario, ScenarioResult
 from mwir_atmos.webgui.results import render_result, setup_download
-from mwir_atmos.webgui.sidebar import build_scenario_from_sidebar
+from mwir_atmos.webgui.sidebar import backend_from_sidebar, build_scenario_from_sidebar
 from mwir_atmos.webgui.sweep import distance_sweep_section
 
 st.set_page_config(page_title="mwir_atmos", page_icon=":thermometer:", layout="wide")
@@ -58,17 +58,18 @@ def _scenario_cache_key(scenario: Scenario) -> str:
 
 
 @st.cache_data(show_spinner=False, max_entries=8)
-def _run_scenario_cached(cache_key: str) -> ScenarioResult:
+def _run_scenario_cached(cache_key: str, backend: str = "auto") -> ScenarioResult:
     scenario = scenario_from_dict(json.loads(cache_key))
     # Turbulence is computed whenever the sidebar selects a Cn^2 model; with
     # TurbulenceModel.NONE the api layer skips it, so this stays cheap.
-    return api.run_scenario(scenario, include_radiance=True, include_turbulence=True)
+    return api.run_scenario(scenario, include_radiance=True, include_turbulence=True,
+                            backend=backend)
 
 
-def _cost_and_gate(scenario: Scenario, cache_key: str) -> bool:
+def _cost_and_gate(scenario: Scenario, cache_key: str, backend: str = "auto") -> bool:
     """Show the cost estimate; large runs need a confirmation tick (as ``mwir --yes``)."""
     try:
-        cost = run_cost.estimate_run_cost(scenario)
+        cost = run_cost.estimate_run_cost(scenario, backend=backend)
     except Exception as exc:  # noqa: BLE001 - surfaced to the user, not a crash
         st.error(f"Could not resolve this scenario's geometry: {exc}")
         return False
@@ -102,20 +103,21 @@ def main() -> None:
     )
 
     scenario = build_scenario_from_sidebar()
+    backend = backend_from_sidebar()
     cache_key = _scenario_cache_key(scenario)
     setup_download(scenario)
     mode = st.radio("Calculation", ["Single calculation", "Distance sweep"], horizontal=True, key="calculation_mode")
     if mode == "Distance sweep":
-        distance_sweep_section(scenario, cache_key)
+        distance_sweep_section(scenario, cache_key, backend)
         return
 
-    if not _cost_and_gate(scenario, cache_key):
+    if not _cost_and_gate(scenario, cache_key, backend):
         st.warning("Waiting for confirmation above before running this scenario.")
         st.stop()
 
     with st.spinner("Running scenario..."):
         try:
-            result = _run_scenario_cached(cache_key)
+            result = _run_scenario_cached(cache_key, backend)
         except Exception as exc:  # noqa: BLE001 - surfaced to the user, not a crash
             st.error(f"Error running scenario: {exc}")
             st.stop()

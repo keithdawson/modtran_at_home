@@ -42,7 +42,7 @@ def _check_band(scenario: Scenario, lo: float, hi: float) -> None:
         raise ValueError("The band must contain at least two computed spectral samples")
 
 
-def distance_sweep_section(scenario: Scenario, cache_key: str) -> None:
+def distance_sweep_section(scenario: Scenario, cache_key: str, backend: str = "auto") -> None:
     st.subheader("Distance sweep")
     st.caption("Move the source outward along the saved sensor direction, holding other inputs fixed. Source-altitude limits are cleared. Stop at the first sampled band transmittance below the threshold.")
     st.info("Transmittance is atmospheric throughput, not detector detectability. A Python script can supply its own detectability or SNR metric.")
@@ -61,13 +61,13 @@ def distance_sweep_section(scenario: Scenario, cache_key: str) -> None:
         submitted = st.form_submit_button("Run distance sweep")
 
     # Results persist across reruns until any input changes.
-    signature = (cache_key, start, stop, step, lo, hi, threshold)
+    signature = (cache_key, backend, start, stop, step, lo, hi, threshold)
     if submitted:
         try:
             distances = sweep_distances(start, stop, step)
             with_overrides(scenario)  # Validate inputs before sizing a grid.
             _check_band(scenario, lo, hi)
-            sweep = _run_with_progress(scenario, distances, lo, hi, threshold)
+            sweep = _run_with_progress(scenario, distances, lo, hi, threshold, backend)
             st.session_state["distance_sweep_result"] = (signature, sweep)
         except (ValueError, RuntimeError) as exc:
             st.error(f"Distance sweep stopped: {exc}")
@@ -79,7 +79,7 @@ def distance_sweep_section(scenario: Scenario, cache_key: str) -> None:
 
 
 def _run_with_progress(scenario: Scenario, distances: np.ndarray, lo: float, hi: float,
-                       threshold: float):
+                       threshold: float, backend: str = "auto"):
     progress = st.progress(0.0, text="Starting distance sweep")
     completed = []
 
@@ -90,7 +90,7 @@ def _run_with_progress(scenario: Scenario, distances: np.ndarray, lo: float, hi:
 
     sweep = sweep_distance(scenario, distances, threshold=threshold,
                            metric=lambda r: band_average(r.grid, r.transmittance.total, (lo, hi)),
-                           include_radiance=False, on_sample=update)
+                           include_radiance=False, on_sample=update, backend=backend)
     progress.empty()
     return sweep
 

@@ -61,6 +61,11 @@ CPU selection (`MWIR_CUDA_SELECTION=cpu`) was GIL-bound (~0.8 s) and slowed
 after two runs on Windows (selection threads sharing physical cores); GPU
 selection has no drift.
 
+The backend defaults to `auto` (CUDA when CuPy sees a GPU); the GUI chooses
+under "Performance", and the cost estimate has a CUDA rate fitted to the
+RTX 4090 (`run_cost._COST_CUDA_*`; DISORT and Monte Carlo terms then count
+as one unparallelised CPU process, which is what the host path is).
+
 1. **Faster GPU selection and the rest of a CUDA run** (full band, GPU
    synchronised per stage: kernels 0.30 s, selection 0.15 s, task setup
    0.01 s, the rest ~0.13 s).
@@ -77,11 +82,8 @@ selection has no drift.
    - Multi-GPU (work server: 4 x Blackwell 6000 on CPU 0, 1 x Ada 6000 on
      CPU 1): one worker process per GPU, **spawned** (never fork after CUDA
      is initialised), each with `MWIR_CUDA_DEVICE`.
-   - GPU-aware runtime estimate; GUI control for the backend.
    - CuPy warns "CUDA path could not be detected" on the desktop; harmless
      with `cupy-cuda12x[ctk]`, silence by setting `CUDA_PATH` if wanted.
-   - Consider making `cuda` the default when a GPU is present: the full
-     band is now 35x faster than the CPU backend on the desktop.
    - DISORT, Monte Carlo and Mie aerosol optics on the CUDA backend use the
      host path: optical depths are copied back once and the rest runs on the
      CPU (2.8 s for the full band with the single-scatter solver, against
@@ -129,7 +131,9 @@ selection has no drift.
 - **Kernel edits without a GPU**: `pip install nvidia-cuda-nvrtc-cu12` then
   `python scripts/validation/nvrtc_compile_check.py` (sm_89, sm_120).
 - **Environment variables**: `MWIR_THREADS` (workers), `MWIR_PARALLEL`
-  (`processes`|`threads`), `MWIR_BACKEND` (`cpu`|`cuda`), `MWIR_CUDA_DEVICE`.
+  (`processes`|`threads`), `MWIR_BACKEND` (`auto`|`cpu`|`cuda`; default auto), `MWIR_CUDA_DEVICE`,
+  `MWIR_CUDA_SELECTION` (`gpu`|`cpu`). The test suite pins
+  `MWIR_BACKEND=cpu` (`tests/conftest.py`) unless it is set beforehand.
 - **Fast tests**: `pip install pytest-xdist`, then `python -m pytest -n auto`
   (~1.5 min on 4 cores).
 - **Old desktop stash**: the desktop may still hold `stash@{0}` "desktop WIP

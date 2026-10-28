@@ -137,7 +137,8 @@ def run_scenario(
     ``grid`` overrides the output grid (uniform spacing). ``n_threads`` sets
     the line-by-line worker threads (default: ``MWIR_THREADS`` or every CPU);
     results do not depend on it. ``backend`` selects the line-by-line engine,
-    ``"cpu"`` or ``"cuda"`` (default: ``MWIR_BACKEND``, else ``"cpu"``; see
+    ``"auto"``, ``"cpu"`` or ``"cuda"`` (default: ``MWIR_BACKEND``, else
+    ``"auto"``: the GPU when CuPy sees one; see
     :func:`mwir_atmos.optics.lbl.resolve_backend`). With
     ``spectral_sampling="resolved"`` the physics runs on a fine internal grid
     and is convolved with the instrument function onto the output grid -- see

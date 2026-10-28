@@ -64,6 +64,37 @@ _SOLVER_LABELS = {
 }
 
 
+_BACKEND_LABELS = {
+    "auto": "Auto (GPU if available)",
+    "cpu": "CPU",
+    "cuda": "GPU (CUDA)",
+}
+
+
+def backend_from_sidebar() -> str:
+    """The compute backend the "Performance" controls select (a run option, not a Scenario field)."""
+    from mwir_atmos.optics import lbl, lbl_cuda
+    with st.sidebar.expander("Performance", expanded=False):
+        choice = st.selectbox("Compute backend", list(_BACKEND_LABELS), index=0,
+                              format_func=_BACKEND_LABELS.get, key="compute_backend",
+                              help="Results agree to ~1e-6 between backends. The GPU needs "
+                                   "CuPy and an NVIDIA GPU (pip install mwir_atmos[cuda]).")
+        gpu = lbl_cuda.available()
+        if gpu:
+            st.caption(f"GPU: {lbl_cuda.device_summary()}")
+        else:
+            st.caption("No CUDA GPU found: Auto runs on the CPU.")
+        if choice == "cuda" and not gpu:
+            st.error("GPU (CUDA) selected, but CuPy or a CUDA device is not available.")
+        try:
+            resolved = lbl.resolve_backend(choice)
+        except RuntimeError:
+            resolved = "cpu"
+        if choice == "auto":
+            st.caption(f"Running on: {_BACKEND_LABELS[resolved]}")
+    return choice
+
+
 def build_scenario_from_sidebar() -> Scenario:
     """The scenario the sidebar describes: from the controls, or a loaded YAML setup."""
     st.sidebar.title("mwir_atmos")
