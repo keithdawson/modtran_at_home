@@ -48,8 +48,20 @@ python scripts/validation/nvrtc_compile_check.py   # kernel compiles for sm_89 /
 python scripts/validation/cuda_check.py            # GPU tests + CPU vs GPU timing
 ```
 
-One process uses one GPU; lines are selected on the GPU by default
-(`MWIR_CUDA_SELECTION=cpu` for the CPU selection).
+One process uses one GPU unless `MWIR_CUDA_DEVICES` lists several: then
+large resolved runs (from about twice the full default band's per-chunk
+size) are split over one spawned worker process per listed GPU, kept for the
+life of the process so sweeps and scripts pay the start-up (a few seconds)
+once. Chunks go to whichever worker is free, so mixing the Ada 6000 with the
+Blackwells is safe; it just takes fewer chunks.
+
+```bash
+export MWIR_CUDA_DEVICES=0,1,2,3       # the four Blackwells (check nvidia-smi -L); or "all"
+python scripts/validation/multi_gpu_check.py --devices 0,1,2,3   # speed vs one GPU, agreement
+```
+
+Lines are selected on the GPU by default (`MWIR_CUDA_SELECTION=cpu` for the
+CPU selection).
 
 ### B. Ubuntu 22.04 / 24.04 LTS
 

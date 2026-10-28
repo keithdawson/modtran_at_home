@@ -283,6 +283,10 @@ _CUDA_CHUNK_ELEMENTS = 1 << 23
 #: and copy back only the instrument-reduced output (see _device_resident).
 #: Off only for comparisons with the host path.
 _CUDA_DEVICE_RESIDENT = True
+#: Resolved CUDA runs spread over the GPUs of ``MWIR_CUDA_DEVICES`` only from
+#: this many fine point x layer elements (two single-GPU chunks; the full
+#: default band is ~41 M): below it one GPU finishes in well under a second.
+_MULTI_GPU_MIN_ELEMENTS = 2 * _CUDA_CHUNK_ELEMENTS
 #: Resolved runs smaller than this many (fine point x layer) elements stay in
 #: one process: worker start-up (~1 s) would cost more than it saves.
 _PROCESS_MIN_ELEMENTS = 1 << 21
@@ -331,12 +335,21 @@ def _run_resolved(spectral_pass: _SpectralPass, grid: SpectralGrid):
     spectral_pass.device = gpu and _device_resident(spectral_pass)
     parallel = (not gpu and workers > 1 and _parallel_mode() == "processes"
                 and n_fine * len(layers) >= _PROCESS_MIN_ELEMENTS)
-    pieces = list(resolved.chunks(plan, grid.n, len(layers),
-                                  min_chunks=_CHUNKS_PER_WORKER * workers if parallel else 1,
+    from . import multi_gpu
+    devices = multi_gpu.cuda_devices() if gpu else None
+    multi = (devices is not None and len(devices) > 1
+             and n_fine * len(layers) >= _MULTI_GPU_MIN_ELEMENTS)
+    min_chunks = (_CHUNKS_PER_WORKER * workers if parallel
+                  else _CHUNKS_PER_WORKER * len(devices) if multi else 1)
+    pieces = list(resolved.chunks(plan, grid.n, len(layers), min_chunks=min_chunks,
                                   max_elements=_CUDA_CHUNK_ELEMENTS if gpu else None))
     jobs = [(plan, first, stop, fine, grid.wavenumber_cm1[first:stop], grid.resolution_cm1, binned)
             for first, stop, fine in pieces]
-    parts = _run_chunks_in_processes(spectral_pass, jobs, workers) if parallel and len(jobs) > 1 else None
+    parts = None
+    if parallel and len(jobs) > 1:
+        parts = _run_chunks_in_processes(spectral_pass, jobs, workers)
+    elif multi and len(jobs) > 1:
+        parts = multi_gpu.run_chunks(spectral_pass, jobs, devices)
     if parts is None:
         parts = [_resolved_chunk(spectral_pass, *job) for job in jobs]
 

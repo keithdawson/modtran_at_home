@@ -335,6 +335,14 @@ def selection_module():
     return _cupy()
 
 
+def device_count() -> int:
+    """CUDA devices CuPy sees (0 without CuPy or a driver)."""
+    try:
+        return int(_cupy().cuda.runtime.getDeviceCount())
+    except Exception:
+        return 0
+
+
 def available() -> bool:
     """True when CuPy imports and sees at least one CUDA device."""
     try:

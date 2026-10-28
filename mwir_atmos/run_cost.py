@@ -137,7 +137,12 @@ def estimate_run_cost(scenario: Scenario, n_threads: Optional[int] = None,
         # One process; DISORT and Monte Carlo below run on its CPU, unparallelised.
         fixed = (_COST_CUDA_FIXED_S if scenario.spectral_sampling == SpectralSampling.RESOLVED
                  else _COST_CUDA_POINT_FIXED_S)
-        est_seconds = fixed + elements / _COST_CUDA_RATE_ELEMENTS_PER_S
+        gpus = 1
+        if (scenario.spectral_sampling == SpectralSampling.RESOLVED
+                and elements >= api._MULTI_GPU_MIN_ELEMENTS):
+            from . import multi_gpu
+            gpus = len(multi_gpu.cuda_devices() or (0,))   # MWIR_CUDA_DEVICES; even split
+        est_seconds = fixed + elements / (_COST_CUDA_RATE_ELEMENTS_PER_S * gpus)
         if scenario.spectral_sampling == SpectralSampling.RESOLVED:
             resident_points = min(size.resident_points,
                                   max(1, api._CUDA_CHUNK_ELEMENTS // max(n_layers, 1)))

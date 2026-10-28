@@ -79,9 +79,14 @@ as one unparallelised CPU process, which is what the host path is).
      selection would overlap the two.
    - Kernels (0.30 s) are now the largest part.
 2. **Other CUDA follow-ups**:
-   - Multi-GPU (work server: 4 x Blackwell 6000 on CPU 0, 1 x Ada 6000 on
-     CPU 1): one worker process per GPU, **spawned** (never fork after CUDA
-     is initialised), each with `MWIR_CUDA_DEVICE`.
+   - Multi-GPU is written, opt-in (`MWIR_CUDA_DEVICES=0,1,2,3` or `all`;
+     `mwir_atmos/multi_gpu.py`): a persistent pool of spawned workers, one
+     per GPU, each pinned with `MWIR_CUDA_DEVICE`; resolved runs of >= 2
+     single-GPU chunks split into >= 3 chunks per GPU, handed out as
+     workers free up. Tested without a GPU (real spawned workers on the CPU
+     backend; routing with a stand-in pool). To do on the work server:
+     `python scripts/validation/multi_gpu_check.py --devices 0,1,2,3`
+     (and with the Ada 6000 included), then record the numbers.
    - CuPy warns "CUDA path could not be detected" on the desktop; harmless
      with `cupy-cuda12x[ctk]`, silence by setting `CUDA_PATH` if wanted.
    - DISORT, Monte Carlo and Mie aerosol optics on the CUDA backend use the
@@ -132,7 +137,7 @@ as one unparallelised CPU process, which is what the host path is).
   `python scripts/validation/nvrtc_compile_check.py` (sm_89, sm_120).
 - **Environment variables**: `MWIR_THREADS` (workers), `MWIR_PARALLEL`
   (`processes`|`threads`), `MWIR_BACKEND` (`auto`|`cpu`|`cuda`; default auto), `MWIR_CUDA_DEVICE`,
-  `MWIR_CUDA_SELECTION` (`gpu`|`cpu`). The test suite pins
+  `MWIR_CUDA_SELECTION` (`gpu`|`cpu`), `MWIR_CUDA_DEVICES` (several GPUs). The test suite pins
   `MWIR_BACKEND=cpu` (`tests/conftest.py`) unless it is set beforehand.
 - **Fast tests**: `pip install pytest-xdist`, then `python -m pytest -n auto`
   (~1.5 min on 4 cores).

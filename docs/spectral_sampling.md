@@ -393,6 +393,20 @@ constant -- each fail it). Not yet timed on a GPU:
 `cuda_selection_profile.py` now compares `cpu`, `gpu-arrays` and
 `gpu-fused`.
 
+#### Several GPUs
+
+`MWIR_CUDA_DEVICES=0,1,2,3` (or `all`) spreads a resolved CUDA run over one
+worker process per listed GPU (`mwir_atmos/multi_gpu.py`). Workers are
+spawned and pin themselves with `MWIR_CUDA_DEVICE` before touching CUDA;
+each chunk runs the single-GPU code, so results match one GPU to rounding.
+Start-up (imports, line lists, CUDA context; a few seconds) exceeds a whole
+full-band run on one GPU, so the pool persists across `run_scenario` calls,
+and only runs of at least two single-GPU chunks (`_MULTI_GPU_MIN_ELEMENTS`,
+2^24 fine point x layers; the full default band is ~41 M) fan out, in at
+least three chunks per GPU. After each chunk a worker frees CuPy's cached
+memory and keeps only its uploaded line lists. Not yet measured on the work
+server (`scripts/validation/multi_gpu_check.py`).
+
 ### Parallelism
 
 Resolved runs of at least 2^21 fine-point x layer elements are split into at
