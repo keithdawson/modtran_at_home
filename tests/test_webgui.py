@@ -319,6 +319,7 @@ def test_gui_backend_control(monkeypatch):
     assert any("Auto runs on the CPU" in c.value for c in performance.caption)
     app.selectbox(key="compute_backend").set_value("cpu").run()
     assert not app.exception
+    next(b for b in app.button if b.label == "Run calculation").click().run()
     assert seen == ["auto", "cpu"]
     app.selectbox(key="compute_backend").set_value("cuda").run()
     assert any("not available" in e.value for e in app.error)
