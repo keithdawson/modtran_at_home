@@ -13,6 +13,12 @@ imported directly (``from mwir_atmos.optics.lbl import ...``). See
 from __future__ import annotations
 
 from . import constants, spectral
+from .source_attenuation import (
+    SourceIntensityRemaining,
+    choose_reference_range_km,
+    compute_band_source_remaining,
+    compute_source_intensity_remaining,
+)
 from .spectral import band_average, band_integrate, make_grid, planck
 from .types import (
     AerosolModel,
@@ -51,6 +57,10 @@ __all__ = [
     "RadianceResult",
     "Scenario",
     "ScenarioResult",
+    "SourceIntensityRemaining",
+    "choose_reference_range_km",
+    "compute_band_source_remaining",
+    "compute_source_intensity_remaining",
     "SkyPosition",
     "SpectralGrid",
     "Species",

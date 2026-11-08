@@ -8,7 +8,7 @@ script but hits the result cache instead of recomputing.
 from __future__ import annotations
 
 import io
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -17,6 +17,11 @@ import yaml
 
 from mwir_atmos import constants, report
 from mwir_atmos.scenario_io import scenario_to_dict
+from mwir_atmos.source_attenuation import (
+    SourceIntensityRemaining,
+    compute_band_source_remaining,
+    compute_source_intensity_remaining,
+)
 from mwir_atmos.spectral import radiance_to_per_um
 from mwir_atmos.types import (
     RADIANCE_COMPONENTS,
@@ -32,9 +37,18 @@ from mwir_atmos.webgui.sidebar import AEROSOL_LABELS, MODEL_LABELS
 __all__ = ["render_result", "setup_download", "download_row"]
 
 
-def render_result(result: ScenarioResult) -> None:
+def render_result(result: ScenarioResult, run_fn: Optional[Callable[[Scenario], ScenarioResult]] = None) -> None:
     """Every section of the main panel for one computed scenario."""
-    _scenario_summary(result)
+    attn: Optional[SourceIntensityRemaining] = None
+    if result.scenario.source_range_km is not None and result.scenario.source_range_km > 0.0:
+        try:
+            attn = compute_source_intensity_remaining(result.scenario, result, run_fn=run_fn)
+        except Exception as exc:
+            st.warning(f"Could not compute near-zero reference comparison: {exc}")
+
+    _scenario_summary(result, attn)
+    if attn is not None:
+        _source_intensity_card(attn, result.scenario)
 
     use_wavelength = st.radio(
         "X-axis units", ["Wavelength (um)", "Wavenumber (cm^-1)"], index=0, horizontal=True, key="x_axis_units"
@@ -53,7 +67,7 @@ def render_result(result: ScenarioResult) -> None:
     _radiance_section(result, x, x_label)
     _turbulence_section(result)
     _profile_section(result)
-    _band_table_section(result)
+    _band_table_section(result, run_fn=run_fn)
 
 
 def setup_download(scenario: Scenario) -> None:
@@ -98,7 +112,7 @@ def _axis_name(x_label: str) -> str:
     return "wavelength" if x_label.startswith("Wavelength") else "wavenumber"
 
 
-def _scenario_summary(result: ScenarioResult) -> None:
+def _scenario_summary(result: ScenarioResult, attn: Optional[SourceIntensityRemaining] = None) -> None:
     sc = result.scenario
     path = result.path
     bits = [
@@ -115,6 +129,12 @@ def _scenario_summary(result: ScenarioResult) -> None:
            f"{sc.instrument_function.value} instrument function"
            if result.fine_step_cm1 is not None else ", point-sampled"),
     ]
+    if sc.source_range_km is not None and attn is not None:
+        ref_txt = f"{attn.reference_range_km * 1000:.0f} m" if attn.reference_range_km < 1.0 else f"{attn.reference_range_km:.3f} km"
+        bits.append(
+            f"source range {sc.source_range_km:g} km: **{attn.percentage_remaining:.3f}%** of source intensity remains "
+            f"(reference baseline at {ref_txt}, {attn.reference_transmittance_pct:.3f}% trans)"
+        )
     if sc.radiance_solver == RadianceSolver.DISORT:
         bits.insert(0, f"**DISORT multiple scattering**, {sc.disort_streams} streams, **plane-parallel geometry**")
     if sc.radiance_solver == RadianceSolver.SPHERICAL_MC:
@@ -129,6 +149,55 @@ def _scenario_summary(result: ScenarioResult) -> None:
             f"illuminated={result.moon.illuminated_fraction:.2f}"
         )
     st.markdown("  \n".join(f"- {b}" for b in bits))
+
+
+def _source_intensity_card(attn: SourceIntensityRemaining, scenario: Scenario) -> None:
+    st.subheader("Source Target Attenuation")
+    ref_desc = f"{attn.reference_range_km * 1000:.0f} m" if attn.reference_range_km < 1.0 else f"{attn.reference_range_km:.3f} km"
+
+    col1, col2, col3, col4 = st.columns(4)
+    if attn.is_thermal:
+        col1.metric(
+            "Source Radiance Remaining",
+            f"{attn.percentage_remaining:.3f}%",
+            help="Percentage of in-band emitted target radiance reaching the sensor aperture through atmospheric extinction.",
+        )
+        col2.metric(
+            "Path Transmittance",
+            f"{attn.transmittance_at_range * 100:.3f}%",
+            delta=f"{attn.transmittance_remaining_pct:.3f}% of ref",
+            help=f"Mean atmospheric transmittance along the {attn.source_range_km:g} km path (reference transmittance at {ref_desc}: {attn.reference_transmittance_pct:.3f}%).",
+        )
+        col3.metric(
+            "In-Band Target Radiance",
+            f"{attn.intensity_at_range:.2e} W/cm²/sr",
+            help=f"Received at sensor vs {attn.intensity_at_reference:.2e} W/cm²/sr at {ref_desc} reference.",
+        )
+    else:
+        col1.metric(
+            "Source Intensity Remaining",
+            f"{attn.percentage_remaining:.3f}%",
+            help="Percentage of source intensity surviving atmospheric attenuation.",
+        )
+        col2.metric(
+            "Path Transmittance",
+            f"{attn.transmittance_at_range * 100:.3f}%",
+            help=f"Mean atmospheric transmittance along the {attn.source_range_km:g} km path.",
+        )
+        col3.metric(
+            "Near Reference Transmittance",
+            f"{attn.reference_transmittance_pct:.3f}%",
+            help=f"Transmittance at {ref_desc} where atmospheric attenuation is negligible.",
+        )
+
+    col4.metric("Source Slant Range", f"{attn.source_range_km:g} km", delta=f"ref: {ref_desc}")
+
+    st.caption(
+        f"Compared against a short-range baseline of **{ref_desc}** along the line of sight "
+        f"where atmospheric attenuation is nearly zero ({attn.reference_transmittance_pct:.3f}% transmittance). "
+        + (f"Weights Planck emission at T = {scenario.source_temp_k:g} K."
+           if attn.is_thermal else "Unweighted path transmittance.")
+    )
 
 
 def _transmittance_section(result: ScenarioResult, x: np.ndarray, x_label: str) -> None:
@@ -263,7 +332,7 @@ def _profile_section(result: ScenarioResult) -> None:
             download_row("profile_h2o", png)
 
 
-def _band_table_section(result: ScenarioResult) -> None:
+def _band_table_section(result: ScenarioResult, run_fn: Optional[Callable] = None) -> None:
     st.subheader("Band summary")
     band_names = list(constants.BANDS_CM1)
     chosen = st.multiselect("Bands", band_names, default=band_names, key="band_selection")
@@ -275,24 +344,41 @@ def _band_table_section(result: ScenarioResult) -> None:
         st.info("None of the selected bands overlap the computed grid.")
         return
 
-    trans_df = pd.DataFrame(
-        [
-            {
-                "band": r.label,
-                "range (um)": f"{r.lo_um:.3f}-{r.hi_um:.3f}",
-                **r.transmittance,
-                **{f"species: {sp}": v for sp, v in r.species_transmittance.items()},
-            }
-            for r in rows
-        ]
-    ).set_index("band")
+    band_remaining: dict[str, float] = {}
+    if result.scenario.source_range_km is not None and result.scenario.source_range_km > 0.0:
+        try:
+            band_remaining = compute_band_source_remaining(
+                result.scenario, result, [(name, name) for name in chosen], run_fn=run_fn
+            )
+        except Exception:
+            pass
+
+    trans_data = []
+    for r in rows:
+        item = {
+            "band": r.label,
+            "range (um)": f"{r.lo_um:.3f}-{r.hi_um:.3f}",
+            **r.transmittance,
+            **{f"species: {sp}": v for sp, v in r.species_transmittance.items()},
+        }
+        if r.label in band_remaining:
+            item["source remaining (%)"] = f"{band_remaining[r.label]:.3f}%"
+        trans_data.append(item)
+
+    trans_df = pd.DataFrame(trans_data).set_index("band")
     st.caption("Band-averaged transmittance")
     st.dataframe(trans_df, width="stretch")
 
     if any(r.radiance is not None for r in rows):
-        radiance_df = pd.DataFrame(
-            [{"band": r.label, **r.radiance} for r in rows if r.radiance is not None]
-        ).set_index("band")
+        rad_data = []
+        for r in rows:
+            if r.radiance is None:
+                continue
+            item = {"band": r.label, **r.radiance}
+            if r.label in band_remaining:
+                item["source remaining (%)"] = f"{band_remaining[r.label]:.3f}%"
+            rad_data.append(item)
+        radiance_df = pd.DataFrame(rad_data).set_index("band")
         st.caption("Band-integrated radiance (W cm^-2 sr^-1)")
         st.dataframe(radiance_df, width="stretch")
 
